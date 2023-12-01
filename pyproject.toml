@@ -1,0 +1,118 @@
+[project]
+name = "minio_manager"
+dynamic = ["version"]
+description = "Declare what MinIO buckets, IAM policies, ILM policies you want, and let MinIO Manager do the work."
+authors = [
+    {name = "Alwyn Kik", email = "alwyn@kik.pw"},
+]
+readme = "README.md"
+packages = [
+  {include = "minio_manager"}
+]
+requires-python = ">=3.8,<4.0"
+dependencies = []
+license = {text = "MIT license"}
+keywords = ['python']
+
+[tool.pdm.version]
+source = "scm"
+
+[project.urls]
+Homepage = "https://alveel.github.io/minio-manager/"
+Repository = "https://github.com/alveel/minio-manager"
+Documentation = "https://alveel.github.io/minio-manager/"
+
+[tool.pdm.dev-dependencies]
+test = [
+  "pytest>=7.2.0",
+  "pytest-cov>=4.0.0"
+  ]
+dev = [
+"deptry>=0.6.4",
+"mypy>=0.981",
+  "pre-commit>=2.20.0",
+  "tox>=3.25.1"
+]
+docs = [
+  "mkdocs>=1.4.2",
+  "mkdocs-material>=8.5.10",
+  "mkdocstrings[python]>=0.19.0"
+]
+
+[tool.pdm.build]
+excludes = ["./**/.git"]
+package-dir = "."
+includes = ["minio_manager"]
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+[tool.black]
+line-length = 120
+target-version = ['py37']
+preview = true
+
+[tool.mypy]
+files = ["minio_manager"]
+disallow_untyped_defs = "True"
+disallow_any_unimported = "True"
+no_implicit_optional = "True"
+check_untyped_defs = "True"
+warn_return_any = "True"
+warn_unused_ignores = "True"
+show_error_codes = "True"
+
+[tool.ruff]
+target-version = "py37"
+line-length = 120
+fix = true
+select = [
+    # flake8-2020
+    "YTT",
+    # flake8-bandit
+    "S",
+    # flake8-bugbear
+    "B",
+    # flake8-builtins
+    "A",
+    # flake8-comprehensions
+    "C4",
+    # flake8-debugger
+    "T10",
+    # flake8-simplify
+    "SIM",
+    # isort
+    "I",
+    # mccabe
+    "C90",
+    # pycodestyle
+    "E", "W",
+    # pyflakes
+    "F",
+    # pygrep-hooks
+    "PGH",
+    # pyupgrade
+    "UP",
+    # ruff
+    "RUF",
+    # tryceratops
+    "TRY",
+]
+ignore = [
+    # LineTooLong
+    "E501",
+    # DoNotAssignLambda
+    "E731",
+]
+
+[tool.coverage.report]
+skip_empty = true
+
+[tool.coverage.run]
+branch = true
+source = ["minio_manager"]
+
+
+[tool.ruff.per-file-ignores]
+"tests/*" = ["S101"]
