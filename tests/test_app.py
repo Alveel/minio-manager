@@ -1,4 +1,4 @@
-from minio_manager.foo import foo
+from minio_manager.app import foo
 
 
 def test_foo():
