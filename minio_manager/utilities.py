@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 
@@ -7,6 +8,11 @@ import yaml
 def read_yaml(file):
     with open(file) as f:
         return yaml.safe_load(f)
+
+
+def read_json(file):
+    with open(file) as f:
+        return json.load(f)
 
 
 def setup_logging():

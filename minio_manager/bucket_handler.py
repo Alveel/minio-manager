@@ -16,4 +16,4 @@ def handle_bucket(bucket, client: Minio):
     if bucket["versioning"]:
         client.set_bucket_versioning(bucket["name"], VersioningConfig(ENABLED))
         versioning_status = client.get_bucket_versioning(bucket["name"]).status
-        logger.info(versioning_status)
+        logger.debug(f"Versioning status for bucket {bucket['name']}: {versioning_status}")
