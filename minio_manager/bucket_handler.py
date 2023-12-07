@@ -6,7 +6,7 @@ from minio.versioningconfig import ENABLED, VersioningConfig
 logger = logging.getLogger("root")
 
 
-def handle_bucket(bucket, client: Minio):
+def handle_bucket(client: Minio, bucket):
     if not client.bucket_exists(bucket["name"]):
         logger.info("Creating bucket %s" % bucket["name"])
         client.make_bucket(bucket["name"])

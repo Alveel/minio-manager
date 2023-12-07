@@ -1,15 +1,19 @@
 import json
 import logging
 
-from minio import Minio, S3Error
-from utilities import read_json
+from minio import Minio, MinioAdmin, S3Error
+from minio.error import MinioAdminException
+from utilities import read_json, sort_policy
 
 logger = logging.getLogger("root")
 
 
-def handle_bucket_policy(policy, client: Minio):
+def handle_bucket_policy(client: Minio, policy):
     """
-    Compare and apply policies for buckets
+    Manage policies for buckets.
+
+    If the policy doesn't exist, create it.
+    If the policy exists, compare the desired policy with the current policy, and update if needed.
 
     Args:
         policy: dict
@@ -17,22 +21,71 @@ def handle_bucket_policy(policy, client: Minio):
             policy_file: str
         client: Minio
     """
-    policy_object = None
-    desired_policy = json.dumps(read_json(policy["policy_file"]), sort_keys=True)
+    current_policy = None
+    desired_policy = sort_policy(read_json(policy["policy_file"]))
 
     try:
-        current_policy = client.get_bucket_policy(policy["bucket"])
-        policy_object = json.dumps(json.loads(current_policy), sort_keys=True)
+        current_policy_str = client.get_bucket_policy(policy["bucket"])
+        current_policy = sort_policy(json.loads(current_policy_str))
+        logger.debug(f"Current policy: {current_policy}")
         logger.debug(f"Desired policy: {desired_policy}")
-        logger.debug(f"Current policy: {policy_object}")
     except S3Error as s3e:
         if s3e.code == "NoSuchBucketPolicy":
             logger.info(f"Creating bucket policy for {policy['bucket']}")
             client.set_bucket_policy(policy["bucket"], desired_policy)
-            policy_object = client.get_bucket_policy(policy["bucket"])
+            current_policy = client.get_bucket_policy(policy["bucket"])
 
-    if policy_object == desired_policy:
+    if current_policy == desired_policy:
         return
 
-    logger.info(f"Desired policy does not match existing. Updating bucket policy for {policy['bucket']}")
+    logger.info(f"Desired bucket policy for '{policy['bucket']}' does not match current policy. Updating.")
     client.set_bucket_policy(policy["bucket"], desired_policy)
+
+
+def handle_iam_policy(client: MinioAdmin, iam_policy):
+    """
+    Manage IAM policies for users.
+    If the policy doesn't exist, create it.
+    If the policy exists, compare the desired policy with the current policy, and update if needed.
+
+    Args:
+        iam_policy: dict
+            name: str
+            policy_file: str
+        client: MinioAdmin
+    """
+    current_policy = None
+    desired_policy = sort_policy(read_json(iam_policy["policy_file"]))
+
+    try:
+        current_policy_str = client.policy_info(iam_policy["name"])
+        current_policy = sort_policy(json.loads(current_policy_str))
+        logger.debug(f"Current (sorted) policy: {current_policy}")
+        logger.debug(f"Desired (sorted) policy: {desired_policy}")
+    except MinioAdminException as mae:
+        if mae._code == 404:
+            logger.info(f"Creating IAM policy {iam_policy['name']}")
+            client.policy_add(iam_policy["name"], iam_policy["policy_file"])
+            current_policy = client.policy_info(iam_policy["name"])
+
+    if current_policy == desired_policy:
+        return
+
+    logger.info(f"Desired IAM policy '{iam_policy['name']}' does not match current policy. Updating IAM policy.")
+    client.policy_add(iam_policy["name"], iam_policy["policy_file"])
+
+
+def handle_user_policy_attachments(client: MinioAdmin, user):
+    """
+    Manage user policy attachments.
+
+    Args:
+        user: str
+        client: MinioAdmin
+    """
+    logger.debug(f"Handling user policy attachments for '{user['user']}'")
+    for policy_name in user["policies"]:
+        logger.debug(f"Attaching policy '{policy_name}' to user '{user['user']}'")
+        client.policy_set(policy_name, user["user"])
+
+    # TODO: don't set the attachments if they're already attached

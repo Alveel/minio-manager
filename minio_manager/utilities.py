@@ -26,3 +26,21 @@ def setup_logging():
         logging.basicConfig(format="%(message)s")
 
     logger.debug("Initialising")
+
+
+def sort_policy(policy: dict):
+    """
+
+    Args:
+        policy: dict
+            MinIO policy documents use the same schema as AWS IAM Policy documents.
+            https://docs.aws.amazon.com/IAM/latest/UserGuide/access.html
+
+    Returns: dict with sorted Actions and Resources
+    """
+    for index, statement in enumerate(policy["Statement"]):
+        statement["Action"] = sorted(statement["Action"])
+        statement["Resource"] = sorted(statement["Resource"])
+        # TODO: also sort Principals
+        policy["Statement"][index] = statement
+    return policy
