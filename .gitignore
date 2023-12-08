@@ -1,4 +1,5 @@
 config.yaml
+!tests/resources/config.yaml
 environments/*
 docs/source
 

@@ -13,17 +13,7 @@ Declare what MinIO buckets, IAM policies, ILM policies you want, and let MinIO M
 
 ## Getting started with your project
 
-First, create a repository on GitHub with the same name as this project, and then run the following commands:
-
-``` bash
-git init -b main
-git add .
-git commit -m "init commit"
-git remote add origin git@github.com:alveel/minio-manager.git
-git push -u origin main
-```
-
-Finally, install the environment and the pre-commit hooks with
+Install the environment and the pre-commit hooks with
 
 ```bash
 make install
@@ -40,6 +30,22 @@ For activating the automatic documentation with MkDocs, see
 To enable the code coverage reports, see [here](https://fpgmaas.github.io/cookiecutter-pdm/features/codecov/).
 
 ## Releasing a new version
+
+## Configuration
+
+### Keepass
+
+The Keepass database's root group must be named "Passwords".
+
+You must have a group called "s3" and subgroups with the name of each MinIO cluster.
+
+Usernames and entry names must be identical.
+
+Entry names must be unique.
+
+### Environment variables
+
+- `KEEPASS_PASSWORD`
 
 
 
