@@ -2,6 +2,7 @@ config.yaml
 !tests/resources/config.yaml
 environments/*
 docs/source
+*.kdbx
 
 # From https://raw.githubusercontent.com/github/gitignore/main/Python.gitignore
 

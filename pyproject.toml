@@ -1,5 +1,5 @@
 [project]
-name = "minio_manager"
+name = "minio-manager"
 dynamic = ["version"]
 description = "Declare what MinIO buckets, IAM policies, ILM policies you want, and let MinIO Manager do the work."
 authors = [

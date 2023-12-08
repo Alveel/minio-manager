@@ -8,7 +8,7 @@
 
 Declare what MinIO buckets, IAM policies, ILM policies you want, and let MinIO Manager do the work.
 
-- **Github repository**: <https://github.com/alveel/minio-manager/>
+- **GitHub repository**: <https://github.com/alveel/minio-manager/>
 - **Documentation** <https://alveel.github.io/minio-manager/>
 
 ## Getting started with your project
@@ -45,8 +45,8 @@ Entry names must be unique.
 
 ### Environment variables
 
-- `KEEPASS_PASSWORD`
-
+- `KEEPASS_PASSWORD` Keepass database password
+- `MINIO_MANAGER_CONFIG_FILE` The configuration YAML with MinIO cluster information
 
 
 ---
