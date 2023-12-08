@@ -5,7 +5,7 @@
 groups = ["default", "dev", "docs", "test"]
 strategy = ["cross_platform"]
 lock_version = "4.4"
-content_hash = "sha256:4102c791e7cf0b1429eb52eb57c69b107e1fde0cd329869b045564b39726ed07"
+content_hash = "sha256:c4d371ef9cfc327addaf46bb8a96ada42d4a949ec7da818e49d2ddfb719e9062"
 
 [[package]]
 name = "aiohttp"
@@ -1006,7 +1006,7 @@ files = [
 
 [[package]]
 name = "mkdocs-material"
-version = "9.4.14"
+version = "9.5.1"
 requires_python = ">=3.8"
 summary = "Documentation that simply works"
 dependencies = [
@@ -1023,8 +1023,8 @@ dependencies = [
     "requests~=2.26",
 ]
 files = [
-    {file = "mkdocs_material-9.4.14-py3-none-any.whl", hash = "sha256:dbc78a4fea97b74319a6aa9a2f0be575a6028be6958f813ba367188f7b8428f6"},
-    {file = "mkdocs_material-9.4.14.tar.gz", hash = "sha256:a511d3ff48fa8718b033e7e37d17abd9cc1de0fdf0244a625ca2ae2387e2416d"},
+    {file = "mkdocs_material-9.5.1-py3-none-any.whl", hash = "sha256:2e01249bc41813afe2479a4a659f8ba899c3355ccaf9310b5b782952df9c1dea"},
+    {file = "mkdocs_material-9.5.1.tar.gz", hash = "sha256:7ec5d20ed5eee97bb090823a33b33e177ad0704d74bad5937b53acca571ddb3d"},
 ]
 
 [[package]]
