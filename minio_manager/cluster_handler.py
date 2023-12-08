@@ -12,7 +12,7 @@ def setup_client(minio) -> Minio:
 
 def setup_admin_client(minio) -> MinioAdmin:
     provider = credentials.StaticProvider(minio["access_key"], minio["secret_key"])
-    return MinioAdmin(minio["endpoint"], provider)
+    return MinioAdmin(minio["endpoint"], provider, secure=minio["secure"])
 
 
 def handle_cluster(minio):
