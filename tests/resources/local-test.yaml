@@ -1,0 +1,19 @@
+buckets:
+  - name: test-bucket
+    versioning: True
+
+bucket_policies:
+  - bucket: test-bucket
+    policy_file: tests/resources/test-bucket-policy.json
+
+service_accounts:
+  - name: test-service-account
+
+iam_policies:
+  - name: test-policy
+    policy_file: tests/resources/test-iam-policy.json
+
+user_policy_attachments:
+  - user: test-service-account
+    policies:
+      - test-policy
