@@ -23,6 +23,7 @@ def handle_bucket_policy(client: Minio, policy):
     """
     current_policy = None
     desired_policy = sort_policy(read_json(policy["policy_file"]))
+    desired_policy_json = json.dumps(desired_policy)
 
     try:
         current_policy_str = client.get_bucket_policy(policy["bucket"])
@@ -32,14 +33,16 @@ def handle_bucket_policy(client: Minio, policy):
     except S3Error as s3e:
         if s3e.code == "NoSuchBucketPolicy":
             logger.info(f"Creating bucket policy for {policy['bucket']}")
-            client.set_bucket_policy(policy["bucket"], desired_policy)
+            client.set_bucket_policy(policy["bucket"], desired_policy_json)
             current_policy = client.get_bucket_policy(policy["bucket"])
+    else:
+        logger.exception("An unknown exception occurred")
 
     if current_policy == desired_policy:
         return
 
     logger.info(f"Desired bucket policy for '{policy['bucket']}' does not match current policy. Updating.")
-    client.set_bucket_policy(policy["bucket"], desired_policy)
+    client.set_bucket_policy(policy["bucket"], desired_policy_json)
 
 
 def handle_iam_policy(client: MinioAdmin, iam_policy):
@@ -63,10 +66,13 @@ def handle_iam_policy(client: MinioAdmin, iam_policy):
         logger.debug(f"Current (sorted) policy: {current_policy}")
         logger.debug(f"Desired (sorted) policy: {desired_policy}")
     except MinioAdminException as mae:
-        if mae._code == 404:
-            logger.info(f"Creating IAM policy {iam_policy['name']}")
+        mae_obj = json.loads(mae._body)
+        if mae_obj["Code"] == "XMinioAdminNoSuchPolicy":
+            logger.info(f"IAM policy {iam_policy['name']} does not exist, creating.")
             client.policy_add(iam_policy["name"], iam_policy["policy_file"])
             current_policy = client.policy_info(iam_policy["name"])
+        else:
+            logger.exception("An unknown exception occurred")
 
     if current_policy == desired_policy:
         return
