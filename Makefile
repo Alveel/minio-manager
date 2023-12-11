@@ -42,6 +42,15 @@ build: clean-build ## Build wheel file
 clean-build: ## clean build artifacts
 	@rm -rf dist
 
+.PHONY: publish
+publish: ## publish a release to pypi.
+	@echo "🚀 Publishing."
+	@pdm publish --username __token__ --password $PYPI_TOKEN
+
+
+.PHONY: build-and-publish
+build-and-publish: build publish ## Build and publish.
+
 .PHONY: docs-test
 docs-test: ## Test if documentation can be built without warnings or errors
 	@pdm run mkdocs build -s

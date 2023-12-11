@@ -9,7 +9,7 @@ readme = "README.md"
 packages = [
   {include = "minio_manager"}
 ]
-requires-python = ">=3.8,<4.0"
+requires-python = ">=3.8.1,<4.0"
 dependencies = [
     "minio>=7.2.0",
     "pykeepass>=4.0.6",

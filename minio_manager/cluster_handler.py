@@ -34,6 +34,7 @@ def handle_cluster(minio: dict):
     secrets = SecretManager(minio["name"], minio["secret_backend"])
     s3_client = setup_client(minio)
     admin_client = setup_admin_client(minio)
+    # mc = McWrapper(minio["name"], minio["endpoint"], minio["access_key"], minio["secret_key"], minio["secure"])
     cluster_config = read_yaml(minio["config"])
 
     for service_account in cluster_config["service_accounts"]:
