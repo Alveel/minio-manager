@@ -57,7 +57,7 @@ class SecretManager:
     def retrieve_keepass_backend(self, config) -> PyKeePass:
         kp_pass = retrieve_environment_variable("KEEPASS_PASSWORD")
         kp = PyKeePass(config["kdbx"], password=kp_pass)
-        self._keepass_group = f"Passwords/s3/{self._cluster_name}"
+        self._keepass_group = kp.find_groups(name=self._cluster_name, path="Passwords/s3")
         return kp
 
     def keepass_get_password(self, name):
@@ -89,8 +89,9 @@ class SecretManager:
         kp: PyKeePass
         kp = self._backend
         generated_password = self.generate_password()
-        group = kp.find_groups(name=name, path=self._keepass_group)
-        entry = kp.add_entry(destination_group=group, title=name, username=name, password=generated_password)
+        entry = kp.add_entry(
+            destination_group=self._keepass_group, title=name, username=name, password=generated_password
+        )
         return entry
 
     def keepass_set_password(self, name, password):
