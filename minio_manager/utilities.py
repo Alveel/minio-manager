@@ -7,7 +7,7 @@ import yaml
 logger = logging.getLogger("root")
 
 
-def read_yaml(file) -> dict:
+def read_yaml(file):
     with open(file) as f:
         return yaml.safe_load(f)
 
