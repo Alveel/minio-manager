@@ -1,3 +1,5 @@
+#--- !ClusterConfig
+
 buckets:
   - name: test-bucket
     versioning: True
@@ -8,12 +10,16 @@ bucket_policies:
 
 service_accounts:
   - name: test-service-account
+  - name: another-service-account
 
 iam_policies:
   - name: test-policy
     policy_file: tests/resources/test-iam-policy.json
 
 user_policy_attachments:
-  - user: test-service-account
+  - name: test-service-account
+    policies:
+      - test-policy
+  - name: another-service-account
     policies:
       - test-policy
