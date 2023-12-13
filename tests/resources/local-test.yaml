@@ -1,4 +1,4 @@
-#--- !ClusterConfig
+--- !ClusterConfig
 
 buckets:
   - name: test-bucket
