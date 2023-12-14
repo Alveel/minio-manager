@@ -1,11 +1,11 @@
 import logging
 
 from bucket_handler import handle_bucket
-from config import MinioConfig
+from classes import MinioConfig
 from mc_wrapper import McWrapper
 from minio import Minio, MinioAdmin, credentials
-from policy_handler import handle_bucket_policy, handle_iam_policy, handle_user_policy_attachments
-from secret_manager import SecretManager
+from minio_secrets import SecretManager
+from policy_handler import handle_bucket_policy, handle_iam_policy, handle_iam_policy_attachments
 from user_handler import handle_service_account
 from utilities import read_yaml
 
@@ -32,7 +32,7 @@ def handle_cluster(minio: MinioConfig, secrets: SecretManager):
     """
     s3_client = setup_client(minio)
     admin_client = setup_admin_client(minio)
-    mc = McWrapper(minio.name, minio.endpoint, minio.access_key, minio.secret_key, secrets, minio.secure)
+    mc = McWrapper(minio.name, minio.endpoint, minio.access_key, minio.secret_key, minio.secure)
     cluster_config = read_yaml(minio.config)  # type: ClusterConfig
 
     for service_account in cluster_config.service_accounts:
@@ -51,8 +51,6 @@ def handle_cluster(minio: MinioConfig, secrets: SecretManager):
         logger.info("Handling IAM policies...")
         handle_iam_policy(admin_client, iam_policy)
 
-    for user in cluster_config.user_policy_attachments:
+    for user in cluster_config.iam_policy_attachments:
         logger.info("Handling IAM policy attachments...")
-        access_key = secrets.get_credentials(user["name"]).access_key
-        user["access_key"] = access_key
-        handle_user_policy_attachments(admin_client, user)
+        handle_iam_policy_attachments(admin_client, user)
