@@ -21,10 +21,10 @@ class SecretManager:
         self.backend_type = backend["type"]
         self._backend_config = backend["config"]
         self._backend = self.__configure_backend()
-        self._backend_dirty = False
+        self.backend_dirty = False
 
     def __del__(self):
-        if not self._backend_dirty:
+        if not self.backend_dirty:
             return
         # If we have dirty back-ends, we want to ensure they are saved before exiting.
         if self.backend_type == "keepass":
@@ -60,6 +60,12 @@ class SecretManager:
     def retrieve_dummy_backend(self, config):
         raise NotImplementedError
 
+    def dummy_get_credentials(self, name):
+        raise NotImplementedError
+
+    def dummy_set_password(self, credentials: MinioCredentials):
+        raise NotImplementedError
+
     def retrieve_keepass_backend(self, config) -> PyKeePass:
         kp_pass = retrieve_environment_variable("KEEPASS_PASSWORD")
         kp = PyKeePass(config["kdbx"], password=kp_pass)
@@ -82,7 +88,7 @@ class SecretManager:
         self._logger.debug(f"Finding Keepass entry for {name}")
         kp: PyKeePass
         kp = self._backend
-        entry = kp.find_entries(title=name, name=name, group=self._keepass_group, first=True)
+        entry = kp.find_entries(title=name, username=name, group=self._keepass_group, first=True)
 
         try:
             credentials = MinioCredentials(entry.username, entry.password)
@@ -103,5 +109,5 @@ class SecretManager:
             username=credentials.access_key,
             password=credentials.secret_key,
         )
-        self._backend_dirty = True
+        self.backend_dirty = True
         return entry
