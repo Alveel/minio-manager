@@ -6,6 +6,12 @@ from pykeepass import PyKeePass
 from utilities import retrieve_environment_variable
 
 
+class MinioCredentials:
+    def __init__(self, access_key: str, secret_key: str):
+        self.access_key = access_key
+        self.secret_key = secret_key
+
+
 class SecretManager:
     def __init__(self, cluster_name: str, backend: dict):
         self._logger = logging.getLogger("root")
@@ -33,13 +39,13 @@ class SecretManager:
         method = getattr(self, method_name)
         return method(self._backend_config)
 
-    def get_credentials(self, name: dict) -> MinioCredentials:
+    def get_credentials(self, name: str) -> MinioCredentials:
         """
         Get a password from the configured secret backend.
         Args:
             name: str, the name of the password entry
 
-        Returns: str, the password
+        Returns: MinioCredentials
 
         """
         method_name = f"{self.backend_type}_get_credentials"
@@ -50,6 +56,9 @@ class SecretManager:
         method_name = f"{self.backend_type}_set_password"
         method = getattr(self, method_name)
         return method(credentials)
+
+    def retrieve_dummy_backend(self, config):
+        raise NotImplementedError
 
     def retrieve_keepass_backend(self, config) -> PyKeePass:
         kp_pass = retrieve_environment_variable("KEEPASS_PASSWORD")
@@ -73,10 +82,10 @@ class SecretManager:
         self._logger.debug(f"Finding Keepass entry for {name}")
         kp: PyKeePass
         kp = self._backend
-        entry = kp.find_entries(title=name, group=self._keepass_group, first=True)
+        entry = kp.find_entries(title=name, name=name, group=self._keepass_group, first=True)
 
         try:
-            credentials = self.MinioCredentials(entry.title, entry.username, entry.password)
+            credentials = MinioCredentials(entry.username, entry.password)
             self._logger.debug(f"Found access key {credentials.access_key}")
         except AttributeError as ae:
             if not ae.obj:
@@ -87,18 +96,12 @@ class SecretManager:
             return credentials
 
     def keepass_set_password(self, credentials: MinioCredentials):
-        self._logger.info(f"Creating Keepass entry for {credentials.name}")
+        self._logger.info(f"Creating Keepass entry for {credentials.access_key}")
         entry = self._backend.add_entry(
             destination_group=self._keepass_group,
-            title=credentials.name,
+            title=credentials.access_key,
             username=credentials.access_key,
             password=credentials.secret_key,
         )
         self._backend_dirty = True
         return entry
-
-    class MinioCredentials:
-        def __init__(self, name: str, access_key: str, secret_key: str):
-            self.name = name
-            self.access_key = access_key
-            self.secret_key = secret_key
