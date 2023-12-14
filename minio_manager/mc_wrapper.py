@@ -7,13 +7,11 @@ from pathlib import Path
 from types import SimpleNamespace
 
 from errors import MinioManagerError
-from secret_manager import SecretManager
+from minio_secrets import MinioCredentials
 
 
 class McWrapper:
-    def __init__(
-        self, cluster_name, endpoint, access_key, secret_key, secret_manager: SecretManager, secure=True, timeout=60
-    ):
+    def __init__(self, cluster_name, endpoint, access_key, secret_key, secure=True, timeout=60):
         self._logger = logging.getLogger("root")
         self._logger.info("Initialising McWrapper")
         self.cluster_name = cluster_name
@@ -21,7 +19,6 @@ class McWrapper:
         self._timeout = timeout
         self.mc_config_path = self.set_config_path()
         self.mc = self.find_mc_command()
-        self._secret_manager = secret_manager
         self.configure(endpoint, access_key, secret_key, secure)
 
     def _run(self, args, multiline=False):
@@ -30,7 +27,6 @@ class McWrapper:
             [self.mc, "--json", *args],  # noqa: S603
             capture_output=True,
             timeout=self._timeout,
-            # check=True,
             text=True,
         )
         if not proc.stdout:
@@ -66,6 +62,8 @@ class McWrapper:
         self._logger.debug(f"Validating config for cluster {self.cluster_name}")
         cluster_info = self._run(["admin", "info", self.cluster_name])
         if cluster_info.status != "success":
+            if "connection refused" in cluster_info.error:
+                raise ConnectionError(cluster_info.error)
             raise MinioManagerError(cluster_info.error)
 
         self._logger.info("Endpoint is not configured or erroneous, configuring...")
@@ -88,25 +86,15 @@ class McWrapper:
             raise MinioManagerError(resp.error)
         return resp
 
-    def service_account_add(self, name) -> str:
+    def service_account_add(self, access_key) -> MinioCredentials:
         """
         mc admin user svcacct add alias-name 'username' --name "sa-test-key"
         Returns: str, the access key
-        TODO: move secret logic to user_handler
         """
-        # Check if the service account already exists in the secret backend
-        entry = self._secret_manager.get_credentials(name)
-        if entry:
-            backend_type = self._secret_manager.backend_type
-            self._logger.exception(f"Secret for {name} already exists in {backend_type}, not creating service account!")
         # Create the service account in MinIO
-        resp = self._service_account_run("add", [self.cluster_access_key, "--name", name])
-        # Create an entry in the secret backend
-        credentials = self._secret_manager.MinioCredentials(name, resp.accessKey, resp.secretKey)
-        self._secret_manager.set_password(credentials)
-        self._secret_manager.backend_dirty = True
-        self._logger.info(f"Created service account {name} with access key {resp.accessKey}")
-        return credentials.access_key
+        resp = self._service_account_run("add", [self.cluster_access_key, access_key])
+        credentials = MinioCredentials(resp.accessKey, resp.secretKey)
+        return credentials
 
     def service_account_list(self, username):
         """
@@ -120,7 +108,6 @@ class McWrapper:
         """
         mc admin user svcacct info alias-name service-account-name
         Returns:
-        TODO: move secret logic to user_handler
         """
         resp = self._service_account_run("info", [access_key])
 
