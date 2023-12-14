@@ -2,6 +2,11 @@ from types import SimpleNamespace
 
 
 class MinioManagerError(Exception):
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
+class MinioApiError(Exception):
     def __init__(self, error: SimpleNamespace):
         super().__init__(error)
         self.error_message = error.message
