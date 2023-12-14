@@ -1,11 +1,13 @@
-minio:
-  - name: cluster1
-    endpoint: s3.example.org
-    access_key: abc123
-    secret_key: abcdefgh12345678
-    secure: True
-  - name: cluster2
-    endpoint: s3.example.net
-    keepass:
-      kdbx: /path/to/file.kdbx
-      path: root/s3/cluster2
+--- !MinioConfig
+
+name: local-test
+endpoint: 127.0.0.1:9000
+access_key: minioadmin
+secret_key: minioadmin
+secure: False
+config: tests/resources/local-test.yaml
+secret_backend:
+  type: keepass
+  config:
+    kdbx: secrets.kdbx
+    generate_missing: True

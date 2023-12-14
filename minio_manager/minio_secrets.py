@@ -3,7 +3,8 @@ from __future__ import annotations
 import logging
 
 from pykeepass import PyKeePass
-from utilities import retrieve_environment_variable
+
+from .utilities import retrieve_environment_variable
 
 
 class MinioCredentials:
@@ -17,11 +18,11 @@ class SecretManager:
         self._logger = logging.getLogger("root")
         self._logger.debug("Initialising SecretManager")
         self._cluster_name = cluster_name
-        self._keepass_group = None
+        self.backend_dirty = False
         self.backend_type = backend["type"]
         self._backend_config = backend["config"]
+        self._keepass_group = None
         self._backend = self.__configure_backend()
-        self.backend_dirty = False
 
     def __del__(self):
         if not self.backend_dirty:

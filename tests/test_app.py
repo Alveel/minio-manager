@@ -2,7 +2,7 @@ from minio_manager.utilities import read_json, read_yaml
 
 
 def test_read_yaml():
-    assert read_yaml("tests/resources/config.yaml") == {
+    assert read_yaml("config.example.yaml") == {
         "minio": [
             {
                 "name": "local-test",

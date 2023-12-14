@@ -33,27 +33,6 @@ class MinioConfig(yaml.YAMLObject):
         )
 
 
-class ClusterConfig(yaml.YAMLObject):
-    """MinIO Cluster configuration object, aka the cluster contents: buckets, policies, etc."""
-
-    yaml_tag = "!ClusterConfig"
-    yaml_loader = yaml.SafeLoader
-
-    def __init__(
-        self,
-        buckets: list,
-        bucket_policies: list,
-        service_accounts: list,
-        iam_policies: list,
-        iam_policy_attachments: list,
-    ):
-        self.buckets = [Bucket(name, versioning) for name, versioning in buckets]
-        self.bucket_policies = [BucketPolicy(bucket, policy_file) for bucket, policy_file in bucket_policies]
-        self.service_accounts = [ServiceAccount(name) for name in service_accounts]
-        self.iam_policies = [IamPolicy(name, policy_file) for name, policy_file in iam_policies]
-        self.iam_policy_attachments = [IamPolicyAttachment(name, policies) for name, policies in iam_policy_attachments]
-
-
 class Bucket:
     def __init__(self, name: str, versioning: bool):
         self.name = name
@@ -83,3 +62,24 @@ class IamPolicyAttachment:
     def __init__(self, name: str, policies: list):
         self.name = name
         self.policies = policies
+
+
+class ClusterConfig(yaml.YAMLObject):
+    """MinIO Cluster configuration object, aka the cluster contents: buckets, policies, etc."""
+
+    yaml_tag = "!ClusterConfig"
+    yaml_loader = yaml.SafeLoader
+
+    def __init__(
+        self,
+        buckets: list,
+        bucket_policies: list,
+        service_accounts: list,
+        iam_policies: list,
+        iam_policy_attachments: list,
+    ):
+        self.buckets = [Bucket(name, versioning) for name, versioning in buckets]
+        self.bucket_policies = [BucketPolicy(bucket, policy_file) for bucket, policy_file in bucket_policies]
+        self.service_accounts = [ServiceAccount(name) for name in service_accounts]
+        self.iam_policies = [IamPolicy(name, policy_file) for name, policy_file in iam_policies]
+        self.iam_policy_attachments = [IamPolicyAttachment(name, policies) for name, policies in iam_policy_attachments]

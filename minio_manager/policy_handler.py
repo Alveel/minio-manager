@@ -3,7 +3,8 @@ import logging
 
 from minio import Minio, MinioAdmin, S3Error
 from minio.error import MinioAdminException
-from utilities import read_json, sort_policy
+
+from .utilities import read_json, sort_policy
 
 logger = logging.getLogger("root")
 
@@ -94,7 +95,7 @@ def handle_iam_policy_attachments(client: MinioAdmin, user):
     """
     logger.debug(f"Handling user policy attachments for '{user['name']}'")
     for policy_name in user["policies"]:
-        logger.debug(f"Attaching policy '{policy_name}' to access key '{user['user']}'")
-        client.policy_set(policy_name, user["access_key"])
+        logger.debug(f"Attaching policy '{policy_name}' to access key '{user['name']}'")
+        client.policy_set(policy_name, user["name"])
 
     # TODO: don't set the attachments if they're already attached

@@ -16,7 +16,7 @@ iam_policies:
   - name: test-policy
     policy_file: tests/resources/test-iam-policy.json
 
-user_policy_attachments:
+iam_policy_attachments:
   - name: test-service-account
     policies:
       - test-policy

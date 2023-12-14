@@ -1,8 +1,8 @@
 import os
 
-from cluster_handler import handle_cluster
-from minio_secrets import SecretManager
-from utilities import read_yaml, setup_logging
+from .cluster_handler import handle_cluster
+from .minio_secrets import SecretManager
+from .utilities import read_yaml, setup_logging
 
 
 def main():

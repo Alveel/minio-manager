@@ -1,35 +1,14 @@
-import json
 import logging
 
-from errors import MinioInvalidIamCredentialsError
-from mc_wrapper import McWrapper
-from minio.error import MinioAdminException
-from secret_manager import SecretManager
+from .errors import MinioInvalidIamCredentialsError
+from .mc_wrapper import McWrapper
+from .minio_secrets import SecretManager
 
 logger = logging.getLogger("root")
 
 
-def check_if_user_exists(client: McWrapper, access_key):
+def service_account_exists(client: McWrapper, access_key):
     try:
-        user_info = client.service_account_info(access_key)
-        logger.debug(f"User info: {user_info}")
-    except MinioAdminException as mae:
-        mae_obj = json.loads(mae._body)
-        logger.debug(mae_obj)
-        if mae_obj["Code"] == "XMinioAdminNoSuchUser":
-            logger.warning(f"User '{access_key}' does not exist!")
-            return False
-    else:
-        return user_info
-
-
-def service_account_exists(client: McWrapper, secret: SecretManager, name):
-    try:
-        # TODO: find access key, compare to existing in secret backend and live in MinIO
-        # TODO: determine for accessKey: automatically generate, or manually configure (20 chars max)
-        # sas = client.service_account_list(client.cluster_access_key)
-        # logger.debug(sas)
-        access_key = secret.get_credentials(name).access_key
         return client.service_account_info(access_key)
     except AttributeError:
         # account does not exist in MinIO
@@ -39,9 +18,15 @@ def service_account_exists(client: McWrapper, secret: SecretManager, name):
         return False
 
 
-def handle_service_account(client: McWrapper, secrets: SecretManager, account):
+def handle_service_account(client: McWrapper, secrets: SecretManager, account: dict):
     """
     Manage service accounts.
+
+    Steps taken:
+    1) check if service account exists in minio
+    2) check if service account exists in secret backend
+    3) if it exists in one but not the other, throw an error and return
+    4) if it does not, create service account in minio and secret backend
 
     Args:
         secrets: SecretManager
@@ -49,7 +34,25 @@ def handle_service_account(client: McWrapper, secrets: SecretManager, account):
         account: dict
             name: str
     """
-    user = service_account_exists(client, secrets, account["name"])
+    if len(account["name"]) > 20:
+        logger.error(f"Service account name '{account['name']}' must be equal to or less than 20 characters!")
+        return
+    # Determine if access key exists in MinIO
+    user = service_account_exists(client, account["name"])
+    # Determine if access key entry exists in secret backend
+    entry = secrets.get_credentials(account["name"])
+    if (entry and not user) or (user and not entry):
+        logger.error(
+            f"User {account['name']} already exists in secret backend but not in MinIO! Manual intervention required."
+        )
+        return
+
+    # Create the service account in MinIO
+    credentials = client.service_account_add(account["name"])
+    # Create an entry in the secret backend
+    secrets.set_password(credentials)
+    secrets.backend_dirty = True
+
     access_key = account["name"]
     if user:
         logger.debug(user)
