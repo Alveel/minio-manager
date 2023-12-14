@@ -6,7 +6,7 @@ import subprocess
 from pathlib import Path
 from types import SimpleNamespace
 
-from errors import MinioManagerError
+from errors import MinioApiError
 from minio_secrets import MinioCredentials
 
 
@@ -64,7 +64,7 @@ class McWrapper:
         if cluster_info.status != "success":
             if "connection refused" in cluster_info.error:
                 raise ConnectionError(cluster_info.error)
-            raise MinioManagerError(cluster_info.error)
+            raise MinioApiError(cluster_info.error)
 
         self._logger.info("Endpoint is not configured or erroneous, configuring...")
         url = f"https://{endpoint}" if secure else f"http://{endpoint}"
@@ -83,7 +83,7 @@ class McWrapper:
         multiline = cmd in ["list", "ls"]
         resp = self._run(["admin", "user", "svcacct", cmd, self.cluster_name, *args], multiline=multiline)
         if hasattr(resp, "error") and resp.error:
-            raise MinioManagerError(resp.error)
+            raise MinioApiError(resp.error)
         return resp
 
     def service_account_add(self, access_key) -> MinioCredentials:
@@ -92,9 +92,8 @@ class McWrapper:
         Returns: str, the access key
         """
         # Create the service account in MinIO
-        resp = self._service_account_run("add", [self.cluster_access_key, access_key])
-        credentials = MinioCredentials(resp.accessKey, resp.secretKey)
-        return credentials
+        resp = self._service_account_run("add", [self.cluster_access_key, "--access-key", access_key])
+        return MinioCredentials(resp.accessKey, resp.secretKey)
 
     def service_account_list(self, username):
         """
@@ -109,9 +108,7 @@ class McWrapper:
         mc admin user svcacct info alias-name service-account-name
         Returns:
         """
-        resp = self._service_account_run("info", [access_key])
-
-        return resp
+        return self._service_account_run("info", [access_key])
 
     def service_account_delete(self):
         """
