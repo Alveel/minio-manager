@@ -82,7 +82,7 @@ def handle_iam_policy(client: MinioAdmin, iam_policy):
     client.policy_add(iam_policy["name"], iam_policy["policy_file"])
 
 
-def handle_user_policy_attachments(client: MinioAdmin, user):
+def handle_iam_policy_attachments(client: MinioAdmin, user):
     """
     Manage user policy attachments.
 
@@ -94,7 +94,7 @@ def handle_user_policy_attachments(client: MinioAdmin, user):
     """
     logger.debug(f"Handling user policy attachments for '{user['name']}'")
     for policy_name in user["policies"]:
-        logger.debug(f"Attaching policy '{policy_name}' to access key '{user['access_key']}'")
+        logger.debug(f"Attaching policy '{policy_name}' to access key '{user['user']}'")
         client.policy_set(policy_name, user["access_key"])
 
     # TODO: don't set the attachments if they're already attached
