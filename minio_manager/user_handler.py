@@ -38,9 +38,15 @@ def handle_service_account(client: McWrapper, secrets: SecretManager, account: S
     user = service_account_exists(client, account.name)
     # Determine if access key entry exists in secret backend
     entry = secrets.get_credentials(account.name)
-    if (entry and not user) or (user and not entry):
+    if entry and not user:
         logger.error(
             f"User {account.name} already exists in secret backend but not in MinIO! Manual intervention required."
+        )
+        return
+
+    if user and not entry:
+        logger.error(
+            f"User {account.name} already exists in MinIO but not in secret backend! Manual intervention required."
         )
         return
 

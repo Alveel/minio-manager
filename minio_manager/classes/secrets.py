@@ -15,6 +15,7 @@ class MinioCredentials:
 
 class SecretManager:
     def __init__(self, cluster_name: str, backend: dict):
+        self._backend = None
         self._logger = logging.getLogger("root")
         self._logger.debug("Initialising SecretManager")
         self._cluster_name = cluster_name
@@ -22,7 +23,7 @@ class SecretManager:
         self.backend_type = backend["type"]
         self._backend_config = backend["config"]
         self._keepass_group = None
-        self._backend = self.__configure_backend()
+        self.configure_backend()
 
     def __del__(self):
         if not self.backend_dirty:
@@ -34,11 +35,11 @@ class SecretManager:
             self._logger.info(f"Saving {self._backend_config['kdbx']}")
             self._backend.save()
 
-    def __configure_backend(self):
+    def configure_backend(self):
         self._logger.debug(f"Configuring SecretManager with backend {self.backend_type}")
         method_name = f"retrieve_{self.backend_type}_backend"
         method = getattr(self, method_name)
-        return method(self._backend_config)
+        self._backend = method(self._backend_config)
 
     def get_credentials(self, name: str) -> MinioCredentials:
         """
