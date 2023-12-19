@@ -1,54 +1,50 @@
-from types import SimpleNamespace
+class MinioManagerBaseError(Exception):
+    """Base class for Minio Manager errors."""
+
+    def __init__(self, message: str, cause=None):
+        super().__init__(f"{message}: {cause}" if cause else message)
 
 
-class MinioManagerError(Exception):
-    def __init__(self, message: str):
-        super().__init__(message)
+class MinioInvalidIamCredentialsError(MinioManagerBaseError):
+    """Raised when invalid IAM credentials are used."""
 
 
-class MinioApiError(Exception):
-    def __init__(self, error: SimpleNamespace):
-        super().__init__(error)
-        self.error_message = error.message
-        self.cause_code = error.cause.error.Code
-        self.cause_message = error.cause.error.Message
-        self.request_id = error.cause.error.RequestID
-        self.determine_cause()
-
-    def determine_cause(self):
-        if self.cause_code == "XMinioInvalidIAMCredentials":
-            raise MinioInvalidIamCredentialsError(self.cause_message)
-        if self.cause_code == "InternalError":
-            raise MinioInternalError(self.cause_message)
-        if self.cause_code == "XMinioAdminNoSuchUser":
-            raise MinioNoSuchUserError(self.cause_message)
-        if self.cause_code == "XMinioAdminNoSuchPolicy":
-            raise MinioNoSuchPolicyError(self.cause_message)
-        if self.cause_code == "XMinioAdminInvalidSecretKey":
-            raise MinioInvalidSecretKeyError(self.cause_message)
-        if self.cause_code == "XMinioAdminInvalidAccessKey":
-            raise MinioInvalidAccessKeyError(self.cause_message)
-
-
-class MinioInvalidIamCredentialsError(Exception):
-    """Raised when the specified service account is not found."""
-
-
-class MinioInternalError(Exception):
+class MinioInternalError(MinioManagerBaseError):
     """Raised when a MinIO internal error occurred."""
 
 
-class MinioNoSuchUserError(Exception):
-    """Raised when the specified user account is not found."""
+class MinioNoSuchUserError(MinioManagerBaseError):
+    """Raised when a specified user account is not found."""
 
 
-class MinioNoSuchPolicyError(Exception):
-    """Raised when the specified policy is not found."""
+class MinioNoSuchPolicyError(MinioManagerBaseError):
+    """Raised when a specified policy is not found."""
 
 
-class MinioInvalidSecretKeyError(Exception):
-    """Raised when the specified secret key is invalid."""
+class MinioInvalidSecretKeyError(MinioManagerBaseError):
+    """Raised when an invalid secret key is used."""
 
 
-class MinioInvalidAccessKeyError(Exception):
-    """Raised when the specified secret key is invalid."""
+class MinioInvalidAccessKeyError(MinioManagerBaseError):
+    """Raised when an invalid access key is used."""
+
+
+class MinioIamServiceAccountNotAllowedError(MinioManagerBaseError):
+    """Raised when trying to add a service account that already exists."""
+
+
+error_map = {
+    "XMinioInvalidIAMCredentials": MinioInvalidIamCredentialsError,
+    "XMinioIAMServiceAccountNotAllowed": MinioIamServiceAccountNotAllowedError,
+    "InternalError": MinioInternalError,
+    "XMinioAdminNoSuchUser": MinioNoSuchUserError,
+    "XMinioAdminNoSuchPolicy": MinioNoSuchPolicyError,
+    "XMinioAdminInvalidSecretKey": MinioInvalidSecretKeyError,
+    "XMinioAdminInvalidAccessKey": MinioInvalidAccessKeyError,
+}
+
+
+def raise_specific_error(error_code, error_message):
+    if error_code not in error_map:
+        raise MinioManagerBaseError(error_code, error_message)
+    raise error_map[error_code](error_message)
