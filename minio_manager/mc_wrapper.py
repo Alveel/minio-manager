@@ -6,7 +6,7 @@ import subprocess
 from pathlib import Path
 from types import SimpleNamespace
 
-from .errors import MinioApiError
+from .errors import raise_specific_error
 from .minio_secrets import MinioCredentials
 
 
@@ -61,11 +61,14 @@ class McWrapper:
         """Ensure the proper alias is configured for the cluster."""
         self._logger.debug(f"Validating config for cluster {self.cluster_name}")
         cluster_info = self._run(["admin", "info", self.cluster_name])
-        # TODO: validate this comparison, there seems to be a bug here.
-        if cluster_info.status != "success":
-            if "connection refused" in cluster_info.error:
-                raise ConnectionError(cluster_info.error)
-            raise MinioApiError(cluster_info.error)
+        self._logger.debug(f"Cluster info: {cluster_info.status}")
+        if cluster_info.status == "success":
+            # Cluster is configured & available
+            return
+
+        if hasattr(cluster_info, "error"):
+            # A connection error occurred
+            raise ConnectionError(cluster_info.error)
 
         self._logger.info("Endpoint is not configured or erroneous, configuring...")
         url = f"https://{endpoint}" if secure else f"http://{endpoint}"
@@ -76,7 +79,7 @@ class McWrapper:
         mc admin user svcacct helper function, no need to specify the cluster name
         Args:
             cmd: str, the svcacct command
-            args: list, list of arguments to the command
+            args: list of arguments to the command
 
         Returns: a SimpleNamespace object
 
@@ -84,7 +87,8 @@ class McWrapper:
         multiline = cmd in ["list", "ls"]
         resp = self._run(["admin", "user", "svcacct", cmd, self.cluster_name, *args], multiline=multiline)
         if hasattr(resp, "error") and resp.error:
-            raise MinioApiError(resp.error)
+            error_details = resp.error.cause.error
+            raise_specific_error(error_details.Code, error_details.Message)
         return resp
 
     def service_account_add(self, access_key) -> MinioCredentials:
