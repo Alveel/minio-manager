@@ -21,7 +21,7 @@ def setup_logging():
     log_debug = os.environ.get("LOG_LEVEL", "DEBUG")
     if log_debug:
         logger.setLevel(logging.DEBUG)
-        logging.basicConfig(format="[%(filename)s:%(lineno)d	- %(funcName)20s() ] %(message)s")
+        logging.basicConfig(format="[%(asctime)s [%(filename)s:%(lineno)d	- %(funcName)24s() ] %(message)s")
     else:
         logger.setLevel(logging.INFO)
         logging.basicConfig(format="%(message)s")

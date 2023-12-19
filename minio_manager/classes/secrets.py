@@ -42,13 +42,12 @@ class SecretManager:
         self._backend = method(self._backend_config)
 
     def get_credentials(self, name: str) -> MinioCredentials:
-        """
-        Get a password from the configured secret backend.
+        """Get a password from the configured secret backend.
+
         Args:
             name: str, the name of the password entry
 
         Returns: MinioCredentials
-
         """
         method_name = f"{self.backend_type}_get_credentials"
         method = getattr(self, method_name)
@@ -75,17 +74,16 @@ class SecretManager:
         self._keepass_group = kp.find_groups(path=["s3", self._cluster_name])
         if not self._keepass_group:
             self._logger.exception("Required group not found in Keepass! See documentation for requirements.")
-        self._logger.debug(f"Found {self._keepass_group}")
         return kp
 
     def keepass_get_credentials(self, name) -> MinioCredentials | bool:
-        """
-        Get a password from the configured Keepass database.
+        """Get a password from the configured Keepass database.
+
         Args:
-            name:
+            name: str, the name of the password entry
 
         Returns:
-
+            MinioCredentials if found, False if not found
         """
         self._logger.debug(f"Finding Keepass entry for {name}")
         kp: PyKeePass
@@ -104,12 +102,16 @@ class SecretManager:
             return credentials
 
     def keepass_set_password(self, credentials: MinioCredentials):
+        """Set the password for the given credentials.
+
+        Args:
+            credentials: MinioCredentials
+        """
         self._logger.info(f"Creating Keepass entry for {credentials.access_key}")
-        entry = self._backend.add_entry(
+        self._backend.add_entry(
             destination_group=self._keepass_group,
             title=credentials.access_key,
             username=credentials.access_key,
             password=credentials.secret_key,
         )
         self.backend_dirty = True
-        return entry

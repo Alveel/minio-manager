@@ -48,7 +48,7 @@ class BucketPolicy:
 class ServiceAccount:
     def __init__(self, name: str):
         if len(name) > 20:
-            raise ValueError("Service account name must be less than 20 characters.")
+            raise ValueError(f"The name of service account {name} must be less than 20 characters.")
         self.name = name
 
 

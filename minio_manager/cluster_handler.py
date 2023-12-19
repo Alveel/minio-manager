@@ -3,6 +3,7 @@ import logging
 from minio import Minio, MinioAdmin, credentials
 
 from .bucket_handler import handle_bucket
+from .classes.config import ClusterConfig  # noqa: F401
 from .classes.minio import Bucket, BucketPolicy, IamPolicy, IamPolicyAttachment, MinioConfig, ServiceAccount
 from .classes.secrets import SecretManager
 from .mc_wrapper import McWrapper
@@ -34,6 +35,7 @@ def handle_cluster(minio: MinioConfig, secrets: SecretManager):
     s3_client = setup_client(minio)
     admin_client = setup_admin_client(minio)
     mc = McWrapper(minio.name, minio.endpoint, minio.access_key, minio.secret_key, minio.secure)
+    # TODO: try to validate all resources before handling them. Perhaps by using pydantic or dataclasses?
     cluster_config = read_yaml(minio.config)  # type: ClusterConfig
 
     logger.info("Handling service accounts...")
