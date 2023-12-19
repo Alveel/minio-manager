@@ -47,8 +47,8 @@ class BucketPolicy:
 
 class ServiceAccount:
     def __init__(self, name: str):
-        # if len(name) > 20:
-        #     raise ValueError("Service account name must be less than 20 characters.")
+        if len(name) > 20:
+            raise ValueError("Service account name must be less than 20 characters.")
         self.name = name
 
 
@@ -78,8 +78,8 @@ class ClusterConfig(yaml.YAMLObject):
         iam_policies: list,
         iam_policy_attachments: list,
     ):
-        self.buckets = [Bucket(name, versioning) for name, versioning in buckets]
-        self.bucket_policies = [BucketPolicy(bucket, policy_file) for bucket, policy_file in bucket_policies]
-        self.service_accounts = [ServiceAccount(name) for name in service_accounts]
-        self.iam_policies = [IamPolicy(name, policy_file) for name, policy_file in iam_policies]
-        self.iam_policy_attachments = [IamPolicyAttachment(name, policies) for name, policies in iam_policy_attachments]
+        self.buckets = buckets
+        self.bucket_policies = bucket_policies
+        self.service_accounts = service_accounts
+        self.iam_policies = iam_policies
+        self.iam_policy_attachments = iam_policy_attachments

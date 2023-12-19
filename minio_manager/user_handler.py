@@ -1,5 +1,6 @@
 import logging
 
+from .classes import ServiceAccount
 from .errors import MinioInvalidIamCredentialsError
 from .mc_wrapper import McWrapper
 from .minio_secrets import SecretManager
@@ -18,7 +19,7 @@ def service_account_exists(client: McWrapper, access_key):
         return False
 
 
-def handle_service_account(client: McWrapper, secrets: SecretManager, account: dict):
+def handle_service_account(client: McWrapper, secrets: SecretManager, account: ServiceAccount):
     """
     Manage service accounts.
 
@@ -31,34 +32,30 @@ def handle_service_account(client: McWrapper, secrets: SecretManager, account: d
     Args:
         secrets: SecretManager
         client: McWrapper
-        account: dict
-            name: str
+        account: ServiceAccount
     """
-    if len(account["name"]) > 20:
-        logger.error(f"Service account name '{account['name']}' must be equal to or less than 20 characters!")
-        return
     # Determine if access key exists in MinIO
-    user = service_account_exists(client, account["name"])
+    user = service_account_exists(client, account.name)
     # Determine if access key entry exists in secret backend
-    entry = secrets.get_credentials(account["name"])
+    entry = secrets.get_credentials(account.name)
     if (entry and not user) or (user and not entry):
         logger.error(
-            f"User {account['name']} already exists in secret backend but not in MinIO! Manual intervention required."
+            f"User {account.name} already exists in secret backend but not in MinIO! Manual intervention required."
         )
         return
 
     # Create the service account in MinIO
-    credentials = client.service_account_add(account["name"])
+    credentials = client.service_account_add(account.name)
     # Create an entry in the secret backend
     secrets.set_password(credentials)
     secrets.backend_dirty = True
 
-    access_key = account["name"]
+    access_key = account.name
     if user:
         logger.debug(user)
         # TODO: check if user is correct.
         return
 
-    resp = client.service_account_add(account["name"])
-    logger.info(f"Created service account '{account['name']}', access key: {access_key}")
+    resp = client.service_account_add(account.name)
+    logger.info(f"Created service account '{account.name}', access key: {access_key}")
     logger.debug(resp)

@@ -9,13 +9,13 @@ readme = "README.md"
 packages = [
   {include = "minio_manager"}
 ]
-requires-python = ">=3.8.1,<4.0"
+requires-python = ">=3.8.1"
 dependencies = [
     "minio>=7.2.0",
     "pykeepass>=4.0.6",
 ]
 license = {text = "MIT license"}
-keywords = ['python']
+keywords = ['minio']
 
 [project.urls]
 Homepage = "https://alveel.github.io/minio-manager/"
@@ -28,7 +28,7 @@ build-backend = "pdm.backend"
 
 [tool.black]
 line-length = 120
-target-version = ['py37']
+target-version = ['py38', 'py39', 'py310', 'py311']
 preview = true
 
 [tool.mypy]
@@ -82,6 +82,8 @@ ignore = [
     "E501",
     # DoNotAssignLambda
     "E731",
+    # raise-vanilla-args
+    "TRY003",
 ]
 
 [tool.coverage.report]

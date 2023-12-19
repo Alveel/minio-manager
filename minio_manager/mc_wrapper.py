@@ -61,6 +61,7 @@ class McWrapper:
         """Ensure the proper alias is configured for the cluster."""
         self._logger.debug(f"Validating config for cluster {self.cluster_name}")
         cluster_info = self._run(["admin", "info", self.cluster_name])
+        # TODO: validate this comparison, there seems to be a bug here.
         if cluster_info.status != "success":
             if "connection refused" in cluster_info.error:
                 raise ConnectionError(cluster_info.error)
