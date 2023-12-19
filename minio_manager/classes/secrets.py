@@ -4,7 +4,7 @@ import logging
 
 from pykeepass import PyKeePass
 
-from .utilities import retrieve_environment_variable
+from ..utilities import retrieve_environment_variable
 
 
 class MinioCredentials:

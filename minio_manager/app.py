@@ -1,7 +1,7 @@
 import os
 
+from .classes.secrets import SecretManager
 from .cluster_handler import handle_cluster
-from .minio_secrets import SecretManager
 from .utilities import read_yaml, setup_logging
 
 

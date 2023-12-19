@@ -3,7 +3,7 @@ import logging
 from minio import Minio
 from minio.versioningconfig import ENABLED, VersioningConfig
 
-from .classes import Bucket
+from .classes.minio import Bucket
 
 logger = logging.getLogger("root")
 

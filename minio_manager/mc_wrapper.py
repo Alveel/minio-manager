@@ -6,8 +6,8 @@ import subprocess
 from pathlib import Path
 from types import SimpleNamespace
 
-from .errors import raise_specific_error
-from .minio_secrets import MinioCredentials
+from .classes.errors import raise_specific_error
+from .classes.secrets import MinioCredentials
 
 
 class McWrapper:
@@ -61,7 +61,6 @@ class McWrapper:
         """Ensure the proper alias is configured for the cluster."""
         self._logger.debug(f"Validating config for cluster {self.cluster_name}")
         cluster_info = self._run(["admin", "info", self.cluster_name])
-        self._logger.debug(f"Cluster info: {cluster_info.status}")
         if cluster_info.status == "success":
             # Cluster is configured & available
             return
