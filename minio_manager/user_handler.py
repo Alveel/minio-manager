@@ -27,7 +27,8 @@ def handle_service_account(client: McWrapper, secrets: SecretManager, account: S
     1) check if service account exists in minio
     2) check if service account exists in secret backend
     3) if it exists in one but not the other, throw an error and return
-    4) if it does not, create service account in minio and secret backend
+    4) if it exists in both, return
+    5) if it does not, create service account in minio and secret backend
 
     Args:
         secrets: SecretManager
@@ -38,16 +39,21 @@ def handle_service_account(client: McWrapper, secrets: SecretManager, account: S
     user = service_account_exists(client, account.name)
     # Determine if access key entry exists in secret backend
     entry = secrets.get_credentials(account.name)
+
     if entry and not user:
         logger.error(
-            f"User {account.name} already exists in secret backend but not in MinIO! Manual intervention required."
+            f"Service account {account.name} exists in secret backend but not in MinIO! Manual intervention required."
         )
         return
 
     if user and not entry:
         logger.error(
-            f"User {account.name} already exists in MinIO but not in secret backend! Manual intervention required."
+            f"Service account {account.name} exists in MinIO but not in secret backend! Manual intervention required."
         )
+        return
+
+    if user and entry:
+        logger.debug(f"Service account {account.name} OK: exists in both MinIO and secret backend.")
         return
 
     # Create the service account in MinIO
@@ -62,6 +68,4 @@ def handle_service_account(client: McWrapper, secrets: SecretManager, account: S
         # TODO: check if user is correct.
         return
 
-    resp = client.service_account_add(account.name)
     logger.info(f"Created service account '{account.name}', access key: {access_key}")
-    logger.debug(resp)

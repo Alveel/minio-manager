@@ -9,6 +9,10 @@ class MinioInvalidIamCredentialsError(MinioManagerBaseError):
     """Raised when invalid IAM credentials are used."""
 
 
+class MinioInvalidAccessKeyId(MinioManagerBaseError):
+    """Raised when an invalid user access key ID is provided."""
+
+
 class MinioInternalError(MinioManagerBaseError):
     """Raised when a MinIO internal error occurred."""
 
@@ -35,6 +39,7 @@ class MinioIamServiceAccountNotAllowedError(MinioManagerBaseError):
 
 error_map = {
     "XMinioInvalidIAMCredentials": MinioInvalidIamCredentialsError,
+    "InvalidAccessKeyId": MinioInvalidAccessKeyId,
     "XMinioIAMServiceAccountNotAllowed": MinioIamServiceAccountNotAllowedError,
     "InternalError": MinioInternalError,
     "XMinioAdminNoSuchUser": MinioNoSuchUserError,

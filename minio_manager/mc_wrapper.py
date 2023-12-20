@@ -23,6 +23,7 @@ class McWrapper:
 
     def _run(self, args, multiline=False):
         """Execute mc command and return JSON output."""
+        self._logger.debug(f"Running: {self.mc} --json {' '.join(args)}")
         proc = subprocess.run(
             [self.mc, "--json", *args],  # noqa: S603
             capture_output=True,
@@ -60,18 +61,27 @@ class McWrapper:
     def configure(self, endpoint, access_key, secret_key, secure: bool):
         """Ensure the proper alias is configured for the cluster."""
         self._logger.debug(f"Validating config for cluster {self.cluster_name}")
-        cluster_info = self._run(["admin", "info", self.cluster_name])
-        if cluster_info.status == "success":
+        cluster_ready = self._run(["ready", self.cluster_name])
+        self._logger.debug(cluster_ready)
+        if cluster_ready.healthy:
             # Cluster is configured & available
             return
 
-        if hasattr(cluster_info, "error"):
-            # A connection error occurred
-            raise ConnectionError(cluster_info.error)
-
         self._logger.info("Endpoint is not configured or erroneous, configuring...")
         url = f"https://{endpoint}" if secure else f"http://{endpoint}"
-        self._run(["alias", "set", self.cluster_name, url, access_key, secret_key])
+        alias_set_resp = self._run(["alias", "set", self.cluster_name, url, f"'{access_key}'", f"'{secret_key}'"])
+        if hasattr(alias_set_resp, "error"):
+            error_details = alias_set_resp.error.cause.error
+            raise_specific_error(error_details.Code, error_details.Message)
+
+        cluster_ready = self._run(["ready", self.cluster_name])
+        if cluster_ready.healthy:
+            # Cluster is configured & available
+            return
+
+        if hasattr(cluster_ready, "error"):
+            # A connection error occurred
+            raise ConnectionError(cluster_ready.error)
 
     def _service_account_run(self, cmd, args):
         """
