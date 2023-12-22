@@ -32,6 +32,17 @@ class MinioConfig(yaml.YAMLObject):
             f"secret_backend={self.secret_backend})"
         )
 
+    def __eq__(self, other):
+        return (
+            self.name == other.name
+            and self.endpoint == other.endpoint
+            and self.access_key == other.access_key
+            and self.secret_key == other.secret_key
+            and self.secure == other.secure
+            and self.config == other.config
+            and self.secret_backend == other.secret_backend
+        )
+
 
 class Bucket:
     def __init__(self, name: str, versioning: bool):

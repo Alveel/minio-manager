@@ -1,18 +1,18 @@
+from config import MinioConfig
+
 from minio_manager.utilities import read_json, read_yaml
 
 
 def test_read_yaml():
-    assert read_yaml("config.example.yaml") == {
-        "minio": [
-            {
-                "name": "local-test",
-                "endpoint": "127.0.0.1:9000",
-                "access_key": "minioadmin",
-                "secret_key": "minioadmin",
-                "secure": True,
-            }
-        ]
-    }
+    test_minio_config = MinioConfig(
+        "local-test",
+        "127.0.0.1:9000",
+        "minioadmin",
+        "minioadmin",
+        False,
+        {"type": "keepass", "config": {"kdbx": "secret.kdbx", "generate_missing": True}},
+    )
+    assert read_yaml("tests/resources/config.yaml") == test_minio_config
 
 
 def test_read_json():

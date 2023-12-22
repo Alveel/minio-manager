@@ -122,3 +122,8 @@ docs = [
 excludes = ["./**/.git"]
 package-dir = "."
 includes = ["minio_manager"]
+
+[tool.pytest.ini_options]
+addopts = [
+  "--import-mode=importlib"
+]

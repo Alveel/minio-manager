@@ -25,13 +25,15 @@ run-test-environment:
 
 .PHONY: stop-test-environment
 stop-test-environment:
-	@podman stop minio-local-test
+	@podman stop --ignore minio-local-test
 
 .PHONY: test
 test: ## Test the code with pytest
+	@$(MAKE) -f $(THIS_FILE) stop-test-environment
 	@$(MAKE) -f $(THIS_FILE) run-test-environment
 	@echo "🚀 Testing code: Running pytest"
-	@pdm run pytest --cov --cov-config=pyproject.toml --cov-report=xml
+	@pdm run pytest --cov --cov-config=pyproject.toml --cov-report=xml --import-mode=importlib
+	@$(MAKE) -f $(THIS_FILE) stop-test-environment
 
 .PHONY: build
 build: clean-build ## Build wheel file
