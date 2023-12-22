@@ -15,6 +15,15 @@ logger = logging.getLogger("root")
 
 
 def setup_client(minio: MinioConfig) -> Minio:
+    """Set up MinIO S3 client for the specified cluster.
+
+    Args:
+        minio:
+
+    Returns:
+        Minio S3 client object
+
+    """
     return Minio(minio.endpoint, access_key=minio.access_key, secret_key=minio.secret_key, secure=minio.secure)
 
 

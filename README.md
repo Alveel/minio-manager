@@ -11,6 +11,36 @@ Declare what MinIO buckets, IAM policies, ILM policies you want, and let MinIO M
 - **GitHub repository**: <https://github.com/alveel/minio-manager/>
 - **Documentation** <https://alveel.github.io/minio-manager/>
 
+## Description
+
+The concept for management is to have so-called "bucket groups".
+
+Each bucket group is managed by an account that only has access to buckets in that group.
+
+This application authenticates to multiple accounts.
+
+For illustration:
+
+```
+├── user1
+│  └─ sa-user1-bucketgroup
+│    ├─── sa-user1-bucketABC
+│    │   └── bucketABC
+│    └─── sa-user1-bucketXYZ
+│        └── bucketXYZ
+└── user2
+   └─ sa-user2-bucketgroup
+     ├── sa-user2-bucketDEF
+     │  └── bucketDEF
+     └── sa-user2-bucketUWV
+        └── bucketUWV
+```
+
+## Requirements
+
+- [Python](https://www.python.org/) (3.8.1 or newer)
+- [PDM](https://pdm-project.org/)
+
 ## Getting started with your project
 
 Install the environment and the pre-commit hooks with
@@ -32,6 +62,39 @@ To enable the code coverage reports, see [here](https://fpgmaas.github.io/cookie
 ## Releasing a new version
 
 ## Configuration
+
+### MinIO
+
+
+
+#### More privileged user
+
+Minimum required permissions:
+
+- `admin:CreatePolicy`
+- `admin:GetPolicy`
+- `admin:AttachUserOrGroupPolicy`
+- `admin:ListUserPolicies`
+
+#### Lesser privileged user
+
+Minimum required permissions:
+
+- `s3:CreateBucket`
+- `s3:GetBucketLocation`
+- `s3:ListAllMyBuckets`
+- `s3:GetBucketPolicy`
+- `s3:PutBucketPolicy`
+- `s3:DeleteBucketPolicy`
+- `admin:CreatePolicy`
+- `admin:DeletePolicy`
+- `admin:GetPolicy`
+- `admin:AttachUserOrGroupPolicy`
+- `admin:ListUserPolicies`
+- `admin:CreateServiceAccount`
+- `admin:UpdateServiceAccount`
+- `admin:RemoveServiceAccount`
+- `admin:ListServiceAccounts`
 
 ### Keepass
 

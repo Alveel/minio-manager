@@ -31,9 +31,9 @@ def handle_service_account(client: McWrapper, secrets: SecretManager, account: S
     5) if it does not, create service account in minio and secret backend
 
     Args:
-        secrets: SecretManager
-        client: McWrapper
-        account: ServiceAccount
+        secrets (SecretManager)
+        client (McWrapper)
+        account (ServiceAccount)
     """
     # Determine if access key exists in MinIO
     user = service_account_exists(client, account.name)

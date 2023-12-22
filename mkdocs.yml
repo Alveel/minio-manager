@@ -5,19 +5,14 @@ site_description: Declare what MinIO buckets, IAM policies, ILM policies you wan
 site_author: Alwyn Kik
 edit_uri: edit/main/docs/
 repo_name: alveel/minio-manager
-copyright: Maintained by <a href="https://alveel.com">Florian</a>.
+copyright: Maintained by <a href="https://github.com/alveel">Alwyn Kik</a>.
 
 nav:
   - Home: index.md
   - Modules: modules.md
 plugins:
   - search
-  - mkdocstrings:
-      handlers:
-        python:
-            setup_commands:
-                - import sys
-                - sys.path.append('../')
+  - mkdocstrings: {}
 theme:
   name: material
   feature:

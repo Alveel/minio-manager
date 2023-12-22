@@ -10,16 +10,16 @@ bucket_policies:
 
 service_accounts:
   - name: test-service-account
-  - name: another-service-account
+  - name: another-one
 
 iam_policies:
   - name: test-policy
     policy_file: tests/resources/test-iam-policy.json
 
 iam_policy_attachments:
-  - name: test-service-account
+  - name: test123
     policies:
       - test-policy
-  - name: another-service-account
+  - name: another-test123
     policies:
       - test-policy
