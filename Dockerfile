@@ -17,4 +17,4 @@ RUN pdm install --no-self
 # Copy Python code to the Docker image
 COPY minio_manager/ /code/minio_manager//
 
-CMD [ "python", "minio_manager//foo.py"]
+CMD [ "python", "minio_manager"]

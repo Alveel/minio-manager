@@ -6,8 +6,8 @@ import subprocess
 from pathlib import Path
 from types import SimpleNamespace
 
-from .classes.errors import raise_specific_error
-from .classes.secrets import MinioCredentials
+from .errors import raise_specific_error
+from .secrets import MinioCredentials
 
 
 class McWrapper:

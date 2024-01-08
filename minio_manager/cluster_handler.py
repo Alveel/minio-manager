@@ -4,9 +4,9 @@ from minio import Minio, MinioAdmin, credentials
 
 from .bucket_handler import handle_bucket
 from .classes.config import ClusterConfig  # noqa: F401
+from .classes.mc_wrapper import McWrapper
 from .classes.minio import Bucket, BucketPolicy, IamPolicy, IamPolicyAttachment, MinioConfig, ServiceAccount
 from .classes.secrets import SecretManager
-from .mc_wrapper import McWrapper
 from .policy_handler import handle_bucket_policy, handle_iam_policy, handle_iam_policy_attachments
 from .user_handler import handle_service_account
 from .utilities import read_yaml
