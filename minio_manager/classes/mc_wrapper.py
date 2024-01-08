@@ -7,7 +7,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 from .errors import MinioManagerBaseError, raise_specific_error
-from secrets import MinioCredentials
+from .secrets import MinioCredentials
 
 
 class McWrapper:
