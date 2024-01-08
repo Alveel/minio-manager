@@ -6,7 +6,7 @@ import subprocess
 from pathlib import Path
 from types import SimpleNamespace
 
-from .classes.errors import raise_specific_error
+from .classes.errors import MinioManagerBaseError, raise_specific_error
 from .classes.secrets import MinioCredentials
 
 
@@ -63,7 +63,7 @@ class McWrapper:
         self._logger.debug(f"Validating config for cluster {self.cluster_name}")
         cluster_ready = self._run(["ready", self.cluster_name])
         self._logger.debug(cluster_ready)
-        if cluster_ready.healthy:
+        if not cluster_ready.error:
             # Cluster is configured & available
             return
 
@@ -72,7 +72,10 @@ class McWrapper:
         alias_set_resp = self._run(["alias", "set", self.cluster_name, url, f"'{access_key}'", f"'{secret_key}'"])
         if hasattr(alias_set_resp, "error"):
             error_details = alias_set_resp.error.cause.error
-            raise_specific_error(error_details.Code, error_details.Message)
+            try:
+                raise_specific_error(error_details.Code, error_details.Message)
+            except AttributeError:
+                raise MinioManagerBaseError(alias_set_resp.error.cause.message)
 
         cluster_ready = self._run(["ready", self.cluster_name])
         if cluster_ready.healthy:
