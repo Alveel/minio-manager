@@ -24,10 +24,14 @@ before_script:
   - source .venv/bin/activate
 
 # test:
+#   tags:
+#     - dockerbased
 #   script:
 #     - make test
 
 run:
+  tags:
+    - dockerbased
   script:
     - make build
   artifacts:
@@ -35,6 +39,8 @@ run:
       - dist/*
 
 pages:
+  tags:
+    - dockerbased
   script:
     - make docs-test
   artifacts:
@@ -44,6 +50,8 @@ pages:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
 deploy:
+  tags:
+    - dockerbased
   stage: deploy
   script: echo "Define your deployment script!"
   environment: production
