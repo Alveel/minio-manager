@@ -65,36 +65,40 @@ To enable the code coverage reports, see [here](https://fpgmaas.github.io/cookie
 
 ### MinIO
 
+Unfortunately, not everything can be automated (unless you use the superuser for everything, which you probably don't.)
 
+#### Secret backend
 
-#### More privileged user
+A user and bucket must be configured where the secret backend will be stored.
 
-Minimum required permissions:
+Using the default bucket name as an example, the following minimal IAM policy must be created:
 
-- `admin:CreatePolicy`
-- `admin:GetPolicy`
-- `admin:AttachUserOrGroupPolicy`
-- `admin:ListUserPolicies`
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+              "s3:GetBucketLocation",
+              "s3:GetBucketVersioning",
+              "s3:GetObject",
+              "s3:GetObjectRetention",
+              "s3:GetObjectVersion",
+              "s3:ListAllMyBuckets",
+              "s3:ListBucket",
+              "s3:PutObject"
+            ],
+            "Resource": [
+                "arn:aws:s3:::minio-manager-secrets",
+                "arn:aws:s3:::minio-manager-secrets/*"
+            ]
+        }
+    ]
+}
+```
 
-#### Lesser privileged user
-
-Minimum required permissions:
-
-- `s3:CreateBucket`
-- `s3:GetBucketLocation`
-- `s3:ListAllMyBuckets`
-- `s3:GetBucketPolicy`
-- `s3:PutBucketPolicy`
-- `s3:DeleteBucketPolicy`
-- `admin:CreatePolicy`
-- `admin:DeletePolicy`
-- `admin:GetPolicy`
-- `admin:AttachUserOrGroupPolicy`
-- `admin:ListUserPolicies`
-- `admin:CreateServiceAccount`
-- `admin:UpdateServiceAccount`
-- `admin:RemoveServiceAccount`
-- `admin:ListServiceAccounts`
+You can further restrict access by specifying specific files instead of using a wildcard.
 
 ### Keepass
 
@@ -108,9 +112,16 @@ Entry names must be unique.
 
 ### Environment variables
 
-- `KEEPASS_PASSWORD` Keepass database password
+- `MINIO_MANAGER_LOG_LEVEL` The log level of the application. Defaults to `INFO`, may also use `DEBUG`
+- `MINIO_MANAGER_S3_ENDPOINT` What host:port to use as S3 endpoint
+- `MINIO_MANAGER_S3_ENDPOINT_SECURE` Whether to use HTTPS for the endpoint. Defaults to `True`
+- `MINIO_MANAGER_SECRET_BACKEND_TYPE` What secret backend to use. Currently only keepass is supported
+- `MINIO_MANAGER_KEEPASS_PASSWORD` Keepass database password
+- `MINIO_MANAGER_KEEPASS_FILE` The name of the database file in the S3 bucket. Defaults to `secrets.kdbx`
 - `MINIO_MANAGER_CONFIG_FILE` The configuration YAML with MinIO cluster information
-
+- `MINIO_MANAGER_SECRET_S3_BUCKET` The name of the bucket where the secret backend is kept. Defaults to `minio-manager-secrets`
+- `MINIO_MANAGER_SECRET_S3_ACCESS_KEY` The S3 access key to the bucket where the secret database is stored
+- `MINIO_MANAGER_SECRET_S3_SECRET_KEY` The S3 secret key to the bucket where the secret database is stored
 
 ---
 

@@ -1,35 +1,15 @@
 import logging
 
-from minio import Minio, MinioAdmin, credentials
-
 from .bucket_handler import handle_bucket
 from .classes.config import ClusterConfig  # noqa: F401
 from .classes.mc_wrapper import McWrapper
-from .classes.minio import Bucket, BucketPolicy, IamPolicy, IamPolicyAttachment, MinioConfig, ServiceAccount
+from .classes.minio_resources import Bucket, BucketPolicy, IamPolicy, IamPolicyAttachment, MinioConfig, ServiceAccount
 from .classes.secrets import SecretManager
 from .policy_handler import handle_bucket_policy, handle_iam_policy, handle_iam_policy_attachments
 from .user_handler import handle_service_account
-from .utilities import read_yaml
+from .utilities import read_yaml, setup_minio_admin_client, setup_s3_client
 
 logger = logging.getLogger("root")
-
-
-def setup_client(minio: MinioConfig) -> Minio:
-    """Set up MinIO S3 client for the specified cluster.
-
-    Args:
-        minio:
-
-    Returns:
-        Minio S3 client object
-
-    """
-    return Minio(minio.endpoint, access_key=minio.access_key, secret_key=minio.secret_key, secure=minio.secure)
-
-
-def setup_admin_client(minio: MinioConfig) -> MinioAdmin:
-    provider = credentials.StaticProvider(minio.access_key, minio.secret_key)
-    return MinioAdmin(minio.endpoint, provider, secure=minio.secure)
 
 
 def handle_cluster(minio: MinioConfig, secrets: SecretManager):
@@ -41,8 +21,8 @@ def handle_cluster(minio: MinioConfig, secrets: SecretManager):
         minio: MinioConfig
         secrets: SecretManager
     """
-    s3_client = setup_client(minio)
-    admin_client = setup_admin_client(minio)
+    s3_client = setup_s3_client(minio.endpoint, minio.access_key, minio.secret_key, minio.secure)
+    admin_client = setup_minio_admin_client(minio.endpoint, minio.access_key, minio.secret_key, minio.secure)
     mc = McWrapper(minio.name, minio.endpoint, minio.access_key, minio.secret_key, minio.secure)
     # TODO: try to validate all resources before handling them. Perhaps by using pydantic or dataclasses?
     cluster_config = read_yaml(minio.config)  # type: ClusterConfig

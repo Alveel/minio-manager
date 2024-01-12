@@ -2,7 +2,7 @@ import logging
 
 from .classes.errors import MinioInvalidIamCredentialsError
 from .classes.mc_wrapper import McWrapper
-from .classes.minio import ServiceAccount
+from .classes.minio_resources import ServiceAccount
 from .classes.secrets import SecretManager
 
 logger = logging.getLogger("root")

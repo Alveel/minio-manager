@@ -11,16 +11,14 @@ class MinioConfig(yaml.YAMLObject):
         self,
         name: str,
         endpoint: str,
-        access_key: str,
-        secret_key: str,
         secure: True,
         config: str,
         secret_backend: dict,
     ):
         self.name = name
         self.endpoint = endpoint
-        self.access_key = access_key
-        self.secret_key = secret_key
+        self.access_key = None
+        self.secret_key = None
         self.secure = secure
         self.config = config
         self.secret_backend = secret_backend

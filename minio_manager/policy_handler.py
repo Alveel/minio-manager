@@ -4,7 +4,7 @@ import logging
 from minio import Minio, MinioAdmin, S3Error
 from minio.error import MinioAdminException
 
-from .classes.minio import BucketPolicy, IamPolicy, IamPolicyAttachment
+from .classes.minio_resources import BucketPolicy, IamPolicy, IamPolicyAttachment
 from .utilities import read_json, sort_policy
 
 logger = logging.getLogger("root")
