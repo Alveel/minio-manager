@@ -74,8 +74,8 @@ class McWrapper:
             error_details = alias_set_resp.error.cause.error
             try:
                 raise_specific_error(error_details.Code, error_details.Message)
-            except AttributeError:
-                raise MinioManagerBaseError(alias_set_resp.error.cause.message)
+            except AttributeError as ae:
+                raise MinioManagerBaseError(alias_set_resp.error.cause.message) from ae
 
         cluster_ready = self._run(["ready", self.cluster_name])
         if cluster_ready.healthy:
