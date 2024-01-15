@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import logging
+from pathlib import Path
+from tempfile import NamedTemporaryFile
 
 from minio import S3Error
 from pykeepass import PyKeePass
@@ -21,9 +23,11 @@ class SecretManager:
         self._cluster_name = cluster_name
         self.backend_dirty = False
         self.backend_type = retrieve_environment_variable("MINIO_MANAGER_SECRET_BACKEND_TYPE")
-        self.backend_bucket = retrieve_environment_variable("MINIO_MANAGER_SECRET_S3_BUCKET", "minio-manager-secrets")
-        self._backend_config = backend["config"]
-        self._keepass_filename = None
+        self.backend_bucket = retrieve_environment_variable(
+            "MINIO_MANAGER_SECRET_BACKEND_S3_BUCKET", "minio-manager-secrets"
+        )
+        self._backend_filename = retrieve_environment_variable("MINIO_MANAGER_KEEPASS_FILE", "secrets.kdbx")
+        self._keepass_temp_file_name = None
         self._keepass_group = None
         self._backend_s3 = self.setup_backend_s3()
         self._backend = self.setup_backend()
@@ -35,15 +39,19 @@ class SecretManager:
         if self.backend_type == "keepass":
             # The PyKeePass save() function can take some time. So we want to run it once when the application is
             # exiting, not every time after creating or updating an entry.
-            self._logger.info(f"Saving {self._keepass_filename}")
+            self._logger.info(f"Saving {self._keepass_temp_file_name}")
             self._backend.save()
+            # After saving, upload the updated file to the S3 bucket and clean up the temp file.
+            tmp_file = Path(self._keepass_temp_file_name)
+            self._backend_s3.fput_object(self.backend_bucket, self._backend_filename, tmp_file)
+            tmp_file.unlink()
 
     def setup_backend_s3(self):
         endpoint = retrieve_environment_variable("MINIO_MANAGER_S3_ENDPOINT")
         endpoint_secure_str = retrieve_environment_variable("MINIO_MANAGER_S3_ENDPOINT_SECURE", True)
         endpoint_secure = endpoint_secure_str.lower() != "false"
-        access_key = retrieve_environment_variable("MINIO_MANAGER_SECRET_S3_ACCESS_KEY")
-        secret_key = retrieve_environment_variable("MINIO_MANAGER_SECRET_S3_SECRET_KEY")
+        access_key = retrieve_environment_variable("MINIO_MANAGER_SECRET_BACKEND_S3_ACCESS_KEY")
+        secret_key = retrieve_environment_variable("MINIO_MANAGER_SECRET_BACKEND_S3_SECRET_KEY")
         self._logger.debug(f"Setting up secret bucket {self.backend_bucket}")
         s3 = setup_s3_client(endpoint, access_key, secret_key, endpoint_secure)
         try:
@@ -86,26 +94,39 @@ class SecretManager:
         raise NotImplementedError
 
     def retrieve_keepass_backend(self) -> PyKeePass:
-        self._keepass_filename = retrieve_environment_variable("MINIO_MANAGER_KEEPASS_FILE", "secrets.kdbx")
+        """Back-end implementation for the keepass backend.
+        Two-step process:
+            - first we retrieve the kdbx file from the S3 bucket
+            - then we configure the PyKeePass backend
+
+        Returns: PyKeePass object, with the kdbx file loaded
+
+        """
+        tmp_file = NamedTemporaryFile(suffix=self._backend_filename, delete=False)
         try:
-            self._backend_s3.fget_object(
-                self.backend_bucket, self._keepass_filename, f"/tmp/{self._keepass_filename}"  # noqa: S108
-            )
+            response = self._backend_s3.get_object(self.backend_bucket, self._backend_filename)
+            with tmp_file as f:
+                f.write(response.data)
+                self._keepass_temp_file_name = tmp_file.name
         except S3Error as s3e:
             self._logger.debug(s3e)
             self._logger.critical(
-                f"Unable to retrieve {self._keepass_filename} from {self.backend_bucket}!\n"
+                f"Unable to retrieve {self._backend_filename} from {self.backend_bucket}!\n"
                 "Do the required bucket and kdbx file exist, and does the user have the correct "
-                "permissions?"
+                "policies assigned?"
             )
             exit(4)
+        finally:
+            response.close()
+            response.release_conn()
 
         kp_pass = retrieve_environment_variable("MINIO_MANAGER_KEEPASS_PASSWORD")
-        kp = PyKeePass(f"/tmp/{self._keepass_filename}", password=kp_pass)  # noqa: S108
+        kp = PyKeePass(self._keepass_temp_file_name, password=kp_pass)
         # noinspection PyTypeChecker
         self._keepass_group = kp.find_groups(path=["s3", self._cluster_name])
         if not self._keepass_group:
             self._logger.exception("Required group not found in Keepass! See documentation for requirements.")
+
         return kp
 
     def keepass_get_credentials(self, name) -> MinioCredentials | bool:
@@ -129,6 +150,7 @@ class SecretManager:
             if not ae.obj:
                 self._logger.warning(f"Entry for {name} not found!")
                 return False
+            self._logger.critical(f"Unhandled exception: {ae}")
             exit(5)
         else:
             return credentials
