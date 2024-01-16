@@ -1,9 +1,9 @@
 import logging
 
 from .bucket_handler import handle_bucket
-from .classes.config import ClusterConfig  # noqa: F401
+from .classes.config import ClusterConfig, parse_resources  # noqa: F401
 from .classes.mc_wrapper import McWrapper
-from .classes.minio_resources import Bucket, BucketPolicy, IamPolicy, IamPolicyAttachment, MinioConfig, ServiceAccount
+from .classes.minio_resources import MinioConfig
 from .classes.secrets import SecretManager
 from .policy_handler import handle_bucket_policy, handle_iam_policy, handle_iam_policy_attachments
 from .user_handler import handle_service_account
@@ -24,30 +24,27 @@ def handle_cluster(minio: MinioConfig, secrets: SecretManager):
     s3_client = setup_s3_client(minio.endpoint, minio.access_key, minio.secret_key, minio.secure)
     admin_client = setup_minio_admin_client(minio.endpoint, minio.access_key, minio.secret_key, minio.secure)
     mc = McWrapper(minio.name, minio.endpoint, minio.access_key, minio.secret_key, minio.secure)
-    # TODO: try to validate all resources before handling them. Perhaps by using pydantic or dataclasses?
     cluster_config = read_yaml(minio.config)  # type: ClusterConfig
 
+    logger.info("Loading resources...")
+    service_accounts, buckets, bucket_policies, iam_policies, iam_policy_attachments = parse_resources(cluster_config)
+
     logger.info("Handling service accounts...")
-    for service_account in cluster_config.service_accounts:
-        sa = ServiceAccount(service_account["name"])
-        handle_service_account(mc, secrets, sa)
+    for service_account in service_accounts:
+        handle_service_account(mc, secrets, service_account)
 
     logger.info("Handling buckets...")
-    for bucket in cluster_config.buckets:
-        b = Bucket(bucket["name"], bucket["versioning"])
-        handle_bucket(s3_client, b)
+    for bucket in buckets:
+        handle_bucket(s3_client, bucket)
 
     logger.info("Handling bucket policies...")
-    for bucket_policy in cluster_config.bucket_policies:
-        bp = BucketPolicy(bucket_policy["bucket"], bucket_policy["policy_file"])
-        handle_bucket_policy(s3_client, bp)
+    for bucket_policy in bucket_policies:
+        handle_bucket_policy(s3_client, bucket_policy)
 
     logger.info("Handling IAM policies...")
-    for iam_policy in cluster_config.iam_policies:
-        ip = IamPolicy(iam_policy["name"], iam_policy["policy_file"])
-        handle_iam_policy(admin_client, ip)
+    for iam_policy in iam_policies:
+        handle_iam_policy(admin_client, iam_policy)
 
     logger.info("Handling IAM policy attachments...")
-    for user in cluster_config.iam_policy_attachments:
-        ipa = IamPolicyAttachment(user["name"], user["policies"])
-        handle_iam_policy_attachments(admin_client, ipa)
+    for iam_policy_attachment in iam_policy_attachments:
+        handle_iam_policy_attachments(admin_client, iam_policy_attachment)
