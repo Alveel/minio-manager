@@ -20,8 +20,8 @@ def read_json(file) -> dict:
 
 
 def setup_logging():
-    log_debug = os.environ.get("MINIO_MANAGER_LOG_LEVEL", "INFO")
-    if log_debug:
+    log_level = retrieve_environment_variable("MINIO_MANAGER_LOG_LEVEL", "INFO")
+    if log_level:
         logger.setLevel(logging.DEBUG)
         logging.basicConfig(format="[%(asctime)s [%(filename)s:%(lineno)d	- %(funcName)24s() ] %(message)s")
     else:

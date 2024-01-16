@@ -113,15 +113,16 @@ Entry names must be unique.
 ### Environment variables
 
 - `MINIO_MANAGER_LOG_LEVEL` The log level of the application. Defaults to `INFO`, may also use `DEBUG`
-- `MINIO_MANAGER_S3_ENDPOINT` What host:port to use as S3 endpoint
-- `MINIO_MANAGER_S3_ENDPOINT_SECURE` Whether to use HTTPS for the endpoint. Defaults to `True`
+- `MINIO_MANAGER_MINIO_ENDPOINT` What host:port to use as MinIO/S3 endpoint
+- `MINIO_MANAGER_MINIO_ENDPOINT_SECURE` Whether to use HTTPS for the endpoint. Defaults to `True`
+- `MINIO_MANAGER_MINIO_CONTROLLER_USER` The entry of the MinIO controller user in the secret backend that contains its access and secret keys
+- `MINIO_MANAGER_CONFIG_FILE` The configuration YAML with MinIO cluster information
 - `MINIO_MANAGER_SECRET_BACKEND_TYPE` What secret backend to use. Currently only keepass is supported
+- `MINIO_MANAGER_SECRET_BACKEND_S3_BUCKET` The name of the bucket where the secret backend is kept. Defaults to `minio-manager-secrets`
+- `MINIO_MANAGER_SECRET_BACKEND_S3_ACCESS_KEY` The access key to the S3 bucket where the secret database is stored
+- `MINIO_MANAGER_SECRET_BACKEND_S3_SECRET_KEY` The secret key to the S3 bucket where the secret database is stored
 - `MINIO_MANAGER_KEEPASS_PASSWORD` Keepass database password
 - `MINIO_MANAGER_KEEPASS_FILE` The name of the database file in the S3 bucket. Defaults to `secrets.kdbx`
-- `MINIO_MANAGER_CONFIG_FILE` The configuration YAML with MinIO cluster information
-- `MINIO_MANAGER_SECRET_S3_BUCKET` The name of the bucket where the secret backend is kept. Defaults to `minio-manager-secrets`
-- `MINIO_MANAGER_SECRET_S3_ACCESS_KEY` The S3 access key to the bucket where the secret database is stored
-- `MINIO_MANAGER_SECRET_S3_SECRET_KEY` The S3 secret key to the bucket where the secret database is stored
 
 ---
 
