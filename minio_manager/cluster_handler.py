@@ -1,7 +1,7 @@
 import logging
 
 from .bucket_handler import handle_bucket
-from .classes.config import ClusterConfig, parse_resources  # noqa: F401
+from .classes.config import ClusterResources, parse_resources  # noqa: F401
 from .classes.mc_wrapper import McWrapper
 from .classes.minio_resources import MinioConfig
 from .classes.secrets import SecretManager
@@ -10,6 +10,21 @@ from .user_handler import handle_service_account
 from .utilities import read_yaml, setup_minio_admin_client, setup_s3_client
 
 logger = logging.getLogger("root")
+
+
+def initialise_clients(config: MinioConfig):
+    """Configure all required clients: S3, MinioAdmin, and MC wrapper
+
+    Args:
+        config: MinioConfig
+
+    Returns: tuple (Minio, MinioAdmin, McWrapper)
+
+    """
+    s3_client = setup_s3_client(config.endpoint, config.access_key, config.secret_key, config.secure)
+    admin_client = setup_minio_admin_client(config.endpoint, config.access_key, config.secret_key, config.secure)
+    mc = McWrapper(config.name, config.endpoint, config.access_key, config.secret_key, config.secure)
+    return s3_client, admin_client, mc
 
 
 def handle_cluster(minio: MinioConfig, secrets: SecretManager):
@@ -21,10 +36,8 @@ def handle_cluster(minio: MinioConfig, secrets: SecretManager):
         minio: MinioConfig
         secrets: SecretManager
     """
-    s3_client = setup_s3_client(minio.endpoint, minio.access_key, minio.secret_key, minio.secure)
-    admin_client = setup_minio_admin_client(minio.endpoint, minio.access_key, minio.secret_key, minio.secure)
-    mc = McWrapper(minio.name, minio.endpoint, minio.access_key, minio.secret_key, minio.secure)
-    cluster_config = read_yaml(minio.config)  # type: ClusterConfig
+    s3_client, admin_client, mc = initialise_clients(minio)
+    cluster_config = read_yaml(minio.cluster_resources)  # type: ClusterResources
 
     logger.info("Loading resources...")
     service_accounts, buckets, bucket_policies, iam_policies, iam_policy_attachments = parse_resources(cluster_config)

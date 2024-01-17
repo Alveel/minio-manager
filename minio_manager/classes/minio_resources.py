@@ -1,5 +1,7 @@
 import yaml
 
+from ..utilities import retrieve_environment_variable
+
 
 class MinioConfig(yaml.YAMLObject):
     """MinIO server configuration object, the connection details."""
@@ -7,28 +9,16 @@ class MinioConfig(yaml.YAMLObject):
     yaml_tag = "!MinioConfig"
     yaml_loader = yaml.SafeLoader
 
-    def __init__(
-        self,
-        name: str,
-        endpoint: str,
-        secure: True,
-        config: str,
-        secret_backend: dict,
-    ):
-        self.name = name
-        self.endpoint = endpoint
+    def __init__(self):
+        self.name = retrieve_environment_variable("MINIO_MANAGER_CLUSTER_NAME")
+        self.endpoint = retrieve_environment_variable("MINIO_MANAGER_S3_ENDPOINT")
+        self.secure = retrieve_environment_variable("MINIO_MANAGER_S3_ENDPOINT_SECURE", True)
+        self.controller_user = retrieve_environment_variable("MINIO_MANAGER_MINIO_CONTROLLER_USER")
         self.access_key = None
         self.secret_key = None
-        self.secure = secure
-        self.config = config
-        self.secret_backend = secret_backend
-
-    def __repr__(self):
-        return (
-            f"MinioConfig(name={self.name}, endpoint={self.endpoint}, access_key={self.access_key}, "
-            f"secret_key={self.secret_key}, secure={self.secure}, config={self.config}, "
-            f"secret_backend={self.secret_backend})"
-        )
+        self.cluster_resources = retrieve_environment_variable("MINIO_MANAGER_CLUSTER_RESOURCES_FILE")
+        self.secret_backend_type = retrieve_environment_variable("MINIO_MANAGER_SECRET_BACKEND_TYPE")
+        self.secret_s3_bucket = retrieve_environment_variable("MINIO_MANAGER_SECRET_BACKEND_S3_BUCKET")
 
 
 class Bucket:

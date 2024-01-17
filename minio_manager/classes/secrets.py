@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import sys
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
@@ -8,6 +9,7 @@ from minio import S3Error
 from pykeepass import PyKeePass
 
 from ..utilities import retrieve_environment_variable, setup_s3_client
+from .minio_resources import MinioConfig
 
 
 class MinioCredentials:
@@ -17,16 +19,14 @@ class MinioCredentials:
 
 
 class SecretManager:
-    def __init__(self, cluster_name: str, backend: dict):
+    def __init__(self, config: MinioConfig):
         self._logger = logging.getLogger("root")
         self._logger.debug("Initialising SecretManager")
-        self._cluster_name = cluster_name
+        self._cluster_name = config.name
         self.backend_dirty = False
-        self.backend_type = retrieve_environment_variable("MINIO_MANAGER_SECRET_BACKEND_TYPE")
-        self.backend_bucket = retrieve_environment_variable(
-            "MINIO_MANAGER_SECRET_BACKEND_S3_BUCKET", "minio-manager-secrets"
-        )
-        self._backend_filename = retrieve_environment_variable("MINIO_MANAGER_KEEPASS_FILE", "secrets.kdbx")
+        self.backend_type = config.secret_backend_type
+        self.backend_bucket = config.secret_s3_bucket
+        self._backend_filename = None
         self._keepass_temp_file_name = None
         self._keepass_group = None
         self._backend_s3 = self.setup_backend_s3()
@@ -58,6 +58,7 @@ class SecretManager:
             s3.bucket_exists(self.backend_bucket)
         except S3Error as s3e:
             self._logger.critical(f"{s3e.code}: Does the bucket exist? Does the user have the correct permissions?")
+            sys.exit(10)
         return s3
 
     def setup_backend(self):
@@ -102,6 +103,7 @@ class SecretManager:
         Returns: PyKeePass object, with the kdbx file loaded
 
         """
+        self._backend_filename = retrieve_environment_variable("MINIO_MANAGER_KEEPASS_FILE", "secrets.kdbx")
         tmp_file = NamedTemporaryFile(suffix=self._backend_filename, delete=False)
         try:
             response = self._backend_s3.get_object(self.backend_bucket, self._backend_filename)
@@ -115,7 +117,7 @@ class SecretManager:
                 "Do the required bucket and kdbx file exist, and does the user have the correct "
                 "policies assigned?"
             )
-            exit(4)
+            sys.exit(11)
         finally:
             response.close()
             response.release_conn()
@@ -125,8 +127,8 @@ class SecretManager:
         # noinspection PyTypeChecker
         self._keepass_group = kp.find_groups(path=["s3", self._cluster_name])
         if not self._keepass_group:
-            self._logger.exception("Required group not found in Keepass! See documentation for requirements.")
-
+            self._logger.critical("Required group not found in Keepass! See documentation for requirements.")
+            sys.exit(12)
         return kp
 
     def keepass_get_credentials(self, name) -> MinioCredentials | bool:
@@ -139,9 +141,7 @@ class SecretManager:
             MinioCredentials if found, False if not found
         """
         self._logger.debug(f"Finding Keepass entry for {name}")
-        kp: PyKeePass
-        kp = self._backend
-        entry = kp.find_entries(title=name, username=name, group=self._keepass_group, first=True)
+        entry = self._backend.find_entries(title=name, group=self._keepass_group, first=True)
 
         try:
             credentials = MinioCredentials(entry.username, entry.password)
@@ -151,7 +151,7 @@ class SecretManager:
                 self._logger.warning(f"Entry for {name} not found!")
                 return False
             self._logger.critical(f"Unhandled exception: {ae}")
-            exit(5)
+            sys.exit(13)
         else:
             return credentials
 
