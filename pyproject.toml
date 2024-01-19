@@ -9,10 +9,11 @@ readme = "README.md"
 packages = [
   {include = "minio_manager"}
 ]
-requires-python = ">=3.8.1"
+requires-python = ">=3.9"
 dependencies = [
     "minio>=7.2.0",
     "pykeepass>=4.0.6",
+    "python-dotenv>=1.0.0",
 ]
 license = {text = "MIT license"}
 keywords = ['minio']
@@ -28,7 +29,7 @@ build-backend = "pdm.backend"
 
 [tool.black]
 line-length = 120
-target-version = ['py38', 'py39', 'py310', 'py311']
+target-version = ['py39', 'py310', 'py311']
 preview = true
 
 [tool.mypy]

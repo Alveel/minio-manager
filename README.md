@@ -17,7 +17,7 @@ The concept for management is to have so-called "bucket groups".
 
 Each bucket group is managed by an account that only has access to buckets in that group.
 
-This application authenticates to multiple accounts.
+TODO: update illustration.
 
 For illustration:
 
@@ -38,7 +38,7 @@ For illustration:
 
 ## Requirements
 
-- [Python](https://www.python.org/) (3.8.1 or newer)
+- [Python](https://www.python.org/) (3.9 or newer)
 - [PDM](https://pdm-project.org/)
 
 ## Getting started with your project
@@ -61,44 +61,44 @@ To enable the code coverage reports, see [here](https://fpgmaas.github.io/cookie
 
 ## Releasing a new version
 
-## Configuration
+## Set up
+
+An admin user should be used for these steps.
+
+1. Create the bucket for the secret backend `minio-manager-secrets`
+
+    `mc mb $ALIAS/minio-manager-secrets`
+1. Create a user (either in MinIO or your identity provider)
+
+    You can use `mc admin user add $ALIAS minio-manager` for a MinIO user
+1. Create a policy that gives read/write access to the bucket for the secret backend
+
+    You can use the example provided in the `examples` directory:
+
+    `mc admin policy create $ALIAS minio-manager examples/minio-manager-policy.json`
+1. Attach the policy to the user:
+
+   - For MinIO: `mc admin policy attach $ALIAS minio-manager --user=minio-manager`
+   - For LDAP: `mc idp ldap policy attach $ALIAS minio-manager --user='uid=minio-manager,cn=users,dc=your,dc=domain'`
+1. Upload your secret backend (e.g. `secrets.kdbx`) to the bucket root
+1. Create a MinIO service account/access key with either option:
+
+   - `mc admin user svcacct add $ALIAS minio-manager` and note down the access and secret keys
+1. Copy `.env.example` to `.env` and set the following variables to the obtained keys
+
+   - `MINIO_MANAGER_SECRET_BACKEND_S3_ACCESS_KEY`
+   - `MINIO_MANAGER_SECRET_BACKEND_S3_SECRET_KEY`
+1. Configure the other variables in the `.env` file. Descriptions of each variable can be found in the
+   [Environment variables](#environment-variables) section
+1.
 
 ### MinIO
 
-Unfortunately, not everything can be automated (unless you use the superuser for everything, which you probably don't.)
+At least two users are required in MinIO. One with access to a single bucket containing the secret backend, all other
+users are to be used as "bucket group" managers. For each bucket created under this manager user a service account
+(or access key in S3/MinIO terms) will be created.
 
 #### Secret backend
-
-A user and bucket must be configured where the secret backend will be stored.
-
-Using the default bucket name as an example, the following minimal IAM policy must be created:
-
-```json
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Action": [
-              "s3:GetBucketLocation",
-              "s3:GetBucketVersioning",
-              "s3:GetObject",
-              "s3:GetObjectRetention",
-              "s3:GetObjectVersion",
-              "s3:ListAllMyBuckets",
-              "s3:ListBucket",
-              "s3:PutObject"
-            ],
-            "Resource": [
-                "arn:aws:s3:::minio-manager-secrets",
-                "arn:aws:s3:::minio-manager-secrets/*"
-            ]
-        }
-    ]
-}
-```
-
-You can further restrict access by specifying specific files instead of using a wildcard.
 
 ### Keepass
 
@@ -106,25 +106,34 @@ The Keepass database's root group must be named "Passwords".
 
 You must have a group called "s3" and subgroups with the name of each MinIO cluster.
 
-Usernames and entry names must be identical.
-
 Entry names must be unique.
 
-### Environment variables
+Entries are found by way of the title of the entry, the username is not considered when searching.
+
+## Environment variables
+
+### Required
 
 - `MINIO_MANAGER_CLUSTER_NAME` The name of the cluster, used for example in the secret backend
 - `MINIO_MANAGER_MINIO_ENDPOINT` What host:port to use as MinIO/S3 endpoint
-- `MINIO_MANAGER_MINIO_ENDPOINT_SECURE` Whether to use HTTPS for the endpoint. Defaults to `True`
 - `MINIO_MANAGER_MINIO_CONTROLLER_USER` The entry of the MinIO controller user in the secret backend that contains its access and secret keys
 - `MINIO_MANAGER_CLUSTER_RESOURCES_FILE` The YAML file with the MinIO resource configuration (buckets, policies, etc.)
 - `MINIO_MANAGER_SECRET_BACKEND_TYPE` What secret backend to use. Currently only keepass is supported
-- `MINIO_MANAGER_SECRET_BACKEND_S3_BUCKET` The name of the bucket where the secret backend is kept. Defaults to `minio-manager-secrets`
 - `MINIO_MANAGER_SECRET_BACKEND_S3_ACCESS_KEY` The access key to the S3 bucket where the secret database is stored
 - `MINIO_MANAGER_SECRET_BACKEND_S3_SECRET_KEY` The secret key to the S3 bucket where the secret database is stored
 - `MINIO_MANAGER_KEEPASS_PASSWORD` Keepass database password
+
+### Optional
+
+- `MINIO_MANAGER_MINIO_ENDPOINT_SECURE` Whether to use HTTPS for the endpoint. Defaults to `True`
+- `MINIO_MANAGER_SECRET_BACKEND_S3_BUCKET` The name of the bucket where the secret backend is kept. Defaults to `minio-manager-secrets`
 - `MINIO_MANAGER_KEEPASS_FILE` The name of the database file in the S3 bucket. Defaults to `secrets.kdbx`
-- `MINIO_MANAGER_KEEPASS_GENERATE_MISSING` Whether to automatically create missing entries in Keepass
+- `MINIO_MANAGER_KEEPASS_GENERATE_MISSING` Whether to automatically create missing entries in Keepass. Defaults to False
 - `MINIO_MANAGER_LOG_LEVEL` The log level of the application. Defaults to `INFO`, may also use `DEBUG`
+
+## To do features
+
+- Automatically generate the policy for each service account limiting access to a single bucket.
 
 ---
 

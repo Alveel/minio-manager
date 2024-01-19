@@ -4,9 +4,12 @@ import os
 from typing import Union
 
 import yaml
+from dotenv import load_dotenv
 from minio import Minio, MinioAdmin, credentials
 
 logger = logging.getLogger("root")
+
+load_dotenv()
 
 
 def read_yaml(file):

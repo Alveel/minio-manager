@@ -1,13 +1,8 @@
-import yaml
-
 from ..utilities import retrieve_environment_variable
 
 
-class MinioConfig(yaml.YAMLObject):
+class MinioConfig:
     """MinIO server configuration object, the connection details."""
-
-    yaml_tag = "!MinioConfig"
-    yaml_loader = yaml.SafeLoader
 
     def __init__(self):
         self.name = retrieve_environment_variable("MINIO_MANAGER_CLUSTER_NAME")
