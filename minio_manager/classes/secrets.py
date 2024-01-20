@@ -108,6 +108,7 @@ class SecretManager:
         try:
             response = self._backend_s3.get_object(self.backend_bucket, self._backend_filename)
             with tmp_file as f:
+                self._logger.debug("Writing kdbx file to temp file")
                 f.write(response.data)
                 self._keepass_temp_file_name = tmp_file.name
         except S3Error as s3e:
@@ -123,12 +124,14 @@ class SecretManager:
             response.release_conn()
 
         kp_pass = retrieve_environment_variable("MINIO_MANAGER_KEEPASS_PASSWORD")
+        self._logger.debug("Opening keepass database")
         kp = PyKeePass(self._keepass_temp_file_name, password=kp_pass)
         # noinspection PyTypeChecker
         self._keepass_group = kp.find_groups(path=["s3", self._cluster_name])
         if not self._keepass_group:
             self._logger.critical("Required group not found in Keepass! See documentation for requirements.")
             sys.exit(12)
+        self._logger.debug("Keepass configured as secret backend")
         return kp
 
     def keepass_get_credentials(self, name) -> MinioCredentials | bool:
