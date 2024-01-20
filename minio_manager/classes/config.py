@@ -40,6 +40,6 @@ def parse_resources(resources: ClusterResources) -> tuple:
         iam_policies.append(IamPolicy(iam_policy["name"], iam_policy["policy_file"]))
 
     for user in resources.iam_policy_attachments:
-        iam_policy_attachments.append(IamPolicyAttachment(user["name"], user["policies"]))
+        iam_policy_attachments.append(IamPolicyAttachment(user["username"], user["policies"]))
 
     return service_accounts, buckets, bucket_policies, iam_policies, iam_policy_attachments

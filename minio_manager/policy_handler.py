@@ -88,9 +88,9 @@ def handle_iam_policy_attachments(client: MinioAdmin, user: IamPolicyAttachment)
         user: IamPolicyAttachment
         client: MinioAdmin
     """
-    logger.debug(f"Handling user policy attachments for '{user.name}'")
+    logger.debug(f"Handling user policy attachments for '{user.username}'")
     for policy_name in user.policies:
-        logger.debug(f"Attaching policy '{policy_name}' to access key '{user.name}'")
-        client.policy_set(policy_name, user.name)
+        logger.debug(f"Attaching policy '{policy_name}' to access key '{user.username}'")
+        client.policy_set(policy_name, user.username)
 
     # TODO: don't set the attachments if they're already attached

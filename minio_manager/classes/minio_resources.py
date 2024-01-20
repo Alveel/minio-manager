@@ -42,6 +42,6 @@ class IamPolicy:
 
 
 class IamPolicyAttachment:
-    def __init__(self, name: str, policies: list):
-        self.name = name
+    def __init__(self, username: str, policies: list):
+        self.username = username
         self.policies = policies
