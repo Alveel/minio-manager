@@ -7,7 +7,7 @@ from .classes.minio_resources import MinioConfig
 from .classes.secrets import SecretManager
 from .policy_handler import handle_bucket_policy, handle_iam_policy, handle_iam_policy_attachments
 from .user_handler import handle_service_account
-from .utilities import read_yaml, setup_minio_admin_client, setup_s3_client
+from .utilities import setup_minio_admin_client, setup_s3_client
 
 logger = logging.getLogger("root")
 
@@ -27,7 +27,7 @@ def initialise_clients(config: MinioConfig):
     return s3_client, admin_client, mc
 
 
-def handle_cluster(minio: MinioConfig, secrets: SecretManager):
+def handle_resources(minio: MinioConfig, secrets: SecretManager, resources):
     """
     Set up MinIO S3 and MinIO Admin clients for the specified cluster,
     then handle buckets, bucket policies, IAM policies, and user policy attachments, in that order.
@@ -35,12 +35,10 @@ def handle_cluster(minio: MinioConfig, secrets: SecretManager):
     Args:
         minio: MinioConfig
         secrets: SecretManager
+        resources: tuple of all resources to be handled
     """
     s3_client, admin_client, mc = initialise_clients(minio)
-    cluster_config = read_yaml(minio.cluster_resources)  # type: ClusterResources
-
-    logger.info("Loading resources...")
-    service_accounts, buckets, bucket_policies, iam_policies, iam_policy_attachments = parse_resources(cluster_config)
+    service_accounts, buckets, bucket_policies, iam_policies, iam_policy_attachments = resources
 
     logger.info("Handling service accounts...")
     for service_account in service_accounts:
