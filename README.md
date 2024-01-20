@@ -90,7 +90,11 @@ An admin user should be used for these steps.
    - `MINIO_MANAGER_SECRET_BACKEND_S3_SECRET_KEY`
 1. Configure the other variables in the `.env` file. Descriptions of each variable can be found in the
    [Environment variables](#environment-variables) section
-1.
+1. Each "bucket group" manager user must get its own policy.
+   1. You can find an example in `examples/bucket-group-user-policy.json`
+   1. `mc admin policy create $ALIAS infra-test-manager examples/bucket-group-user-policy.json`
+   1. `mc idp ldap policy attach $ALIAS infra-test-manager --user='uid=infra-test-manager,cn=users,dc=your,dc=domain'`
+1. You can then log in to the web console with this user to create an access key exactly like how we did it previously
 
 ### MinIO
 
