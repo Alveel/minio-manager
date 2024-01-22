@@ -108,7 +108,7 @@ class SecretManager:
         try:
             response = self._backend_s3.get_object(self.backend_bucket, self._backend_filename)
             with tmp_file as f:
-                self._logger.debug("Writing kdbx file to temp file")
+                self._logger.debug(f"Writing kdbx file to temp file {tmp_file.name}")
                 f.write(response.data)
                 self._keepass_temp_file_name = tmp_file.name
         except S3Error as s3e:

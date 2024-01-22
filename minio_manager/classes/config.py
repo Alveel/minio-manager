@@ -6,7 +6,7 @@ from .minio_resources import Bucket, BucketPolicy, IamPolicy, IamPolicyAttachmen
 class ClusterResources(yaml.YAMLObject):
     """MinIO Cluster configuration object, aka the cluster contents: buckets, policies, etc."""
 
-    yaml_tag = "!ClusterConfig"
+    yaml_tag = "!ClusterResources"
     yaml_loader = yaml.SafeLoader
 
     def __init__(
@@ -28,7 +28,8 @@ def parse_resources(resources: ClusterResources) -> tuple:
     service_accounts, buckets, bucket_policies, iam_policies, iam_policy_attachments = [], [], [], [], []
 
     for service_account in resources.service_accounts:
-        service_accounts.append(ServiceAccount(service_account["name"]))
+        bucket = service_account.get("for_bucket", None)
+        service_accounts.append(ServiceAccount(service_account["name"], bucket))
 
     for bucket in resources.buckets:
         buckets.append(Bucket(bucket["name"], bucket["versioning"]))

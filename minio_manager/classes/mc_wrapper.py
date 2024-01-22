@@ -7,19 +7,20 @@ from pathlib import Path
 from types import SimpleNamespace
 
 from .errors import MinioManagerBaseError, raise_specific_error
+from .minio_resources import MinioConfig
 from .secrets import MinioCredentials
 
 
 class McWrapper:
-    def __init__(self, cluster_name, endpoint, access_key, secret_key, secure=True, timeout=60):
+    def __init__(self, config: MinioConfig, timeout=60):
         self._logger = logging.getLogger("root")
         self._logger.info("Initialising McWrapper")
-        self.cluster_name = cluster_name
-        self.cluster_access_key = access_key
+        self.cluster_name = config.name
+        self.cluster_controller_user = config.controller_user
         self._timeout = timeout
         self.mc_config_path = self.set_config_path()
         self.mc = self.find_mc_command()
-        self.configure(endpoint, access_key, secret_key, secure)
+        self.configure(config.endpoint, config.access_key, config.secret_key, config.secure)
 
     def _run(self, args, multiline=False):
         """Execute mc command and return JSON output."""
@@ -109,28 +110,21 @@ class McWrapper:
         Returns: str, the access key
         """
         # Create the service account in MinIO
-        resp = self._service_account_run("add", [self.cluster_access_key, "--access-key", access_key])
+        resp = self._service_account_run("add", [self.cluster_controller_user, "--access-key", access_key])
         return MinioCredentials(resp.accessKey, resp.secretKey)
 
-    def service_account_list(self, username):
-        """
-        mc admin user svcacct ls alias-name 'username'
-        Returns:
-
-        """
-        return self._service_account_run("ls", [username])
+    def service_account_list(self, access_key):
+        """mc admin user svcacct ls alias-name 'access_key'"""
+        return self._service_account_run("ls", [access_key])
 
     def service_account_info(self, access_key):
-        """
-        mc admin user svcacct info alias-name service-account-name
-        Returns:
-        """
+        """mc admin user svcacct info alias-name service-account-access-key"""
         return self._service_account_run("info", [access_key])
 
     def service_account_delete(self):
-        """
-        mc admin user svcacct rm alias-name service-account-name
-        Returns:
-
-        """
+        """mc admin user svcacct rm alias-name service-account-access-key"""
         raise NotImplementedError
+
+    def service_account_set_policy(self, access_key, policy_file):
+        """mc admin user svcacct edit alias-name service-account-access-key --policy policy-file"""
+        return self._service_account_run("edit", [access_key, "--policy", policy_file])

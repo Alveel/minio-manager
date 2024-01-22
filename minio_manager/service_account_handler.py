@@ -1,4 +1,6 @@
 import logging
+from pathlib import Path
+from tempfile import NamedTemporaryFile
 
 from .classes.errors import MinioInvalidIamCredentialsError
 from .classes.mc_wrapper import McWrapper
@@ -17,6 +19,18 @@ def service_account_exists(client: McWrapper, access_key):
     except MinioInvalidIamCredentialsError as e:
         logger.warning(e)
         return False
+
+
+def generate_service_account_policy(account: ServiceAccount) -> Path:
+    with Path("examples/service-account-policy-base.json").open() as base:
+        base_policy = base.read()
+
+    temp_file = NamedTemporaryFile(prefix=account.bucket, suffix=".json", delete=False)
+    with temp_file as out:
+        new_content = base_policy.replace("BUCKET_NAME_REPLACE_ME", account.bucket)
+        out.write(new_content)
+
+    return Path(temp_file.name)
 
 
 def handle_service_account(client: McWrapper, secrets: SecretManager, account: ServiceAccount):
@@ -62,10 +76,14 @@ def handle_service_account(client: McWrapper, secrets: SecretManager, account: S
     secrets.set_password(credentials)
     secrets.backend_dirty = True
 
-    access_key = account.name
     if user:
         logger.debug(user)
         # TODO: check if user is correct.
         return
 
-    logger.info(f"Created service account '{account.name}', access key: {access_key}")
+    logger.info(f"Created service account '{account.name}', access key: {account.name}")
+
+    if account.bucket:
+        policy_file = generate_service_account_policy(account)
+        client.service_account_set_policy(account.name, str(policy_file))
+        policy_file.unlink()
