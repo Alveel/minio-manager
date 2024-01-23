@@ -39,11 +39,12 @@ class SecretManager:
         if self.backend_type == "keepass":
             # The PyKeePass save() function can take some time. So we want to run it once when the application is
             # exiting, not every time after creating or updating an entry.
-            self._logger.info(f"Saving {self._keepass_temp_file_name}")
-            self._backend.save()
             # After saving, upload the updated file to the S3 bucket and clean up the temp file.
+            self._logger.info(f"Saving {self._keepass_temp_file_name}")
             tmp_file = Path(self._keepass_temp_file_name)
-            self._backend_s3.fput_object(self.backend_bucket, self._backend_filename, tmp_file)
+            if isinstance(self._backend, PyKeePass):
+                self._backend.save()
+                self._backend_s3.fput_object(self.backend_bucket, self._backend_filename, tmp_file)
             tmp_file.unlink()
 
     def setup_backend_s3(self):
@@ -105,12 +106,12 @@ class SecretManager:
         """
         self._backend_filename = retrieve_environment_variable("MINIO_MANAGER_KEEPASS_FILE", "secrets.kdbx")
         tmp_file = NamedTemporaryFile(suffix=self._backend_filename, delete=False)
+        self._keepass_temp_file_name = tmp_file.name
         try:
             response = self._backend_s3.get_object(self.backend_bucket, self._backend_filename)
             with tmp_file as f:
                 self._logger.debug(f"Writing kdbx file to temp file {tmp_file.name}")
                 f.write(response.data)
-                self._keepass_temp_file_name = tmp_file.name
         except S3Error as s3e:
             self._logger.debug(s3e)
             self._logger.critical(

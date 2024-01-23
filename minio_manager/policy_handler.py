@@ -33,16 +33,22 @@ def handle_bucket_policy(client: Minio, bucket_policy: BucketPolicy):
     except S3Error as s3e:
         if s3e.code == "NoSuchBucketPolicy":
             logger.info(f"Creating bucket policy for {bucket_policy.bucket}")
-            client.set_bucket_policy(bucket_policy.bucket, desired_policy_json)
-            current_policy = client.get_bucket_policy(bucket_policy.bucket)
-    except Exception:
-        raise
+            try:
+                client.set_bucket_policy(bucket_policy.bucket, desired_policy_json)
+                current_policy = client.get_bucket_policy(bucket_policy.bucket)
+            except S3Error as sbe:
+                if sbe.code == "MalformedPolicy":
+                    logger.exception("Do the resources in the policy file match the bucket name? Is it valid JSON?")
+                    return
 
     if current_policy == desired_policy:
         return
 
     logger.info(f"Desired bucket policy for '{bucket_policy.bucket}' does not match current policy. Updating.")
-    client.set_bucket_policy(bucket_policy.bucket, desired_policy_json)
+    try:
+        client.set_bucket_policy(bucket_policy.bucket, desired_policy_json)
+    except S3Error:
+        logger.exception("Failed to update bucket policy")
 
 
 def handle_iam_policy(client: MinioAdmin, iam_policy: IamPolicy):

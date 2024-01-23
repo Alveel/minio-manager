@@ -63,7 +63,7 @@ class McWrapper:
         """Ensure the proper alias is configured for the cluster."""
         self._logger.debug(f"Validating config for cluster {self.cluster_name}")
         cluster_ready = self._run(["ready", self.cluster_name])
-        self._logger.debug(cluster_ready)
+        self._logger.debug(f"Cluster status: {cluster_ready}")
         if not cluster_ready.error:
             # Cluster is configured & available
             return
@@ -76,6 +76,7 @@ class McWrapper:
             try:
                 raise_specific_error(error_details.Code, error_details.Message)
             except AttributeError as ae:
+                self._logger.exception("Unknown error!")
                 raise MinioManagerBaseError(alias_set_resp.error.cause.message) from ae
 
         cluster_ready = self._run(["ready", self.cluster_name])

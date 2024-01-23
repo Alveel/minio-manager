@@ -29,7 +29,7 @@ def setup_logging():
         logging.basicConfig(format="[%(asctime)s [%(filename)s:%(lineno)d	- %(funcName)24s() ] %(message)s")
     else:
         logger.setLevel(logging.INFO)
-        logging.basicConfig(format="%(message)s")
+        logging.basicConfig(format="%(asctime)s	%(message)s")
 
     logger.debug("Initialising")
 

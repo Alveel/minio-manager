@@ -28,11 +28,12 @@ def parse_resources(resources: ClusterResources) -> tuple:
     service_accounts, buckets, bucket_policies, iam_policies, iam_policy_attachments = [], [], [], [], []
 
     for service_account in resources.service_accounts:
-        bucket = service_account.get("for_bucket", None)
+        bucket = service_account.get("bucket", None)
         service_accounts.append(ServiceAccount(service_account["name"], bucket))
 
     for bucket in resources.buckets:
-        buckets.append(Bucket(bucket["name"], bucket["versioning"]))
+        versioning = bucket.get("versioning", True)
+        buckets.append(Bucket(bucket["name"], versioning))
 
     for bucket_policy in resources.bucket_policies:
         bucket_policies.append(BucketPolicy(bucket_policy["bucket"], bucket_policy["policy_file"]))

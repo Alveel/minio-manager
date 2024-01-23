@@ -24,3 +24,4 @@ def main():
     config.secret_key = run_user_credentials.secret_key
     logger.info("Handling cluster resources...")
     handle_resources(config, secrets, resources)
+    secrets.__del__()

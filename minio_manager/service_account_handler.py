@@ -28,7 +28,7 @@ def generate_service_account_policy(account: ServiceAccount) -> Path:
     temp_file = NamedTemporaryFile(prefix=account.bucket, suffix=".json", delete=False)
     with temp_file as out:
         new_content = base_policy.replace("BUCKET_NAME_REPLACE_ME", account.bucket)
-        out.write(new_content)
+        out.write(new_content.encode("utf-8"))
 
     return Path(temp_file.name)
 
@@ -76,14 +76,14 @@ def handle_service_account(client: McWrapper, secrets: SecretManager, account: S
     secrets.set_password(credentials)
     secrets.backend_dirty = True
 
-    if user:
-        logger.debug(user)
-        # TODO: check if user is correct.
-        return
-
     logger.info(f"Created service account '{account.name}', access key: {account.name}")
 
     if account.bucket:
         policy_file = generate_service_account_policy(account)
         client.service_account_set_policy(account.name, str(policy_file))
         policy_file.unlink()
+
+    if user:
+        logger.debug(user)
+        # TODO: check if user is correct.
+        return
