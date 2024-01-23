@@ -1,6 +1,10 @@
+import logging
+
 import yaml
 
 from .minio_resources import Bucket, BucketPolicy, IamPolicy, IamPolicyAttachment, ServiceAccount
+
+logger = logging.getLogger("root")
 
 
 class ClusterResources(yaml.YAMLObject):
@@ -24,24 +28,39 @@ class ClusterResources(yaml.YAMLObject):
         self.iam_policy_attachments = iam_policy_attachments
 
 
-def parse_resources(resources: ClusterResources) -> tuple:
+def parse_resources(resources: ClusterResources) -> tuple:  # noqa: C901
     service_accounts, buckets, bucket_policies, iam_policies, iam_policy_attachments = [], [], [], [], []
 
-    for service_account in resources.service_accounts:
-        bucket = service_account.get("bucket", None)
-        service_accounts.append(ServiceAccount(service_account["name"], bucket))
+    try:
+        for service_account in resources.service_accounts:
+            bucket = service_account.get("bucket", None)
+            service_accounts.append(ServiceAccount(service_account["name"], bucket))
+    except AttributeError:
+        logger.info("No service accounts configured, skipping.")
 
-    for bucket in resources.buckets:
-        versioning = bucket.get("versioning", True)
-        buckets.append(Bucket(bucket["name"], versioning))
+    try:
+        for bucket in resources.buckets:
+            versioning = bucket.get("versioning", True)
+            buckets.append(Bucket(bucket["name"], versioning))
+    except AttributeError:
+        logger.info("No buckets configured, skipping.")
 
-    for bucket_policy in resources.bucket_policies:
-        bucket_policies.append(BucketPolicy(bucket_policy["bucket"], bucket_policy["policy_file"]))
+    try:
+        for bucket_policy in resources.bucket_policies:
+            bucket_policies.append(BucketPolicy(bucket_policy["bucket"], bucket_policy["policy_file"]))
+    except AttributeError:
+        logger.info("No bucket policies configured, skipping.")
 
-    for iam_policy in resources.iam_policies:
-        iam_policies.append(IamPolicy(iam_policy["name"], iam_policy["policy_file"]))
+    try:
+        for iam_policy in resources.iam_policies:
+            iam_policies.append(IamPolicy(iam_policy["name"], iam_policy["policy_file"]))
+    except AttributeError:
+        logger.info("No IAM policies configured, skipping.")
 
-    for user in resources.iam_policy_attachments:
-        iam_policy_attachments.append(IamPolicyAttachment(user["username"], user["policies"]))
+    try:
+        for user in resources.iam_policy_attachments:
+            iam_policy_attachments.append(IamPolicyAttachment(user["username"], user["policies"]))
+    except AttributeError:
+        logger.info("No IAM policy attachments configured, skipping.")
 
     return service_accounts, buckets, bucket_policies, iam_policies, iam_policy_attachments

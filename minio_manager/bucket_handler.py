@@ -8,13 +8,14 @@ from .classes.minio_resources import Bucket
 logger = logging.getLogger("root")
 
 
-def handle_bucket(client: Minio, bucket: Bucket):
+def handle_bucket(client: Minio, bucket: Bucket, create_service_account: bool = False):
     if not client.bucket_exists(bucket.name):
         logger.info("Creating bucket %s" % bucket.name)
         client.make_bucket(bucket.name)
     else:
         logger.info(f"Bucket {bucket.name} already exists")
 
+    # TODO: disable versioning if explicitly disabled
     if not bucket.versioning:
         return
 

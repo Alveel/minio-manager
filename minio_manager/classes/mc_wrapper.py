@@ -111,8 +111,8 @@ class McWrapper:
         Returns: str, the access key
         """
         # Create the service account in MinIO
-        resp = self._service_account_run("add", [self.cluster_controller_user, "--access-key", access_key])
-        return MinioCredentials(resp.accessKey, resp.secretKey)
+        resp = self._service_account_run("add", [self.cluster_controller_user, "--name", access_key])
+        return MinioCredentials(resp.accessKey, resp.secretKey, access_key)
 
     def service_account_list(self, access_key):
         """mc admin user svcacct ls alias-name 'access_key'"""

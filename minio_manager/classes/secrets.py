@@ -13,7 +13,8 @@ from .minio_resources import MinioConfig
 
 
 class MinioCredentials:
-    def __init__(self, access_key: str, secret_key: str):
+    def __init__(self, access_key: str, secret_key: str, username=None):
+        self.username = username
         self.access_key = access_key
         self.secret_key = secret_key
 
@@ -148,7 +149,7 @@ class SecretManager:
         entry = self._backend.find_entries(title=name, group=self._keepass_group, first=True)
 
         try:
-            credentials = MinioCredentials(entry.username, entry.password)
+            credentials = MinioCredentials(entry.username, entry.password, name)
             self._logger.debug(f"Found access key {credentials.access_key}")
         except AttributeError as ae:
             if not ae.obj:
@@ -168,7 +169,7 @@ class SecretManager:
         self._logger.info(f"Creating Keepass entry for {credentials.access_key}")
         self._backend.add_entry(
             destination_group=self._keepass_group,
-            title=credentials.access_key,
+            title=credentials.username,
             username=credentials.access_key,
             password=credentials.secret_key,
         )
