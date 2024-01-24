@@ -50,7 +50,7 @@ class SecretManager:
 
     def setup_backend_s3(self):
         endpoint = retrieve_environment_variable("MINIO_MANAGER_S3_ENDPOINT")
-        endpoint_secure_str = retrieve_environment_variable("MINIO_MANAGER_S3_ENDPOINT_SECURE", True)
+        endpoint_secure_str = retrieve_environment_variable("MINIO_MANAGER_S3_ENDPOINT_SECURE", "true")
         endpoint_secure = endpoint_secure_str.lower() != "false"
         access_key = retrieve_environment_variable("MINIO_MANAGER_SECRET_BACKEND_S3_ACCESS_KEY")
         secret_key = retrieve_environment_variable("MINIO_MANAGER_SECRET_BACKEND_S3_SECRET_KEY")
