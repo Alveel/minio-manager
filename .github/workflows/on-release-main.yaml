@@ -8,26 +8,18 @@ on:
 jobs:
 
   publish:
+    name: upload release to PyPI
     runs-on: ubuntu-latest
+    permissions:
+      # IMPORTANT: this permission is mandatory for trusted publishing
+      id-token: write
     steps:
-      - name: Check out
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-      - name: Set up the environment
-        uses: ./.github/actions/setup-pdm-env
+      - uses: pdm-project/setup-pdm@v3
 
-      - name: Export tag
-        id: vars
-        run: echo tag=${GITHUB_REF#refs/*/} >> $GITHUB_OUTPUT
-
-      - name: Build and publish
-        run: |
-          source .venv/bin/activate
-          export PDM_BUILD_SCM_VERSION=$RELEASE_VERSION
-          make build-and-publish
-        env:
-          PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
-          RELEASE_VERSION: ${{ steps.vars.outputs.tag }}
+      - name: Publish package distributions to PyPI
+        run: pdm publish
 
   deploy-docs:
     needs: publish
