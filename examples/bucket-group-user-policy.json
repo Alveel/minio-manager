@@ -10,6 +10,12 @@
                 "arn:aws:s3:::infra-test-*",
                 "arn:aws:s3:::infra-test-*/*"
             ]
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "admin:ListServiceAccounts"
+            ]
         }
     ]
 }
