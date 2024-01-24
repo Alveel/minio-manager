@@ -69,7 +69,7 @@ class McWrapper:
 
         logger.info("Endpoint is not configured or erroneous, configuring...")
         url = f"https://{endpoint}" if secure else f"http://{endpoint}"
-        alias_set_resp = self._run(["alias", "set", self.cluster_name, url, f"'{access_key}'", f"'{secret_key}'"])
+        alias_set_resp = self._run(["alias", "set", self.cluster_name, url, access_key, secret_key])
         if hasattr(alias_set_resp, "error"):
             error_details = alias_set_resp.error.cause.error
             try:
