@@ -2,7 +2,6 @@
 
 [![Release](https://img.shields.io/github/v/release/alveel/minio-manager)](https://img.shields.io/github/v/release/alveel/minio-manager)
 [![Build status](https://img.shields.io/github/actions/workflow/status/alveel/minio-manager/main.yml?branch=main)](https://github.com/alveel/minio-manager/actions/workflows/main.yml?query=branch%3Amain)
-[![codecov](https://codecov.io/gh/alveel/minio-manager/branch/main/graph/badge.svg)](https://codecov.io/gh/alveel/minio-manager)
 [![Commit activity](https://img.shields.io/github/commit-activity/m/alveel/minio-manager)](https://img.shields.io/github/commit-activity/m/alveel/minio-manager)
 [![License](https://img.shields.io/github/license/alveel/minio-manager)](https://img.shields.io/github/license/alveel/minio-manager)
 
@@ -16,25 +15,6 @@ Declare what MinIO buckets, IAM policies, ILM policies you want, and let MinIO M
 The concept for management is to have so-called "bucket groups".
 
 Each bucket group is managed by an account that only has access to buckets in that group.
-
-TODO: update illustration.
-
-For illustration:
-
-```
-├── user1
-│  └─ sa-user1-bucketgroup
-│    ├─── sa-user1-bucketABC
-│    │   └── bucketABC
-│    └─── sa-user1-bucketXYZ
-│        └── bucketXYZ
-└── user2
-   └─ sa-user2-bucketgroup
-     ├── sa-user2-bucketDEF
-     │  └── bucketDEF
-     └── sa-user2-bucketUWV
-        └── bucketUWV
-```
 
 It should be noted that this is explicitly intended for the _creation and updating of resources in MinIO_. It does _not_
 delete any resources anywhere.
@@ -147,7 +127,7 @@ Entries are found by way of the title of the entry, the username is not consider
 - Also sort policy Principals to prevent unnecessary policy updates.
 - Re-use ServiceAccount object instead of MinioCredentials object which is effectively the same.
 - Allow cleaning up of removed resources, e.g. service account that doesn't have a related bucket.
-- Improve logging not to show strack trace when log level is not DEBUG.
+- Improve logging not to show stack trace when log level is not DEBUG.
 - Create container image of project
 - Add colours to different log levels.
 
