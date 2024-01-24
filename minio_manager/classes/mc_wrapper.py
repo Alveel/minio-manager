@@ -104,14 +104,25 @@ class McWrapper:
             raise_specific_error(error_details.Code, error_details.Message)
         return resp
 
-    def service_account_add(self, access_key) -> MinioCredentials:
+    def service_account_add(self, credentials: MinioCredentials) -> MinioCredentials:
         """
         mc admin user svcacct add alias-name 'username' --name "sa-test-key"
-        Returns: str, the access key
+
+        Args:
+            credentials (MinioCredentials): object containing at least the user-friendly name of the service account
+
+        Returns: MinioCredentials with the access and secret keys added to it
         """
         # Create the service account in MinIO
-        resp = self._service_account_run("add", [self.cluster_controller_user, "--name", access_key])
-        return MinioCredentials(resp.accessKey, resp.secretKey, access_key)
+        args = [self.cluster_controller_user, "--name", credentials.name]
+        if credentials.secret_key:
+            args.extend(["--secret-key", credentials.secret_key])
+        if credentials.access_key:
+            args.extend(["--access-key", credentials.access_key])
+        resp = self._service_account_run("add", args)
+        credentials.access_key = resp.accessKey
+        credentials.secret_key = resp.secretKey
+        return credentials
 
     def service_account_list(self, access_key):
         """mc admin user svcacct ls alias-name 'access_key'"""

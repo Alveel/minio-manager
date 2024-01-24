@@ -12,7 +12,7 @@ from .minio_resources import MinioConfig
 
 
 class MinioCredentials:
-    def __init__(self, access_key: str, secret_key: str, name=None):
+    def __init__(self, name: str, access_key: str | None = None, secret_key: str | None = None):
         self.name = name
         self.access_key = access_key
         self.secret_key = secret_key
@@ -39,11 +39,13 @@ class SecretManager:
             # The PyKeePass save() function can take some time. So we want to run it once when the application is
             # exiting, not every time after creating or updating an entry.
             # After saving, upload the updated file to the S3 bucket and clean up the temp file.
-            logger.info(f"Saving {self._keepass_temp_file_name}")
             tmp_file = Path(self._keepass_temp_file_name)
             if isinstance(self._backend, PyKeePass):
+                logger.info(f"Saving {self._keepass_temp_file_name}")
                 self._backend.save()
+                logger.info(f"Uploading modified {self._keepass_temp_file_name} to bucket {self.backend_bucket}")
                 self._backend_s3.fput_object(self.backend_bucket, self._backend_filename, tmp_file)
+            logger.debug(f"Cleaning up {tmp_file}")
             tmp_file.unlink()
 
     def setup_backend_s3(self):
@@ -83,6 +85,7 @@ class SecretManager:
     def set_password(self, credentials: MinioCredentials):
         method_name = f"{self.backend_type}_set_password"
         method = getattr(self, method_name)
+        self.backend_dirty = True
         return method(credentials)
 
     def retrieve_dummy_backend(self, config):
@@ -147,12 +150,12 @@ class SecretManager:
         entry = self._backend.find_entries(title=name, group=self._keepass_group, first=True)
 
         try:
-            credentials = MinioCredentials(entry.username, entry.password, name)
+            credentials = MinioCredentials(name, entry.username, entry.password)
             logger.debug(f"Found access key {credentials.access_key}")
         except AttributeError as ae:
             if not ae.obj:
                 logger.warning(f"Entry for {name} not found!")
-                return False
+                return MinioCredentials(name=name)
             logger.critical(f"Unhandled exception: {ae}")
             sys.exit(13)
         else:
