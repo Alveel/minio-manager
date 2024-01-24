@@ -25,42 +25,42 @@ jobs:
       - name: Run checks
         run: make check
 
-  tox:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ['3.9', '3.10', '3.11']
-      fail-fast: false
-    steps:
-      - name: Check out
-        uses: actions/checkout@v3
-
-      - name: Set up python
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: Install PDM
-        uses: pdm-project/setup-pdm@v3
-        with:
-          python-version: 3.9
-          cache: true
-
-      - name: Install dependencies
-        run: pdm install
-        shell: bash
-
-#      - name: Install tox
-#        run: |
-#          python -m pip install --upgrade pip
-#          python -m pip install tox tox-gh-actions
+#  tox:
+#    runs-on: ubuntu-latest
+#    strategy:
+#      matrix:
+#        python-version: ['3.9', '3.10', '3.11']
+#      fail-fast: false
+#    steps:
+#      - name: Check out
+#        uses: actions/checkout@v3
 #
-#      - name: Test with tox
-#        run: tox
+#      - name: Set up python
+#        uses: actions/setup-python@v4
+#        with:
+#          python-version: ${{ matrix.python-version }}
 #
-#      - name: Upload coverage reports to Codecov with GitHub Action on Python 3.11
-#        uses: codecov/codecov-action@v3
-#        if: ${{ matrix.python-version == '3.11' }}
+#      - name: Install PDM
+#        uses: pdm-project/setup-pdm@v3
+#        with:
+#          python-version: 3.9
+#          cache: true
+#
+#      - name: Install dependencies
+#        run: pdm install
+#        shell: bash
+#
+##      - name: Install tox
+##        run: |
+##          python -m pip install --upgrade pip
+##          python -m pip install tox tox-gh-actions
+##
+##      - name: Test with tox
+##        run: tox
+##
+##      - name: Upload coverage reports to Codecov with GitHub Action on Python 3.11
+##        uses: codecov/codecov-action@v3
+##        if: ${{ matrix.python-version == '3.11' }}
 
   check-docs:
     runs-on: ubuntu-latest
