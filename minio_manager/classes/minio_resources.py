@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from ..utilities import retrieve_environment_variable
 
 
@@ -29,7 +31,7 @@ class BucketPolicy:
 
 
 class ServiceAccount:
-    def __init__(self, name: str, bucket: str):
+    def __init__(self, name: str, bucket: str | None = None):
         self.name = name
         self.bucket = bucket
 
