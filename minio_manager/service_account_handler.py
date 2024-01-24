@@ -80,7 +80,7 @@ def handle_service_account(client: McWrapper, secrets: SecretManager, account: S
         logger.info(f"Created service account '{credentials.name}', access key: {credentials.access_key}")
     else:
         # Create the service account in MinIO
-        credentials = client.service_account_add(account.name)
+        credentials = client.service_account_add(credentials)
         # Create credentials in the secret backend
         secrets.set_password(credentials)
         logger.info(f"Created service account '{credentials.name}' with access key '{credentials.access_key}'")
