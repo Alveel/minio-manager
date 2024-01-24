@@ -148,6 +148,8 @@ Entries are found by way of the title of the entry, the username is not consider
 - Re-use ServiceAccount object instead of MinioCredentials object which is effectively the same.
 - Allow cleaning up of removed resources, e.g. service account that doesn't have a related bucket.
 - Improve logging not to show strack trace when log level is not DEBUG.
+- Create container image of project
+- Add colours to different log levels.
 
 ---
 
