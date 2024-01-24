@@ -1,5 +1,3 @@
-import logging
-
 from .bucket_handler import handle_bucket
 from .classes.config import ClusterResources, parse_resources  # noqa: F401
 from .classes.mc_wrapper import McWrapper
@@ -7,9 +5,7 @@ from .classes.minio_resources import MinioConfig
 from .classes.secrets import SecretManager
 from .policy_handler import handle_bucket_policy, handle_iam_policy, handle_iam_policy_attachments
 from .service_account_handler import handle_service_account
-from .utilities import setup_minio_admin_client, setup_s3_client
-
-logger = logging.getLogger("root")
+from .utilities import logger, setup_minio_admin_client, setup_s3_client
 
 
 def initialise_clients(config: MinioConfig):

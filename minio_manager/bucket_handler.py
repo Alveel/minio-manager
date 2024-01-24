@@ -1,11 +1,8 @@
-import logging
-
 from minio import Minio
 from minio.versioningconfig import ENABLED, VersioningConfig
 
 from .classes.minio_resources import Bucket
-
-logger = logging.getLogger("root")
+from .utilities import logger
 
 
 def handle_bucket(client: Minio, bucket: Bucket, create_service_account: bool = False):

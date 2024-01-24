@@ -36,6 +36,9 @@ For illustration:
         └── bucketUWV
 ```
 
+It should be noted that this is explicitly intended for the _creation and updating of resources in MinIO_. It does _not_
+delete any resources anywhere.
+
 ## Requirements
 
 - [Python](https://www.python.org/) (3.9 or newer)
@@ -75,7 +78,7 @@ An admin user should be used for these steps.
 
     You can use the example provided in the `examples` directory:
 
-    `mc admin policy create $ALIAS minio-manager examples/minio-manager-policy.json`
+    `mc admin policy create $ALIAS minio-manager examples/minio-manager-secrets-policy.json`
 1. Attach the policy to the user:
 
    - For MinIO: `mc admin policy attach $ALIAS minio-manager --user=minio-manager`
@@ -137,7 +140,14 @@ Entries are found by way of the title of the entry, the username is not consider
 
 ## To do features
 
-- Automatically generate the policy for each service account limiting access to a single bucket.
+- Disable bucket versioning if explicitly disabled. Currently, you can only enable it.
+- Check if policies are already attached to a user before running the "attach" command.
+- Automatically configure a service account with each bucket instead of separately specifying the bucket and service account.
+- Automatically generate keepass database when it is configured as the secret backend while not present in the bucket.
+- Also sort policy Principals to prevent unnecessary policy updates.
+- Re-use ServiceAccount object instead of MinioCredentials object which is effectively the same.
+- Allow cleaning up of removed resources, e.g. service account that doesn't have a related bucket.
+- Improve logging not to show strack trace when log level is not DEBUG.
 
 ---
 

@@ -1,11 +1,11 @@
 import json
-import logging
 import os
 import shutil
 import subprocess
 from pathlib import Path
 from types import SimpleNamespace
 
+from ..utilities import logger
 from .errors import MinioManagerBaseError, raise_specific_error
 from .minio_resources import MinioConfig
 from .secrets import MinioCredentials
@@ -13,22 +13,21 @@ from .secrets import MinioCredentials
 
 class McWrapper:
     def __init__(self, config: MinioConfig, timeout=60):
-        self._logger = logging.getLogger("root")
-        self._logger.info("Initialising McWrapper")
+        logger.info("Initialising McWrapper")
         self.cluster_name = config.name
         self.cluster_controller_user = config.controller_user
-        self._timeout = timeout
+        self.timeout = timeout
         self.mc_config_path = self.set_config_path()
         self.mc = self.find_mc_command()
         self.configure(config.endpoint, config.access_key, config.secret_key, config.secure)
 
     def _run(self, args, multiline=False):
         """Execute mc command and return JSON output."""
-        self._logger.debug(f"Running: {self.mc} --json {' '.join(args)}")
+        logger.debug(f"Running: {self.mc} --json {' '.join(args)}")
         proc = subprocess.run(
             [self.mc, "--json", *args],  # noqa: S603
             capture_output=True,
-            timeout=self._timeout,
+            timeout=self.timeout,
             text=True,
         )
         if not proc.stdout:
@@ -61,14 +60,14 @@ class McWrapper:
 
     def configure(self, endpoint, access_key, secret_key, secure: bool):
         """Ensure the proper alias is configured for the cluster."""
-        self._logger.debug(f"Validating config for cluster {self.cluster_name}")
+        logger.debug(f"Validating config for cluster {self.cluster_name}")
         cluster_ready = self._run(["ready", self.cluster_name])
-        self._logger.debug(f"Cluster status: {cluster_ready}")
+        logger.debug(f"Cluster status: {cluster_ready}")
         if not cluster_ready.error:
             # Cluster is configured & available
             return
 
-        self._logger.info("Endpoint is not configured or erroneous, configuring...")
+        logger.info("Endpoint is not configured or erroneous, configuring...")
         url = f"https://{endpoint}" if secure else f"http://{endpoint}"
         alias_set_resp = self._run(["alias", "set", self.cluster_name, url, f"'{access_key}'", f"'{secret_key}'"])
         if hasattr(alias_set_resp, "error"):
@@ -76,7 +75,7 @@ class McWrapper:
             try:
                 raise_specific_error(error_details.Code, error_details.Message)
             except AttributeError as ae:
-                self._logger.exception("Unknown error!")
+                logger.exception("Unknown error!")
                 raise MinioManagerBaseError(alias_set_resp.error.cause.message) from ae
 
         cluster_ready = self._run(["ready", self.cluster_name])

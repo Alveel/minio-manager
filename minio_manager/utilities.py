@@ -1,15 +1,11 @@
 import json
 import logging
 import os
-from typing import Union
 
 import yaml
-from dotenv import load_dotenv
 from minio import Minio, MinioAdmin, credentials
 
-logger = logging.getLogger("root")
-
-load_dotenv()
+global logger
 
 
 def read_yaml(file):
@@ -23,13 +19,12 @@ def read_json(file) -> dict:
 
 
 def setup_logging():
-    log_level = retrieve_environment_variable("MINIO_MANAGER_LOG_LEVEL", "INFO")
     if log_level == "DEBUG":
         logger.setLevel(logging.DEBUG)
-        logging.basicConfig(format="[%(asctime)s [%(filename)s:%(lineno)d	- %(funcName)24s() ] %(message)s")
+        logging.basicConfig(format="[%(asctime)s [%(filename)-26s:%(lineno)-4d - %(funcName)-24s ] %(message)s")
     else:
         logger.setLevel(logging.INFO)
-        logging.basicConfig(format="%(asctime)s	%(message)s")
+        logging.basicConfig(format="[%(asctime)s] %(message)s")
 
     logger.debug(f"Initialising with log level: {log_level}")
 
@@ -53,7 +48,7 @@ def sort_policy(policy: dict):
     return policy
 
 
-def retrieve_environment_variable(name: str, default=None) -> Union[str, bool]:
+def retrieve_environment_variable(name: str, default=None) -> str:
     """
     Get an environment variable and strip any leading and trailing single and double quotes.
     This is because Python apparently literally loads them.
@@ -94,3 +89,7 @@ def setup_s3_client(endpoint, access_key, secret_key, secure=True) -> Minio:
 def setup_minio_admin_client(endpoint, access_key, secret_key, secure=True) -> MinioAdmin:
     provider = credentials.StaticProvider(access_key, secret_key)
     return MinioAdmin(endpoint, provider, secure=secure)
+
+
+log_level = retrieve_environment_variable("MINIO_MANAGER_LOG_LEVEL", "INFO")
+logger = logging.getLogger("minio-manager") if log_level != "DEBUG" else logging.getLogger("root")

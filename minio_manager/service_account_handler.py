@@ -1,4 +1,3 @@
-import logging
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
@@ -6,8 +5,7 @@ from .classes.errors import MinioInvalidIamCredentialsError
 from .classes.mc_wrapper import McWrapper
 from .classes.minio_resources import ServiceAccount
 from .classes.secrets import SecretManager
-
-logger = logging.getLogger("root")
+from .utilities import logger
 
 
 def service_account_exists(client: McWrapper, access_key):

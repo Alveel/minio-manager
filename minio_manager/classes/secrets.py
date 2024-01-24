@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import logging
 import sys
 from pathlib import Path
 from tempfile import NamedTemporaryFile
@@ -8,21 +7,20 @@ from tempfile import NamedTemporaryFile
 from minio import S3Error
 from pykeepass import PyKeePass
 
-from ..utilities import retrieve_environment_variable, setup_s3_client
+from ..utilities import logger, retrieve_environment_variable, setup_s3_client
 from .minio_resources import MinioConfig
 
 
 class MinioCredentials:
-    def __init__(self, access_key: str, secret_key: str, username=None):
-        self.username = username
+    def __init__(self, access_key: str, secret_key: str, name=None):
+        self.name = name
         self.access_key = access_key
         self.secret_key = secret_key
 
 
 class SecretManager:
     def __init__(self, config: MinioConfig):
-        self._logger = logging.getLogger("root")
-        self._logger.debug("Initialising SecretManager")
+        logger.debug("Initialising SecretManager")
         self._cluster_name = config.name
         self.backend_dirty = False
         self.backend_type = config.secret_backend_type
@@ -41,7 +39,7 @@ class SecretManager:
             # The PyKeePass save() function can take some time. So we want to run it once when the application is
             # exiting, not every time after creating or updating an entry.
             # After saving, upload the updated file to the S3 bucket and clean up the temp file.
-            self._logger.info(f"Saving {self._keepass_temp_file_name}")
+            logger.info(f"Saving {self._keepass_temp_file_name}")
             tmp_file = Path(self._keepass_temp_file_name)
             if isinstance(self._backend, PyKeePass):
                 self._backend.save()
@@ -54,18 +52,18 @@ class SecretManager:
         endpoint_secure = endpoint_secure_str.lower() != "false"
         access_key = retrieve_environment_variable("MINIO_MANAGER_SECRET_BACKEND_S3_ACCESS_KEY")
         secret_key = retrieve_environment_variable("MINIO_MANAGER_SECRET_BACKEND_S3_SECRET_KEY")
-        self._logger.debug(f"Setting up secret bucket {self.backend_bucket}")
+        logger.debug(f"Setting up secret bucket {self.backend_bucket}")
         s3 = setup_s3_client(endpoint, access_key, secret_key, endpoint_secure)
         try:
             s3.bucket_exists(self.backend_bucket)
         except S3Error as s3e:
-            self._logger.critical(f"{s3e.code}: Does the bucket exist? Does the user have the correct permissions?")
+            logger.critical(f"{s3e.code}: Does the bucket exist? Does the user have the correct permissions?")
             sys.exit(10)
         return s3
 
     def setup_backend(self):
         """We dynamically configure the backend depending on the given backend type."""
-        self._logger.debug(f"Configuring SecretManager with backend {self.backend_type}")
+        logger.debug(f"Configuring SecretManager with backend {self.backend_type}")
         method_name = f"retrieve_{self.backend_type}_backend"
         method = getattr(self, method_name)
         return method()
@@ -111,11 +109,11 @@ class SecretManager:
         try:
             response = self._backend_s3.get_object(self.backend_bucket, self._backend_filename)
             with tmp_file as f:
-                self._logger.debug(f"Writing kdbx file to temp file {tmp_file.name}")
+                logger.debug(f"Writing kdbx file to temp file {tmp_file.name}")
                 f.write(response.data)
         except S3Error as s3e:
-            self._logger.debug(s3e)
-            self._logger.critical(
+            logger.debug(s3e)
+            logger.critical(
                 f"Unable to retrieve {self._backend_filename} from {self.backend_bucket}!\n"
                 "Do the required bucket and kdbx file exist, and does the user have the correct "
                 "policies assigned?"
@@ -126,14 +124,14 @@ class SecretManager:
             response.release_conn()
 
         kp_pass = retrieve_environment_variable("MINIO_MANAGER_KEEPASS_PASSWORD")
-        self._logger.debug("Opening keepass database")
+        logger.debug("Opening keepass database")
         kp = PyKeePass(self._keepass_temp_file_name, password=kp_pass)
         # noinspection PyTypeChecker
         self._keepass_group = kp.find_groups(path=["s3", self._cluster_name])
         if not self._keepass_group:
-            self._logger.critical("Required group not found in Keepass! See documentation for requirements.")
+            logger.critical("Required group not found in Keepass! See documentation for requirements.")
             sys.exit(12)
-        self._logger.debug("Keepass configured as secret backend")
+        logger.debug("Keepass configured as secret backend")
         return kp
 
     def keepass_get_credentials(self, name) -> MinioCredentials | bool:
@@ -145,17 +143,17 @@ class SecretManager:
         Returns:
             MinioCredentials if found, False if not found
         """
-        self._logger.debug(f"Finding Keepass entry for {name}")
+        logger.debug(f"Finding Keepass entry for {name}")
         entry = self._backend.find_entries(title=name, group=self._keepass_group, first=True)
 
         try:
             credentials = MinioCredentials(entry.username, entry.password, name)
-            self._logger.debug(f"Found access key {credentials.access_key}")
+            logger.debug(f"Found access key {credentials.access_key}")
         except AttributeError as ae:
             if not ae.obj:
-                self._logger.warning(f"Entry for {name} not found!")
+                logger.warning(f"Entry for {name} not found!")
                 return False
-            self._logger.critical(f"Unhandled exception: {ae}")
+            logger.critical(f"Unhandled exception: {ae}")
             sys.exit(13)
         else:
             return credentials
@@ -166,10 +164,10 @@ class SecretManager:
         Args:
             credentials: MinioCredentials
         """
-        self._logger.info(f"Creating Keepass entry for {credentials.access_key}")
+        logger.info(f"Creating Keepass entry for {credentials.access_key}")
         self._backend.add_entry(
             destination_group=self._keepass_group,
-            title=credentials.username,
+            title=credentials.name,
             username=credentials.access_key,
             password=credentials.secret_key,
         )

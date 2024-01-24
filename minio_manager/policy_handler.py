@@ -1,13 +1,10 @@
 import json
-import logging
 
 from minio import Minio, MinioAdmin, S3Error
 from minio.error import MinioAdminException
 
 from .classes.minio_resources import BucketPolicy, IamPolicy, IamPolicyAttachment
-from .utilities import read_json, sort_policy
-
-logger = logging.getLogger("root")
+from .utilities import logger, read_json, sort_policy
 
 
 def handle_bucket_policy(client: Minio, bucket_policy: BucketPolicy):

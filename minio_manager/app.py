@@ -1,16 +1,18 @@
-import logging
+import time
+
+from dotenv import load_dotenv
 
 from .classes.config import parse_resources
 from .classes.minio_resources import MinioConfig
 from .classes.secrets import SecretManager
 from .resource_handler import handle_resources
-from .utilities import read_yaml, setup_logging
-
-logger = logging.getLogger("root")
+from .utilities import logger, read_yaml, setup_logging
 
 
 def main():
+    load_dotenv()
     setup_logging()
+    start_time = time.time()
     config = MinioConfig()
     cluster_config = read_yaml(config.cluster_resources)  # type: ClusterResources
 
@@ -25,3 +27,5 @@ def main():
     logger.info("Handling cluster resources...")
     handle_resources(config, secrets, resources)
     secrets.__del__()
+    end_time = time.time()
+    logger.info(f"Execution took {end_time - start_time} seconds.")

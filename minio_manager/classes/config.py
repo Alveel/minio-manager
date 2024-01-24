@@ -1,10 +1,7 @@
-import logging
-
 import yaml
 
+from ..utilities import logger
 from .minio_resources import Bucket, BucketPolicy, IamPolicy, IamPolicyAttachment, ServiceAccount
-
-logger = logging.getLogger("root")
 
 
 class ClusterResources(yaml.YAMLObject):
