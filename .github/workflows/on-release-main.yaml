@@ -24,8 +24,12 @@ jobs:
         run: pdm publish
 
   deploy-docs:
+    name: deploy docs to gh-pages branch
     needs: pypi-publish
     runs-on: ubuntu-latest
+    environment: docs
+    permissions:
+      contents: write
     steps:
       - name: Check out
         uses: actions/checkout@v3
@@ -33,5 +37,10 @@ jobs:
       - name: Set up the environment
         uses: ./.github/actions/setup-pdm-env
 
+      - name: Build the documentation
+        run: pdm run mkdocs build
+
       - name: Deploy documentation
-        run: pdm run mkdocs gh-deploy --force
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: site
