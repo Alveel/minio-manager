@@ -1,0 +1,1 @@
+{"config":{"lang":["en"],"separator":"[\\s\\-]+","pipeline":["stopWordFilter"]},"docs":[{"location":"","title":"minio-manager","text":"<p>Declare what MinIO buckets, IAM policies, ILM policies you want, and let MinIO Manager do the work.</p>"},{"location":"modules/","title":"Modules","text":""}]}
