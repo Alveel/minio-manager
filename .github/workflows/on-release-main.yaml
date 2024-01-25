@@ -24,7 +24,7 @@ jobs:
         run: pdm publish
 
   deploy-docs:
-    needs: publish
+    needs: pypi-publish
     runs-on: ubuntu-latest
     steps:
       - name: Check out
