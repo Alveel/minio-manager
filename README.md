@@ -1,7 +1,7 @@
 # minio-manager
 
-[![Release](https://img.shields.io/github/v/release/alveel/minio-manager)](https://img.shields.io/github/v/release/alveel/minio-manager)
-[![Build status](https://img.shields.io/github/actions/workflow/status/alveel/minio-manager/main.yml?branch=main)](https://github.com/alveel/minio-manager/actions/workflows/main.yml?query=branch%3Amain)
+[![Release](https://img.shields.io/github/v/release/Alveel/minio-manager?include_prereleases)](https://img.shields.io/github/v/release/alveel/minio-manager)
+[![Build status](https://img.shields.io/github/actions/workflow/status/Alveel/minio-manager/main.yaml)](https://github.com/alveel/minio-manager/actions/workflows/main.yml?query=branch%3Amain)
 [![Commit activity](https://img.shields.io/github/commit-activity/m/alveel/minio-manager)](https://img.shields.io/github/commit-activity/m/alveel/minio-manager)
 [![License](https://img.shields.io/github/license/alveel/minio-manager)](https://img.shields.io/github/license/alveel/minio-manager)
 
@@ -128,8 +128,11 @@ Entries are found by way of the title of the entry, the username is not consider
 - Re-use ServiceAccount object instead of MinioCredentials object which is effectively the same.
 - Allow cleaning up of removed resources, e.g. service account that doesn't have a related bucket.
 - Improve logging not to show stack trace when log level is not DEBUG.
-- Create container image of project
+- Improve logging to show log level before the message.
 - Add colours to different log levels.
+- Create container image of project.
+- Add lifecycle management to created buckets.
+- Consider implementing object locking.
 
 ---
 

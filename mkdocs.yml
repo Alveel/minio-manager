@@ -1,4 +1,4 @@
-site_name: minio-manager
+site_name: MinIO Manager
 repo_url: https://github.com/alveel/minio-manager
 site_url: https://alveel.github.io/minio-manager
 site_description: Declare what MinIO buckets, IAM policies, ILM policies you want, and let MinIO Manager do the work.
