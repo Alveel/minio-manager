@@ -1,11 +1,13 @@
-from minio import Minio
 from minio.versioningconfig import ENABLED, VersioningConfig
 
-from .classes.minio_resources import Bucket
-from .utilities import logger
+from minio_manager.classes.minio_resources import Bucket, ServiceAccount
+from minio_manager.clients import get_s3_client
+from minio_manager.service_account_handler import handle_service_account
+from minio_manager.utilities import logger
 
 
-def handle_bucket(client: Minio, bucket: Bucket, create_service_account: bool = False):
+def handle_bucket(bucket: Bucket, create_service_account: bool = False):
+    client = get_s3_client()
     if not client.bucket_exists(bucket.name):
         logger.info("Creating bucket %s" % bucket.name)
         client.make_bucket(bucket.name)
@@ -21,3 +23,7 @@ def handle_bucket(client: Minio, bucket: Bucket, create_service_account: bool = 
         return
     client.set_bucket_versioning(bucket.name, VersioningConfig(ENABLED))
     logger.debug(f"Versioning enabled for bucket {bucket.name}")
+
+    if create_service_account:
+        service_account = ServiceAccount(bucket.name)
+        handle_service_account(service_account)

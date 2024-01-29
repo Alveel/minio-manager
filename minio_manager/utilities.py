@@ -3,9 +3,8 @@ import logging
 import os
 
 import yaml
-from minio import Minio, MinioAdmin, credentials
 
-global logger
+logger = None
 
 
 def read_yaml(file):
@@ -19,6 +18,10 @@ def read_json(file) -> dict:
 
 
 def setup_logging():
+    global logger
+    log_level = retrieve_environment_variable("MINIO_MANAGER_LOG_LEVEL", "INFO")
+    logger = logging.getLogger("minio-manager") if log_level != "DEBUG" else logging.getLogger("root")
+
     if log_level == "DEBUG":
         logger.setLevel(logging.DEBUG)
         logging.basicConfig(format="[%(asctime)s [%(filename)-26s:%(lineno)-4d - %(funcName)-24s ] %(message)s")
@@ -26,7 +29,7 @@ def setup_logging():
         logger.setLevel(logging.INFO)
         logging.basicConfig(format="[%(asctime)s] %(message)s")
 
-    logger.debug(f"Initialising with log level: {log_level}")
+    logger.debug(f"Configured log level: {log_level}")
 
 
 def sort_policy(policy: dict):
@@ -70,26 +73,5 @@ def retrieve_environment_variable(name: str, default=None) -> str:
     return default
 
 
-def setup_s3_client(endpoint, access_key, secret_key, secure=True) -> Minio:
-    """Set up MinIO S3 client for the specified cluster.
-
-    Args:
-        endpoint: str
-        access_key: str
-        secret_key: str
-        secure: bool
-
-    Returns:
-        Minio S3 client object
-
-    """
-    return Minio(endpoint, access_key=access_key, secret_key=secret_key, secure=secure)
-
-
-def setup_minio_admin_client(endpoint, access_key, secret_key, secure=True) -> MinioAdmin:
-    provider = credentials.StaticProvider(access_key, secret_key)
-    return MinioAdmin(endpoint, provider, secure=secure)
-
-
-log_level = retrieve_environment_variable("MINIO_MANAGER_LOG_LEVEL", "INFO")
-logger = logging.getLogger("minio-manager") if log_level != "DEBUG" else logging.getLogger("root")
+if not logger:
+    setup_logging()
