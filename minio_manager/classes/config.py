@@ -40,7 +40,7 @@ def parse_resources(resources: ClusterResources) -> tuple:  # noqa: C901
     try:
         for bucket in resources.buckets:
             versioning = bucket.get("versioning", True)
-            create_sa = bucket.get("create_sa", False)
+            create_sa = bucket.get("create_service_account", True)
             buckets.append(Bucket(bucket["name"], create_sa, versioning))
     except AttributeError:
         logger.info("No buckets configured, skipping.")

@@ -15,15 +15,14 @@ def handle_bucket(bucket: Bucket, create_service_account: bool = False):
         logger.info(f"Bucket {bucket.name} already exists")
 
     # TODO: disable versioning if explicitly disabled
-    if not bucket.versioning:
-        return
-
-    versioning_status = client.get_bucket_versioning(bucket.name).status
-    if versioning_status == ENABLED:
-        return
-    client.set_bucket_versioning(bucket.name, VersioningConfig(ENABLED))
-    logger.debug(f"Versioning enabled for bucket {bucket.name}")
+    if bucket.versioning:
+        versioning_status = client.get_bucket_versioning(bucket.name).status
+        if versioning_status == ENABLED:
+            return
+        client.set_bucket_versioning(bucket.name, VersioningConfig(ENABLED))
+        logger.debug(f"Versioning enabled for bucket {bucket.name}")
 
     if create_service_account:
-        service_account = ServiceAccount(bucket.name)
+        # TODO: is there a nicer way to go about this?
+        service_account = ServiceAccount(bucket.name, bucket.name)
         handle_service_account(service_account)

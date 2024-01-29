@@ -32,23 +32,6 @@ class SecretManager:
         self.backend_s3 = self.setup_backend_s3()
         self.backend = self.setup_backend()
 
-    def __del__(self):
-        if not self.backend_dirty:
-            return
-        # If we have dirty back-ends, we want to ensure they are saved before exiting.
-        if self.backend_type == "keepass":
-            # The PyKeePass save() function can take some time. So we want to run it once when the application is
-            # exiting, not every time after creating or updating an entry.
-            # After saving, upload the updated file to the S3 bucket and clean up the temp file.
-            tmp_file = Path(self.keepass_temp_file_name)
-            if isinstance(self.backend, PyKeePass):
-                logger.info(f"Saving {self.keepass_temp_file_name}")
-                self.backend.save(filename=self.keepass_temp_file_name)
-                logger.info(f"Uploading modified {self.keepass_temp_file_name} to bucket {self.backend_bucket}")
-                self.backend_s3.fput_object(self.backend_bucket, self.backend_filename, tmp_file)
-            logger.debug(f"Cleaning up {tmp_file}")
-            tmp_file.unlink()
-
     def setup_backend_s3(self):
         endpoint = retrieve_environment_variable("MINIO_MANAGER_S3_ENDPOINT")
         access_key = retrieve_environment_variable("MINIO_MANAGER_SECRET_BACKEND_S3_ACCESS_KEY")
@@ -173,4 +156,23 @@ class SecretManager:
             username=credentials.access_key,
             password=credentials.secret_key,
         )
-        self.backend_dirty = True
+
+    def cleanup(self):
+        if not self.backend_dirty:
+            Path(self.keepass_temp_file_name).unlink()
+            return
+
+        # If we have dirty back-ends, we want to ensure they are saved before exiting.
+        if self.backend_type == "keepass":
+            # The PyKeePass save() function can take some time. So we want to run it once when the application is
+            # exiting, not every time after creating or updating an entry.
+            # After saving, upload the updated file to the S3 bucket and clean up the temp file.
+            tmp_file = Path(self.keepass_temp_file_name)
+            logger.debug(f"tmp_file stat: {tmp_file.stat()}")
+            if isinstance(self.backend, PyKeePass):
+                logger.info(f"Saving {self.keepass_temp_file_name}")
+                self.backend.save()
+                logger.info(f"Uploading modified {self.keepass_temp_file_name} to bucket {self.backend_bucket}")
+                self.backend_s3.fput_object(self.backend_bucket, self.backend_filename, tmp_file)
+            logger.debug(f"Cleaning up {tmp_file}")
+            tmp_file.unlink()

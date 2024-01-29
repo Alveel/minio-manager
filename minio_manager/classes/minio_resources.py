@@ -2,9 +2,9 @@ from __future__ import annotations
 
 
 class Bucket:
-    def __init__(self, name: str, create_sa: bool, versioning: bool):
+    def __init__(self, name: str, create_service_account: bool = True, versioning: bool = True):
         self.name = name
-        self.create_sa = create_sa
+        self.create_sa = create_service_account
         self.versioning = versioning
 
 
