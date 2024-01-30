@@ -122,13 +122,11 @@ Entries are found by way of the title of the entry, the username is not consider
 
 - Disable bucket versioning if explicitly disabled. Currently, you can only enable it.
 - Check if policies are already attached to a user before running the "attach" command.
-- Automatically configure a service account with each bucket instead of separately specifying the bucket and service account.
 - Automatically generate keepass database when it is configured as the secret backend while not present in the bucket.
 - Also sort policy Principals to prevent unnecessary policy updates.
 - Re-use ServiceAccount object instead of MinioCredentials object which is effectively the same.
 - Allow cleaning up of removed resources, e.g. service account that doesn't have a related bucket.
 - Improve logging not to show stack trace when log level is not DEBUG.
-- Improve logging to show log level before the message.
 - Add colours to different log levels.
 - Create container image of project.
 - Add lifecycle management to created buckets.
