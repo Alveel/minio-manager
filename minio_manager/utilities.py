@@ -3,8 +3,9 @@ import logging
 import os
 
 import yaml
+from classes.logging_config import MinioManagerFilter
 
-logger = None
+logger = None  # type: Logger
 
 
 def read_yaml(file):
@@ -21,14 +22,20 @@ def setup_logging():
     global logger
     log_level = retrieve_environment_variable("MINIO_MANAGER_LOG_LEVEL", "INFO")
     logger = logging.getLogger("minio-manager") if log_level != "DEBUG" else logging.getLogger("root")
+    handler = logging.StreamHandler()
+    minio_manager_filter = MinioManagerFilter()
 
     if log_level == "DEBUG":
         logger.setLevel(logging.DEBUG)
-        logging.basicConfig(format="[%(asctime)s [%(filename)-26s:%(lineno)-4d - %(funcName)-24s ] %(message)s")
+        log_format = "[{asctime}] [{levelname:^8s}] [{filename:>26s}:{lineno:<4d} - {funcName:<24s} ] {message}"
     else:
         logger.setLevel(logging.INFO)
-        logging.basicConfig(format="[%(asctime)s] %(message)s")
+        log_format = "[{asctime}] [{levelname:^8s] {message}"
 
+    formatter = logging.Formatter(log_format, style="{")
+    handler.setFormatter(formatter)
+    handler.addFilter(minio_manager_filter)
+    logger.addHandler(handler)
     logger.debug(f"Configured log level: {log_level}")
 
 
