@@ -42,7 +42,7 @@ pages:
   tags:
     - dockerbased
   script:
-    - make docs-test
+    - pdm run mkdocs build
   artifacts:
     paths:
       - site
