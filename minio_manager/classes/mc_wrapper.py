@@ -5,10 +5,10 @@ import subprocess
 from pathlib import Path
 from types import SimpleNamespace
 
-from ..utilities import logger
-from .errors import MinioManagerBaseError, raise_specific_error
-from .minio_resources import MinioConfig
-from .secrets import MinioCredentials
+from minio_manager.classes.config import MinioConfig
+from minio_manager.classes.errors import MinioManagerBaseError, raise_specific_error
+from minio_manager.classes.secrets import MinioCredentials
+from minio_manager.utilities import logger
 
 
 class McWrapper:

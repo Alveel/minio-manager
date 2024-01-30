@@ -4,11 +4,11 @@ import sys
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
-from minio import S3Error
+from minio import Minio, S3Error
 from pykeepass import PyKeePass
 
-from ..utilities import logger, retrieve_environment_variable, setup_s3_client
-from .minio_resources import MinioConfig
+from minio_manager.classes.config import MinioConfig
+from minio_manager.utilities import logger, retrieve_environment_variable
 
 
 class MinioCredentials:
@@ -25,37 +25,19 @@ class SecretManager:
         self.backend_dirty = False
         self.backend_type = config.secret_backend_type
         self.backend_bucket = config.secret_s3_bucket
-        self._backend_filename = None
-        self._keepass_temp_file_name = None
-        self._keepass_group = None
-        self._backend_s3 = self.setup_backend_s3()
-        self._backend = self.setup_backend()
-
-    def __del__(self):
-        if not self.backend_dirty:
-            return
-        # If we have dirty back-ends, we want to ensure they are saved before exiting.
-        if self.backend_type == "keepass":
-            # The PyKeePass save() function can take some time. So we want to run it once when the application is
-            # exiting, not every time after creating or updating an entry.
-            # After saving, upload the updated file to the S3 bucket and clean up the temp file.
-            tmp_file = Path(self._keepass_temp_file_name)
-            if isinstance(self._backend, PyKeePass):
-                logger.info(f"Saving {self._keepass_temp_file_name}")
-                self._backend.save()
-                logger.info(f"Uploading modified {self._keepass_temp_file_name} to bucket {self.backend_bucket}")
-                self._backend_s3.fput_object(self.backend_bucket, self._backend_filename, tmp_file)
-            logger.debug(f"Cleaning up {tmp_file}")
-            tmp_file.unlink()
+        self.backend_secure = config.secure
+        self.backend_filename = None
+        self.keepass_temp_file_name = None
+        self.keepass_group = None
+        self.backend_s3 = self.setup_backend_s3()
+        self.backend = self.setup_backend()
 
     def setup_backend_s3(self):
         endpoint = retrieve_environment_variable("MINIO_MANAGER_S3_ENDPOINT")
-        endpoint_secure_str = retrieve_environment_variable("MINIO_MANAGER_S3_ENDPOINT_SECURE", "true")
-        endpoint_secure = endpoint_secure_str.lower() != "false"
         access_key = retrieve_environment_variable("MINIO_MANAGER_SECRET_BACKEND_S3_ACCESS_KEY")
         secret_key = retrieve_environment_variable("MINIO_MANAGER_SECRET_BACKEND_S3_SECRET_KEY")
         logger.debug(f"Setting up secret bucket {self.backend_bucket}")
-        s3 = setup_s3_client(endpoint, access_key, secret_key, endpoint_secure)
+        s3 = Minio(endpoint=endpoint, access_key=access_key, secret_key=secret_key, secure=self.backend_secure)
         try:
             s3.bucket_exists(self.backend_bucket)
         except S3Error as s3e:
@@ -106,18 +88,18 @@ class SecretManager:
         Returns: PyKeePass object, with the kdbx file loaded
 
         """
-        self._backend_filename = retrieve_environment_variable("MINIO_MANAGER_KEEPASS_FILE", "secrets.kdbx")
-        tmp_file = NamedTemporaryFile(suffix=self._backend_filename, delete=False)
-        self._keepass_temp_file_name = tmp_file.name
+        self.backend_filename = retrieve_environment_variable("MINIO_MANAGER_KEEPASS_FILE", "secrets.kdbx")
+        tmp_file = NamedTemporaryFile(suffix=self.backend_filename, delete=False)
+        self.keepass_temp_file_name = tmp_file.name
         try:
-            response = self._backend_s3.get_object(self.backend_bucket, self._backend_filename)
+            response = self.backend_s3.get_object(self.backend_bucket, self.backend_filename)
             with tmp_file as f:
                 logger.debug(f"Writing kdbx file to temp file {tmp_file.name}")
                 f.write(response.data)
         except S3Error as s3e:
             logger.debug(s3e)
             logger.critical(
-                f"Unable to retrieve {self._backend_filename} from {self.backend_bucket}!\n"
+                f"Unable to retrieve {self.backend_filename} from {self.backend_bucket}!\n"
                 "Do the required bucket and kdbx file exist, and does the user have the correct "
                 "policies assigned?"
             )
@@ -128,10 +110,10 @@ class SecretManager:
 
         kp_pass = retrieve_environment_variable("MINIO_MANAGER_KEEPASS_PASSWORD")
         logger.debug("Opening keepass database")
-        kp = PyKeePass(self._keepass_temp_file_name, password=kp_pass)
+        kp = PyKeePass(self.keepass_temp_file_name, password=kp_pass)
         # noinspection PyTypeChecker
-        self._keepass_group = kp.find_groups(path=["s3", self._cluster_name])
-        if not self._keepass_group:
+        self.keepass_group = kp.find_groups(path=["s3", self._cluster_name])
+        if not self.keepass_group:
             logger.critical("Required group not found in Keepass! See documentation for requirements.")
             sys.exit(12)
         logger.debug("Keepass configured as secret backend")
@@ -147,7 +129,7 @@ class SecretManager:
             MinioCredentials if found, False if not found
         """
         logger.debug(f"Finding Keepass entry for {name}")
-        entry = self._backend.find_entries(title=name, group=self._keepass_group, first=True)
+        entry = self.backend.find_entries(title=name, group=self.keepass_group, first=True)
 
         try:
             credentials = MinioCredentials(name, entry.username, entry.password)
@@ -168,10 +150,29 @@ class SecretManager:
             credentials: MinioCredentials
         """
         logger.info(f"Creating Keepass entry for {credentials.access_key}")
-        self._backend.add_entry(
-            destination_group=self._keepass_group,
+        self.backend.add_entry(
+            destination_group=self.keepass_group,
             title=credentials.name,
             username=credentials.access_key,
             password=credentials.secret_key,
         )
-        self.backend_dirty = True
+
+    def cleanup(self):
+        if not self.backend_dirty:
+            Path(self.keepass_temp_file_name).unlink()
+            return
+
+        # If we have dirty back-ends, we want to ensure they are saved before exiting.
+        if self.backend_type == "keepass":
+            # The PyKeePass save() function can take some time. So we want to run it once when the application is
+            # exiting, not every time after creating or updating an entry.
+            # After saving, upload the updated file to the S3 bucket and clean up the temp file.
+            tmp_file = Path(self.keepass_temp_file_name)
+            logger.debug(f"tmp_file stat: {tmp_file.stat()}")
+            if isinstance(self.backend, PyKeePass):
+                logger.info(f"Saving {self.keepass_temp_file_name}")
+                self.backend.save()
+                logger.info(f"Uploading modified {self.keepass_temp_file_name} to bucket {self.backend_bucket}")
+                self.backend_s3.fput_object(self.backend_bucket, self.backend_filename, tmp_file)
+            logger.debug(f"Cleaning up {tmp_file}")
+            tmp_file.unlink()

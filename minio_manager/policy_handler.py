@@ -1,13 +1,14 @@
 import json
 
-from minio import Minio, MinioAdmin, S3Error
+from minio import S3Error
 from minio.error import MinioAdminException
 
-from .classes.minio_resources import BucketPolicy, IamPolicy, IamPolicyAttachment
-from .utilities import logger, read_json, sort_policy
+from minio_manager.classes.minio_resources import BucketPolicy, IamPolicy, IamPolicyAttachment
+from minio_manager.clients import get_minio_admin_client, get_s3_client
+from minio_manager.utilities import logger, read_json, sort_policy
 
 
-def handle_bucket_policy(client: Minio, bucket_policy: BucketPolicy):
+def handle_bucket_policy(bucket_policy: BucketPolicy):
     """
     Manage policies for buckets.
 
@@ -16,8 +17,8 @@ def handle_bucket_policy(client: Minio, bucket_policy: BucketPolicy):
 
     Args:
         bucket_policy: BucketPolicy
-        client: Minio
     """
+    client = get_s3_client()
     current_policy = None
     desired_policy = sort_policy(read_json(bucket_policy.policy_file))
     desired_policy_json = json.dumps(desired_policy)
@@ -48,7 +49,7 @@ def handle_bucket_policy(client: Minio, bucket_policy: BucketPolicy):
         logger.exception("Failed to update bucket policy")
 
 
-def handle_iam_policy(client: MinioAdmin, iam_policy: IamPolicy):
+def handle_iam_policy(iam_policy: IamPolicy):
     """
     Manage IAM policies for users.
     If the policy doesn't exist, create it.
@@ -56,8 +57,8 @@ def handle_iam_policy(client: MinioAdmin, iam_policy: IamPolicy):
 
     Args:
         iam_policy: IamPolicy
-        client: MinioAdmin
     """
+    client = get_minio_admin_client()
     current_policy = None
     desired_policy = sort_policy(read_json(iam_policy.policy_file))
 
@@ -83,14 +84,14 @@ def handle_iam_policy(client: MinioAdmin, iam_policy: IamPolicy):
     client.policy_add(iam_policy.name, iam_policy.policy_file)
 
 
-def handle_iam_policy_attachments(client: MinioAdmin, user: IamPolicyAttachment):
+def handle_iam_policy_attachments(user: IamPolicyAttachment):
     """
     Manage user policy attachments.
 
     Args:
         user: IamPolicyAttachment
-        client: MinioAdmin
     """
+    client = get_minio_admin_client()
     logger.debug(f"Handling user policy attachments for '{user.username}'")
     for policy_name in user.policies:
         logger.debug(f"Attaching policy '{policy_name}' to access key '{user.username}'")
