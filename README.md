@@ -115,8 +115,8 @@ Entries are found by way of the title of the entry, the username is not consider
 - `MINIO_MANAGER_MINIO_ENDPOINT_SECURE` Whether to use HTTPS for the endpoint. Defaults to `True`
 - `MINIO_MANAGER_SECRET_BACKEND_S3_BUCKET` The name of the bucket where the secret backend is kept. Defaults to `minio-manager-secrets`
 - `MINIO_MANAGER_KEEPASS_FILE` The name of the database file in the S3 bucket. Defaults to `secrets.kdbx`
-- `MINIO_MANAGER_KEEPASS_GENERATE_MISSING` Whether to automatically create missing entries in Keepass. Defaults to False
 - `MINIO_MANAGER_LOG_LEVEL` The log level of the application. Defaults to `INFO`, may also use `DEBUG`
+- `MINIO_MANAGER_DEFAULT_BUCKET_VERSIONING` What bucket versioning level to use for all buckets by default if not specified on the bucket level. Defaults to "Disabled", can also configure "Enabled" or "Suspended"
 
 ## To do features
 

@@ -17,10 +17,7 @@ def handle_resources(resources: tuple):
 
     logger.info("Handling buckets...")
     for bucket in buckets:
-        if bucket.create_sa:
-            handle_bucket(bucket, True)
-        else:
-            handle_bucket(bucket)
+        handle_bucket(bucket)
 
     logger.info("Handling service accounts...")
     for service_account in service_accounts:
