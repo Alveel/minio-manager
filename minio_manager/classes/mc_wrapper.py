@@ -13,13 +13,14 @@ from minio_manager.utilities import logger
 
 class McWrapper:
     def __init__(self, config: MinioConfig, timeout=60):
-        logger.info("Initialising McWrapper")
+        logger.debug("Initialising McWrapper")
         self.cluster_name = config.name
         self.cluster_controller_user = config.controller_user
         self.timeout = timeout
         self.mc_config_path = self.set_config_path()
         self.mc = self.find_mc_command()
         self.configure(config.endpoint, config.access_key, config.secret_key, config.secure)
+        logger.info("Initialised McWrapper")
 
     def _run(self, args, multiline=False):
         """Execute mc command and return JSON output."""
