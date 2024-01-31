@@ -7,6 +7,15 @@ from minio_manager.utilities import logger
 
 
 def handle_bucket(bucket: Bucket):
+    """Handle the specified bucket.
+
+    First validates the existence of the bucket. If it does not exist, it will be created.
+    Then it will compare the current bucket versioning configuration and update it if needed.
+    Lastly, a related service account will be created that gives access to this specific bucket.
+
+    Args:
+        bucket (Bucket): The bucket to handle.
+    """
     client = get_s3_client()
     if not client.bucket_exists(bucket.name):
         logger.info("Creating bucket %s" % bucket.name)
@@ -14,10 +23,11 @@ def handle_bucket(bucket: Bucket):
     else:
         logger.info(f"Bucket {bucket.name} already exists")
 
-    versioning_status = client.get_bucket_versioning(bucket.name).status
-    if versioning_status.lower() != bucket.versioning.lower():
-        client.set_bucket_versioning(bucket.name, VersioningConfig(bucket.versioning))
-        logger.debug(f"Versioning enabled for bucket {bucket.name}")
+    versioning_status = client.get_bucket_versioning(bucket.name).status.capitalize()
+    desired_versioning = bucket.versioning.capitalize()
+    if versioning_status != desired_versioning:
+        client.set_bucket_versioning(bucket.name, VersioningConfig(desired_versioning))
+        logger.debug(f"Versioning {desired_versioning.lower()} for bucket {bucket.name}")
 
     if bucket.create_sa:
         # TODO: is there a nicer way to go about this?

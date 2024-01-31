@@ -120,7 +120,6 @@ Entries are found by way of the title of the entry, the username is not consider
 
 ## To do features
 
-- Disable bucket versioning if explicitly disabled. Currently, you can only enable it.
 - Check if policies are already attached to a user before running the "attach" command.
 - Automatically generate keepass database when it is configured as the secret backend while not present in the bucket.
 - Also sort policy Principals to prevent unnecessary policy updates.
