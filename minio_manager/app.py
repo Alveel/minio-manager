@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from minio_manager.classes.config import parse_resources
 from minio_manager.clients import get_minio_config, get_secret_manager
 from minio_manager.resource_handler import handle_resources
-from minio_manager.utilities import logger, read_yaml
+from minio_manager.utilities import logger
 
 
 def main():
@@ -13,9 +13,8 @@ def main():
     logger.info("Starting MinIO Manager...")
     start_time = time.time()
     config = get_minio_config()
-    cluster_config = read_yaml(config.cluster_resources)  # type: ClusterResources
     logger.info("Loading resources...")
-    resources = parse_resources(cluster_config)
+    resources = parse_resources(config.cluster_resources)
     logger.info("Handling cluster resources...")
     handle_resources(resources)
     secrets = get_secret_manager(config)

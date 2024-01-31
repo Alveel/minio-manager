@@ -13,7 +13,13 @@ class Bucket:
         "Suspended",
     )
 
-    def __init__(self, name: str, create_service_account: bool = True, versioning: str | None = None):
+    def __init__(
+        self,
+        name: str,
+        create_service_account: bool = True,
+        versioning: str | None = None,
+        lifecycle_profile: str | None = None,
+    ):
         self.name = name
         self.create_sa = create_service_account
         if versioning:
