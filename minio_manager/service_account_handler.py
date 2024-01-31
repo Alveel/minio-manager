@@ -26,7 +26,6 @@ def service_account_exists(client: McWrapper, credentials: MinioCredentials):
             logger.debug(f"Found access key '{sa_info.accessKey}' for '{credentials.name}' in MinIO: {sa_info}")
             return True
 
-    logger.warning(f"Service account {credentials.name} does not exist or has no user-friendly name.")
     return False
 
 
@@ -77,7 +76,7 @@ def handle_service_account(account: ServiceAccount):
 
     # Scenario 2: service account exists in secret backend but not in MinIO
     if credentials.secret_key and not sa_exists:
-        logger.debug(
+        logger.warning(
             f"Service account {account.name} exists in secret backend but not in MinIO. Using existing credentials."
         )
         client.service_account_add(credentials)
