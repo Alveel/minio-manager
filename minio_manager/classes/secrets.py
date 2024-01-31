@@ -31,6 +31,7 @@ class SecretManager:
         self.keepass_group = None
         self.backend_s3 = self.setup_backend_s3()
         self.backend = self.setup_backend()
+        logger.info(f"SecretManager initialised with backend {self.backend_type}")
 
     def setup_backend_s3(self):
         endpoint = retrieve_environment_variable("MINIO_MANAGER_S3_ENDPOINT")

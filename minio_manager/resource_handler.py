@@ -6,7 +6,7 @@ from minio_manager.utilities import logger
 
 
 def handle_resources(resources: tuple):
-    """
+    """TODO: update docstring
     Set up MinIO S3 and MinIO Admin clients for the specified cluster,
     then handle buckets, bucket policies, IAM policies, and user policy attachments, in that order.
 
