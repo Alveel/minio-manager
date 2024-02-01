@@ -12,7 +12,10 @@ def configure_versioning(client, bucket):
 
 
 def configure_lifecycle(client, bucket):
-    pass
+    lifecycle_status = client.get_bucket_lifecycle(bucket.name)
+    if lifecycle_status != bucket.lifecycle_config:
+        client.set_bucket_lifecycle(bucket.name, bucket.lifecycle_config)
+        logger.debug(f"Lifecycle {bucket.lifecycle_config} for bucket {bucket.name}")
 
 
 def handle_bucket(bucket: Bucket):

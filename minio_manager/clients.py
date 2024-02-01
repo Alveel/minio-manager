@@ -66,9 +66,4 @@ def get_minio_config():
     if not config:
         logger.info("Configuring...")
         config = MinioConfig()
-        logger.info("Loading secret backend...")
-        s = get_secret_manager(config)
-        run_user_credentials = s.get_credentials(config.controller_user)
-        config.access_key = run_user_credentials.access_key
-        config.secret_key = run_user_credentials.secret_key
     return config
