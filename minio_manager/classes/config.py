@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import json
-from dataclasses import field
 from pathlib import Path
+from typing import ClassVar
 
+from minio.commonconfig import Filter
 from minio.lifecycleconfig import Expiration, LifecycleConfig, NoncurrentVersionExpiration, Rule
 from minio.versioningconfig import VersioningConfig
 
@@ -17,11 +18,11 @@ default_bucket_lifecycle_policy = retrieve_environment_variable("MINIO_MANAGER_D
 class ClusterResources:
     """MinIO Cluster configuration object, aka the cluster contents: buckets, policies, etc."""
 
-    buckets: list[Bucket] = field(default_factory=list)
-    bucket_policies: list[BucketPolicy] = field(default_factory=list)
-    service_accounts: list[ServiceAccount] = field(default_factory=list)
-    iam_policies: list[IamPolicy] = field(default_factory=list)
-    iam_policy_attachments: list[IamPolicyAttachment] = field(default_factory=list)
+    buckets = ClassVar[list[Bucket]]
+    bucket_policies = ClassVar[list[BucketPolicy]]
+    service_accounts = ClassVar[list[ServiceAccount]]
+    iam_policies = ClassVar[list[IamPolicy]]
+    iam_policy_attachments = ClassVar[list[IamPolicyAttachment]]
 
     def parse_buckets(self, buckets):
         """Parse the provided buckets with the following steps:
@@ -105,6 +106,9 @@ class ClusterResources:
         if noncurrent_version_expiration:
             noncurrent_expire_days = noncurrent_version_expiration.get("NoncurrentDays")
             rule_dict["noncurrent_version_expiration"] = NoncurrentVersionExpiration(noncurrent_expire_days)
+
+        # An empty filter is required for the rule to be valid
+        rule_dict["rule_filter"] = Filter(prefix="")
 
         rule = Rule(**rule_dict)
         return rule
