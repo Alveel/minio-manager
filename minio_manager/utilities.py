@@ -3,9 +3,10 @@ import logging
 import os
 
 import yaml
-from classes.logging_config import MinioManagerFilter
 
-logger = None  # type: Logger
+from minio_manager.classes.logging_config import MinioManagerFilter
+
+logger = None
 
 
 def read_yaml(file):
