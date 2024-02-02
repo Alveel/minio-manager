@@ -63,9 +63,10 @@ def retrieve_environment_variable(name: str, default=None) -> str:
     """
     Get an environment variable and strip any leading and trailing single and double quotes.
     This is because Python apparently literally loads them.
+
     Args:
-        default: str, default if not set
         name: str, the name of the environment variable
+        default: str, default if not set
 
     Returns: str stripped
     """
@@ -74,7 +75,7 @@ def retrieve_environment_variable(name: str, default=None) -> str:
         strip_double_quotes = variable.strip('"')
         return strip_double_quotes.strip("'")
     except KeyError:
-        if not default:
+        if default is None:
             logger.critical(f"Required environment variable {name} not found!")
             exit(1)
 
