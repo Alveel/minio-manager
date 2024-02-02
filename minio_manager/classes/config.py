@@ -11,7 +11,7 @@ from minio_manager.classes.minio_resources import Bucket, BucketPolicy, IamPolic
 from minio_manager.utilities import logger, read_yaml, retrieve_environment_variable
 
 default_bucket_versioning = retrieve_environment_variable("MINIO_MANAGER_DEFAULT_BUCKET_VERSIONING", "Suspended")
-default_bucket_lifecycle_policy = retrieve_environment_variable("MINIO_MANAGER_DEFAULT_LIFECYCLE_POLICY", None)
+default_bucket_lifecycle_policy = retrieve_environment_variable("MINIO_MANAGER_DEFAULT_LIFECYCLE_POLICY", "")
 
 
 class ClusterResources:
