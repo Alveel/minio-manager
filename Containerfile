@@ -1,20 +1,36 @@
 # syntax=docker/dockerfile:1
 
-FROM registry.access.redhat.com/ubi9/python-311
+# build stage
+FROM docker.io/python:3.11-alpine AS builder
 
-# Set work directory
-WORKDIR /code
-
-# Install PDM
+# install PDM
+RUN pip install -U pip setuptools wheel
 RUN pip install pdm
 
-# Copy only requirements to cache them in docker layer
-COPY pdm.lock pyproject.toml /code/
+# copy files
+COPY pyproject.toml pdm.lock README.md /project/
+COPY minio_manager/ /project/minio_manager
 
-# Project initialization:
-RUN pdm install --no-self
+# install dependencies and project into the local packages directory
+WORKDIR /project
+ENV PDM_BUILD_SCM_VERSION=0.1.0-beta
+RUN mkdir __pypackages__ && pdm sync --prod --no-editable
 
-# Copy Python code to the Docker image
-COPY minio_manager/ /code/minio_manager//
 
-CMD [ "python", "minio_manager"]
+# run stage
+FROM docker.io/python:3.11-alpine
+
+# install bash
+RUN apk add --no-cache bash
+
+# retrieve packages from build stage
+ENV PYTHONPATH=/project/pkgs
+COPY --from=builder /project/__pypackages__/3.11/lib /project/pkgs
+
+# retrieve executables
+COPY --from=builder /project/__pypackages__/3.11/bin/* /bin/
+
+USER 1001
+
+# set command/entrypoint, adapt to fit your needs
+CMD [ "minio-manager" ]
