@@ -16,9 +16,9 @@ jobs:
       # IMPORTANT: this permission is mandatory for trusted publishing
       id-token: write
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - uses: pdm-project/setup-pdm@v3
+      - uses: pdm-project/setup-pdm@v4
 
       - name: Publish package distributions to PyPI
         run: pdm publish
@@ -32,7 +32,7 @@ jobs:
       contents: write
     steps:
       - name: Check out
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up the environment
         uses: ./.github/actions/setup-pdm-env
