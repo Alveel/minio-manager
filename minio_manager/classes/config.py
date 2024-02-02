@@ -12,6 +12,9 @@ from minio_manager.utilities import logger, read_yaml, retrieve_environment_vari
 
 default_bucket_versioning = retrieve_environment_variable("MINIO_MANAGER_DEFAULT_BUCKET_VERSIONING", "Suspended")
 default_bucket_lifecycle_policy = retrieve_environment_variable("MINIO_MANAGER_DEFAULT_LIFECYCLE_POLICY", "")
+default_bucket_create_service_account = retrieve_environment_variable(
+    "MINIO_MANAGER_DEFAULT_BUCKET_CREATE_SERVICE_ACCOUNT", "True"
+)
 
 
 class ClusterResources:
@@ -46,7 +49,7 @@ class ClusterResources:
             for bucket in buckets:
                 vs = bucket.get("versioning", None)
                 vc = VersioningConfig(vs) if vs else VersioningConfig(default_bucket_versioning)
-                create_sa = bucket.get("create_service_account", True)
+                create_sa = bucket.get("create_service_account", default_bucket_create_service_account)
                 lifecycle_file = bucket.get("object_lifecycle_file", default_bucket_lifecycle_policy)
                 lifecycle_config = self.parse_bucket_lifecycle_file(lifecycle_file)
                 bucket_objects.append(Bucket(bucket["name"], create_sa, vc, lifecycle_config))
