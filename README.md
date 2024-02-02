@@ -1,6 +1,6 @@
 # minio-manager
 
-[![Release](https://img.shields.io/github/v/release/Alveel/minio-manager?include_prereleases)](https://img.shields.io/github/v/release/alveel/minio-manager)
+[![Release](https://img.shields.io/github/v/release/Alveel/minio-manager?include_prereleases)](https://img.shields.io/github/v/release/Alveel/minio-manager?include_prereleases)
 [![Build status](https://img.shields.io/github/actions/workflow/status/Alveel/minio-manager/main.yaml)](https://github.com/alveel/minio-manager/actions/workflows/main.yml?query=branch%3Amain)
 [![Commit activity](https://img.shields.io/github/commit-activity/m/alveel/minio-manager)](https://img.shields.io/github/commit-activity/m/alveel/minio-manager)
 [![License](https://img.shields.io/github/license/alveel/minio-manager)](https://img.shields.io/github/license/alveel/minio-manager)
@@ -23,6 +23,7 @@ delete any resources anywhere.
 
 - [Python](https://www.python.org/) (3.9 or newer)
 - [PDM](https://pdm-project.org/)
+- [MinIO Client](https://min.io/docs/minio/linux/reference/minio-mc.html)
 
 ## Getting started with your project
 
@@ -120,16 +121,7 @@ Entries are found by way of the title of the entry, the username is not consider
 
 ## To do features
 
-- Check if policies are already attached to a user before running the "attach" command.
-- Automatically generate keepass database when it is configured as the secret backend while not present in the bucket.
-- Also sort policy Principals to prevent unnecessary policy updates.
-- Re-use ServiceAccount object instead of MinioCredentials object which is effectively the same.
-- Allow cleaning up of removed resources, e.g. service account that doesn't have a related bucket.
-- Improve logging not to show stack trace when log level is not DEBUG.
-- Add colours to different log levels.
-- Create container image of project.
-- Add lifecycle management to created buckets.
-- Consider implementing object locking.
+Check the open [enhancement](https://github.com/Alveel/minio-manager/issues?q=is%3Aissue+is%3Aopen+label%3Aenhancement) issues.
 
 ---
 
