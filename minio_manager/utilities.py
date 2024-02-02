@@ -3,9 +3,10 @@ import logging
 import os
 
 import yaml
-from classes.logging_config import MinioManagerFilter
 
-logger = None  # type: Logger
+from minio_manager.classes.logging_config import MinioManagerFilter
+
+logger = None
 
 
 def read_yaml(file):
@@ -30,7 +31,7 @@ def setup_logging():
         log_format = "[{asctime}] [{levelname:^8s}] [{filename:>26s}:{lineno:<4d} - {funcName:<24s} ] {message}"
     else:
         logger.setLevel(logging.INFO)
-        log_format = "[{asctime}] [{levelname:^8s] {message}"
+        log_format = "[{asctime}] [{levelname:^8s}] {message}"
 
     formatter = logging.Formatter(log_format, style="{")
     handler.setFormatter(formatter)

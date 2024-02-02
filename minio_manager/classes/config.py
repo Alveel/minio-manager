@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import ClassVar
 
 from minio.commonconfig import Filter
 from minio.lifecycleconfig import Expiration, LifecycleConfig, NoncurrentVersionExpiration, Rule
@@ -18,11 +17,11 @@ default_bucket_lifecycle_policy = retrieve_environment_variable("MINIO_MANAGER_D
 class ClusterResources:
     """MinIO Cluster configuration object, aka the cluster contents: buckets, policies, etc."""
 
-    buckets = ClassVar[list[Bucket]]
-    bucket_policies = ClassVar[list[BucketPolicy]]
-    service_accounts = ClassVar[list[ServiceAccount]]
-    iam_policies = ClassVar[list[IamPolicy]]
-    iam_policy_attachments = ClassVar[list[IamPolicyAttachment]]
+    buckets: list[Bucket]
+    bucket_policies: list[BucketPolicy]
+    service_accounts: list[ServiceAccount]
+    iam_policies: list[IamPolicy]
+    iam_policy_attachments: list[IamPolicyAttachment]
 
     def parse_buckets(self, buckets):
         """Parse the provided buckets with the following steps:
@@ -40,7 +39,7 @@ class ClusterResources:
         """
         if not buckets:
             logger.info("No buckets configured, skipping.")
-            return
+            return []
 
         bucket_objects = []
         try:
@@ -117,7 +116,7 @@ class ClusterResources:
     def parse_bucket_policies(bucket_policies):
         if not bucket_policies:
             logger.info("No bucket policies configured, skipping.")
-            return
+            return []
 
         bucket_policy_objects = []
         for bucket_policy in bucket_policies:
@@ -129,7 +128,7 @@ class ClusterResources:
     def parse_service_accounts(service_accounts):
         if not service_accounts:
             logger.info("No service accounts configured, skipping.")
-            return
+            return []
 
         service_account_objects = []
         for service_account in service_accounts:
@@ -142,7 +141,7 @@ class ClusterResources:
     def parse_iam_policy_attachments(iam_policy_attachments):
         if not iam_policy_attachments:
             logger.info("No IAM policy attachments configured, skipping.")
-            return
+            return []
 
         iam_policy_attachment_objects = []
         for user in iam_policy_attachments:
@@ -154,7 +153,7 @@ class ClusterResources:
     def parse_iam_policies(iam_policies):
         if not iam_policies:
             logger.info("No IAM policies configured, skipping.")
-            return
+            return []
 
         iam_policy_objects = []
         for iam_policy in iam_policies:
