@@ -4,6 +4,20 @@ from minio_manager.service_account_handler import handle_service_account
 from minio_manager.utilities import logger
 
 
+def configure_versioning(client, bucket):
+    versioning_status = client.get_bucket_versioning(bucket.name)
+    if versioning_status.status != bucket.versioning.status:
+        client.set_bucket_versioning(bucket.name, bucket.versioning)
+        logger.debug(f"Versioning {bucket.versioning.status.lower()} for bucket {bucket.name}")
+
+
+def configure_lifecycle(client, bucket):
+    lifecycle_status = client.get_bucket_lifecycle(bucket.name)
+    if lifecycle_status != bucket.lifecycle_config:
+        client.set_bucket_lifecycle(bucket.name, bucket.lifecycle_config)
+        logger.debug(f"Lifecycle {bucket.lifecycle_config} for bucket {bucket.name}")
+
+
 def handle_bucket(bucket: Bucket):
     """Handle the specified bucket.
 
@@ -21,10 +35,8 @@ def handle_bucket(bucket: Bucket):
     else:
         logger.info(f"Bucket {bucket.name} already exists")
 
-    versioning_status = client.get_bucket_versioning(bucket.name)
-    if versioning_status.status != bucket.versioning.status:
-        client.set_bucket_versioning(bucket.name, bucket.versioning)
-        logger.debug(f"Versioning {bucket.versioning.status.lower()} for bucket {bucket.name}")
+    configure_versioning(client, bucket)
+    configure_lifecycle(client, bucket)
 
     if bucket.create_sa:
         # TODO: is there a nicer way to go about this?

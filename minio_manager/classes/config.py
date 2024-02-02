@@ -1,69 +1,184 @@
 from __future__ import annotations
 
-import yaml
+import json
+from pathlib import Path
+from typing import ClassVar
+
+from minio.commonconfig import Filter
+from minio.lifecycleconfig import Expiration, LifecycleConfig, NoncurrentVersionExpiration, Rule
+from minio.versioningconfig import VersioningConfig
 
 from minio_manager.classes.minio_resources import Bucket, BucketPolicy, IamPolicy, IamPolicyAttachment, ServiceAccount
-from minio_manager.utilities import logger, retrieve_environment_variable
+from minio_manager.utilities import logger, read_yaml, retrieve_environment_variable
+
+default_bucket_versioning = retrieve_environment_variable("MINIO_MANAGER_DEFAULT_BUCKET_VERSIONING", "Suspended")
+default_bucket_lifecycle_policy = retrieve_environment_variable("MINIO_MANAGER_DEFAULT_LIFECYCLE_POLICY", None)
 
 
-class ClusterResources(yaml.YAMLObject):
+class ClusterResources:
     """MinIO Cluster configuration object, aka the cluster contents: buckets, policies, etc."""
 
-    yaml_tag = "!ClusterResources"
-    yaml_loader = yaml.SafeLoader
+    buckets = ClassVar[list[Bucket]]
+    bucket_policies = ClassVar[list[BucketPolicy]]
+    service_accounts = ClassVar[list[ServiceAccount]]
+    iam_policies = ClassVar[list[IamPolicy]]
+    iam_policy_attachments = ClassVar[list[IamPolicyAttachment]]
 
-    def __init__(
-        self,
-        buckets: list,
-        bucket_policies: list,
-        service_accounts: list,
-        iam_policies: list,
-        iam_policy_attachments: list,
-    ):
-        self.buckets = buckets
-        self.bucket_policies = bucket_policies
-        self.service_accounts = service_accounts
-        self.iam_policies = iam_policies
-        self.iam_policy_attachments = iam_policy_attachments
+    def parse_buckets(self, buckets):
+        """Parse the provided buckets with the following steps:
+        For each provided bucket
+            1. check the provided versioning. If versioning is not provided, set the default.
+            2. check if an object lifecycle JSON file is provided, use the default_bucket_lifecycle_policy, or skip OLM
+            3. parse the file and create a LifecycleConfig object for the bucket
+            4. create a Bucket object
 
+        Args:
+            buckets: list of buckets to parse
 
-def parse_resources(resources: ClusterResources) -> tuple:  # noqa: C901
-    service_accounts, buckets, bucket_policies, iam_policies, iam_policy_attachments = [], [], [], [], []
+        Returns:
+            [Bucket]: list of Bucket objects
+        """
+        if not buckets:
+            logger.info("No buckets configured, skipping.")
+            return
 
-    try:
-        for service_account in resources.service_accounts:
+        bucket_objects = []
+        try:
+            for bucket in buckets:
+                vs = bucket.get("versioning", None)
+                vc = VersioningConfig(vs) if vs else VersioningConfig(default_bucket_versioning)
+                create_sa = bucket.get("create_service_account", True)
+                lifecycle_file = bucket.get("object_lifecycle_file", default_bucket_lifecycle_policy)
+                lifecycle_config = self.parse_bucket_lifecycle_file(lifecycle_file)
+                bucket_objects.append(Bucket(bucket["name"], create_sa, vc, lifecycle_config))
+        except AttributeError:
+            logger.info("No buckets configured, skipping.")
+
+        return bucket_objects
+
+    def parse_bucket_lifecycle_file(self, lifecycle_file: str) -> LifecycleConfig | None:
+        """Parse a list of bucket lifecycle config files.
+        The config files must be in JSON format and can be best obtained by running the following command:
+            mc ilm rule export $cluster/$bucket > $policy_file.json
+
+        Args:
+            lifecycle_file: list of lifecycle config files
+
+        Returns:
+            LifecycleConfig object
+        """
+        if not lifecycle_file:
+            return
+
+        rules: list = []
+
+        with Path(lifecycle_file).open() as f:
+            config_data = json.load(f)
+            for rule_data in config_data["Rules"]:
+                parsed_rule = self.parse_bucket_lifecycle_rule(rule_data)
+                rules.append(parsed_rule)
+
+        if not rules:
+            return
+
+        return LifecycleConfig(rules)
+
+    @staticmethod
+    def parse_bucket_lifecycle_rule(rule_data) -> Rule:
+        """Parse a single bucket object lifecycle rule
+        TODO: implement date and days in Expiration, implement Transition, NoncurrentVersionTransition, Filter, and
+          AbortIncompleteMultipartUpload
+
+        Args:
+            rule_data: dict with rule data
+
+        Returns:
+            Rule
+        """
+        rule_dict = {"status": rule_data.get("Status"), "rule_id": rule_data.get("ID")}
+
+        expiration = rule_data.get("Expiration", None)
+        if expiration:
+            expire_delete_marker = expiration.get("ExpiredObjectDeleteMarker", None)
+            rule_dict["expiration"] = Expiration(expired_object_delete_marker=expire_delete_marker)
+
+        noncurrent_version_expiration = rule_data.get("NoncurrentVersionExpiration", None)
+        if noncurrent_version_expiration:
+            noncurrent_expire_days = noncurrent_version_expiration.get("NoncurrentDays")
+            rule_dict["noncurrent_version_expiration"] = NoncurrentVersionExpiration(noncurrent_expire_days)
+
+        # An empty filter is required for the rule to be valid
+        rule_dict["rule_filter"] = Filter(prefix="")
+
+        rule = Rule(**rule_dict)
+        return rule
+
+    @staticmethod
+    def parse_bucket_policies(bucket_policies):
+        if not bucket_policies:
+            logger.info("No bucket policies configured, skipping.")
+            return
+
+        bucket_policy_objects = []
+        for bucket_policy in bucket_policies:
+            bucket_policy_objects.append(BucketPolicy(bucket_policy["bucket"], bucket_policy["policy_file"]))
+
+        return bucket_policy_objects
+
+    @staticmethod
+    def parse_service_accounts(service_accounts):
+        if not service_accounts:
+            logger.info("No service accounts configured, skipping.")
+            return
+
+        service_account_objects = []
+        for service_account in service_accounts:
             bucket = service_account.get("bucket", None)
-            service_accounts.append(ServiceAccount(service_account["name"], bucket))
-    except AttributeError:
-        logger.info("No service accounts configured, skipping.")
+            service_account_objects.append(ServiceAccount(service_account["name"], bucket))
 
-    try:
-        for bucket in resources.buckets:
-            versioning = bucket.get("versioning", None)
-            create_sa = bucket.get("create_service_account", True)
-            buckets.append(Bucket(bucket["name"], create_sa, versioning))
-    except AttributeError:
-        logger.info("No buckets configured, skipping.")
+        return service_account_objects
 
-    try:
-        for bucket_policy in resources.bucket_policies:
-            bucket_policies.append(BucketPolicy(bucket_policy["bucket"], bucket_policy["policy_file"]))
-    except AttributeError:
-        logger.info("No bucket policies configured, skipping.")
+    @staticmethod
+    def parse_iam_policy_attachments(iam_policy_attachments):
+        if not iam_policy_attachments:
+            logger.info("No IAM policy attachments configured, skipping.")
+            return
 
-    try:
-        for iam_policy in resources.iam_policies:
-            iam_policies.append(IamPolicy(iam_policy["name"], iam_policy["policy_file"]))
-    except AttributeError:
-        logger.info("No IAM policies configured, skipping.")
-
-    try:
-        for user in resources.iam_policy_attachments:
+        iam_policy_attachment_objects = []
+        for user in iam_policy_attachments:
             iam_policy_attachments.append(IamPolicyAttachment(user["username"], user["policies"]))
-    except AttributeError:
-        logger.info("No IAM policy attachments configured, skipping.")
 
-    return service_accounts, buckets, bucket_policies, iam_policies, iam_policy_attachments
+        return iam_policy_attachment_objects
+
+    @staticmethod
+    def parse_iam_policies(iam_policies):
+        if not iam_policies:
+            logger.info("No IAM policies configured, skipping.")
+            return
+
+        iam_policy_objects = []
+        for iam_policy in iam_policies:
+            iam_policy_objects.append(IamPolicy(iam_policy["name"], iam_policy["policy_file"]))
+
+        return iam_policy_objects
+
+    def parse_resources(self, resources_file: dict):
+        resources_file = read_yaml(resources_file)
+
+        buckets = resources_file.get("buckets", [])
+        self.buckets = self.parse_buckets(buckets)
+
+        bucket_policies = resources_file.get("bucket_policies", [])
+        self.bucket_policies = self.parse_bucket_policies(bucket_policies)
+
+        service_accounts = resources_file.get("service_accounts", [])
+        self.service_accounts = self.parse_service_accounts(service_accounts)
+
+        iam_policies = resources_file.get("iam_policies", [])
+        self.iam_policies = self.parse_iam_policies(iam_policies)
+
+        iam_policy_attachments = resources_file.get("iam_policy_attachments", [])
+        self.iam_policy_attachments = self.parse_iam_policy_attachments(iam_policy_attachments)
 
 
 class MinioConfig:
