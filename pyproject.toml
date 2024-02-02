@@ -19,6 +19,9 @@ dependencies = [
 license = {text = "MIT license"}
 keywords = ['minio']
 
+[project.scripts]
+minio-manager = "minio_manager:app"
+
 [project.urls]
 Homepage = "https://alveel.github.io/minio-manager/"
 Repository = "https://github.com/alveel/minio-manager"
