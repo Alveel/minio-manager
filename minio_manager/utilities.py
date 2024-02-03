@@ -7,6 +7,7 @@ import yaml
 from minio_manager.classes.logging_config import MinioManagerFilter
 
 logger = None
+module_directory = os.path.dirname(__file__)
 
 
 def read_yaml(file):

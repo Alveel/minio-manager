@@ -120,6 +120,7 @@ Entries are found by way of the title of the entry, the username is not consider
 - `MINIO_MANAGER_DEFAULT_BUCKET_VERSIONING` What bucket versioning level to use for all buckets by default if not specified on the bucket level. Defaults to "Disabled", can also configure "Enabled" or "Suspended"
 - `MINIO_MANAGER_DEFAULT_LIFECYCLE_POLICY` What lifecycle policy (in `mc ilm export` format) to attach to all buckets by default
 - `MINIO_MANAGER_DEFAULT_BUCKET_CREATE_SERVICE_ACCOUNT` Whether to automatically create service accounts for each bucket with access to just that bucket
+- `MINIO_MANAGER_SERVICE_ACCOUNT_POLICY_BASE_FILE` What policy to use as a base for a service account when automatically generated, defaults to [`service-account-policy-base.json`](/minio_manager/resources/service-account-policy-base.json)
 
 ## To do features
 
