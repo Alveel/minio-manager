@@ -6,7 +6,12 @@ from minio_manager.classes.mc_wrapper import McWrapper
 from minio_manager.classes.minio_resources import ServiceAccount
 from minio_manager.classes.secrets import MinioCredentials
 from minio_manager.clients import get_mc_wrapper, get_minio_config, get_secret_manager
-from minio_manager.utilities import logger
+from minio_manager.utilities import logger, module_directory, retrieve_environment_variable
+
+service_account_policy_embedded = f"{module_directory}/resources/service-account-policy-base.json"
+service_account_policy_base_file = retrieve_environment_variable(
+    "MINIO_MANAGER_SERVICE_ACCOUNT_POLICY_BASE_FILE", service_account_policy_embedded
+)
 
 
 def service_account_exists(client: McWrapper, credentials: MinioCredentials):
@@ -30,7 +35,7 @@ def service_account_exists(client: McWrapper, credentials: MinioCredentials):
 
 
 def generate_service_account_policy(account: ServiceAccount) -> Path:
-    with Path("examples/service-account-policy-base.json").open() as base:
+    with Path(service_account_policy_base_file).open() as base:
         base_policy = base.read()
 
     temp_file = NamedTemporaryFile(prefix=account.bucket, suffix=".json", delete=False)

@@ -1,4 +1,5 @@
 THIS_FILE := $(lastword $(MAKEFILE_LIST))
+GIT_TAG := $(shell git describe --exact-match --tags)
 
 .PHONY: install
 install: ## Install the environment and install the pre-commit hooks
@@ -52,6 +53,10 @@ docs-test: ## Test if documentation can be built without warnings or errors
 .PHONY: docs
 docs: ## Build and serve the documentation
 	@pdm run mkdocs serve
+
+.PHONY: build-image
+build-image:
+	@podman build -t minio-manager:$(GIT_TAG) --build-arg GIT_TAG=$(GIT_TAG) .
 
 .PHONY: help
 help:

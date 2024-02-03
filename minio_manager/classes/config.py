@@ -76,9 +76,10 @@ class ClusterResources:
 
         with Path(lifecycle_file).open() as f:
             config_data = json.load(f)
-            for rule_data in config_data["Rules"]:
-                parsed_rule = self.parse_bucket_lifecycle_rule(rule_data)
-                rules.append(parsed_rule)
+
+        for rule_data in config_data["Rules"]:
+            parsed_rule = self.parse_bucket_lifecycle_rule(rule_data)
+            rules.append(parsed_rule)
 
         if not rules:
             return
