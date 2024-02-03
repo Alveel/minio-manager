@@ -1,0 +1,7 @@
+image: minio-manager:0.1.0
+
+run:
+  tags:
+    - minio-manager
+  script:
+    - bash pipeline.sh
