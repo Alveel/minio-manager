@@ -25,10 +25,10 @@ def main():
     config.access_key = run_user_credentials.access_key
     config.secret_key = run_user_credentials.secret_key
 
-    logger.info("Handling cluster resources...")
-    handle_resources(cluster_resources)
-
-    secrets = get_secret_manager(config)
-    secrets.cleanup()
-    end_time = time.time()
-    logger.info(f"Execution took {end_time - start_time:.2f} seconds.")
+    try:
+        logger.info("Handling cluster resources...")
+        handle_resources(cluster_resources)
+    finally:
+        s.cleanup()
+        end_time = time.time()
+        logger.info(f"Execution took {end_time - start_time:.2f} seconds.")

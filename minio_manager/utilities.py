@@ -22,7 +22,7 @@ def read_json(file) -> dict:
 
 def setup_logging():
     global logger
-    log_level = retrieve_environment_variable("MINIO_MANAGER_LOG_LEVEL", "INFO")
+    log_level = get_env_var("MINIO_MANAGER_LOG_LEVEL", "INFO")
     logger = logging.getLogger("minio-manager") if log_level != "DEBUG" else logging.getLogger("root")
     handler = logging.StreamHandler()
     minio_manager_filter = MinioManagerFilter()
@@ -60,10 +60,10 @@ def sort_policy(policy: dict):
     return policy
 
 
-def retrieve_environment_variable(name: str, default=None) -> str:
+def get_env_var(name: str, default=None) -> str:
     """
     Get an environment variable and strip any leading and trailing single and double quotes.
-    This is because Python apparently literally loads them.
+    This is because Python literally loads them.
 
     Args:
         name: str, the name of the environment variable

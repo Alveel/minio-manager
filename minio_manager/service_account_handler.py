@@ -6,12 +6,10 @@ from minio_manager.classes.mc_wrapper import McWrapper
 from minio_manager.classes.minio_resources import ServiceAccount
 from minio_manager.classes.secrets import MinioCredentials
 from minio_manager.clients import get_mc_wrapper, get_minio_config, get_secret_manager
-from minio_manager.utilities import logger, module_directory, retrieve_environment_variable
+from minio_manager.utilities import get_env_var, logger, module_directory
 
-service_account_policy_embedded = f"{module_directory}/resources/service-account-policy-base.json"
-service_account_policy_base_file = retrieve_environment_variable(
-    "MINIO_MANAGER_SERVICE_ACCOUNT_POLICY_BASE_FILE", service_account_policy_embedded
-)
+sa_policy_embedded = f"{module_directory}/resources/service-account-policy-base.json"
+sa_policy_base_file = get_env_var("MINIO_MANAGER_SERVICE_ACCOUNT_POLICY_BASE_FILE", sa_policy_embedded)
 
 
 def service_account_exists(client: McWrapper, credentials: MinioCredentials):
@@ -35,7 +33,7 @@ def service_account_exists(client: McWrapper, credentials: MinioCredentials):
 
 
 def generate_service_account_policy(account: ServiceAccount) -> Path:
-    with Path(service_account_policy_base_file).open() as base:
+    with Path(sa_policy_base_file).open() as base:
         base_policy = base.read()
 
     temp_file = NamedTemporaryFile(prefix=account.bucket, suffix=".json", delete=False)
@@ -91,7 +89,7 @@ def handle_service_account(account: ServiceAccount):
     # Scenario 3: service account does not exist in neither MinIO nor the secret backend
     if not sa_exists and not credentials.access_key:
         # TODO: catch scenario where an access key is deleted in MinIO, but MinIO does not accept the creation of a
-        #  service account with the same access key.
+        #  service account with the same access key, which sometimes happens.
         # Create the service account in MinIO
         credentials = client.service_account_add(credentials)
         # Create credentials in the secret backend
