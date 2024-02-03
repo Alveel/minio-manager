@@ -8,13 +8,11 @@ from minio.lifecycleconfig import Expiration, LifecycleConfig, NoncurrentVersion
 from minio.versioningconfig import VersioningConfig
 
 from minio_manager.classes.minio_resources import Bucket, BucketPolicy, IamPolicy, IamPolicyAttachment, ServiceAccount
-from minio_manager.utilities import logger, read_yaml, retrieve_environment_variable
+from minio_manager.utilities import get_env_var, logger, read_yaml
 
-default_bucket_versioning = retrieve_environment_variable("MINIO_MANAGER_DEFAULT_BUCKET_VERSIONING", "Suspended")
-default_bucket_lifecycle_policy = retrieve_environment_variable("MINIO_MANAGER_DEFAULT_LIFECYCLE_POLICY", "")
-default_bucket_create_service_account = retrieve_environment_variable(
-    "MINIO_MANAGER_DEFAULT_BUCKET_CREATE_SERVICE_ACCOUNT", "True"
-)
+default_bucket_versioning = get_env_var("MINIO_MANAGER_DEFAULT_BUCKET_VERSIONING", "Suspended")
+default_bucket_lifecycle_policy = get_env_var("MINIO_MANAGER_DEFAULT_LIFECYCLE_POLICY", "")
+default_bucket_create_service_account = get_env_var("MINIO_MANAGER_DEFAULT_BUCKET_CREATE_SERVICE_ACCOUNT", "True")
 
 
 class ClusterResources:
@@ -188,12 +186,12 @@ class MinioConfig:
     """MinIO server configuration object, the connection details."""
 
     def __init__(self):
-        self.name = retrieve_environment_variable("MINIO_MANAGER_CLUSTER_NAME")
-        self.endpoint = retrieve_environment_variable("MINIO_MANAGER_S3_ENDPOINT")
-        self.secure = retrieve_environment_variable("MINIO_MANAGER_S3_ENDPOINT_SECURE", True)
-        self.controller_user = retrieve_environment_variable("MINIO_MANAGER_MINIO_CONTROLLER_USER")
+        self.name = get_env_var("MINIO_MANAGER_CLUSTER_NAME")
+        self.endpoint = get_env_var("MINIO_MANAGER_S3_ENDPOINT")
+        self.secure = get_env_var("MINIO_MANAGER_S3_ENDPOINT_SECURE", True)
+        self.controller_user = get_env_var("MINIO_MANAGER_MINIO_CONTROLLER_USER")
         self.access_key = None
         self.secret_key = None
-        self.cluster_resources = retrieve_environment_variable("MINIO_MANAGER_CLUSTER_RESOURCES_FILE")
-        self.secret_backend_type = retrieve_environment_variable("MINIO_MANAGER_SECRET_BACKEND_TYPE")
-        self.secret_s3_bucket = retrieve_environment_variable("MINIO_MANAGER_SECRET_BACKEND_S3_BUCKET")
+        self.cluster_resources = get_env_var("MINIO_MANAGER_CLUSTER_RESOURCES_FILE", "resources.yaml")
+        self.secret_backend_type = get_env_var("MINIO_MANAGER_SECRET_BACKEND_TYPE")
+        self.secret_s3_bucket = get_env_var("MINIO_MANAGER_SECRET_BACKEND_S3_BUCKET", "minio-manager-secrets")

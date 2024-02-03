@@ -8,7 +8,7 @@ from minio import Minio, S3Error
 from pykeepass import PyKeePass
 
 from minio_manager.classes.config import MinioConfig
-from minio_manager.utilities import logger, retrieve_environment_variable
+from minio_manager.utilities import get_env_var, logger
 
 
 class MinioCredentials:
@@ -34,9 +34,9 @@ class SecretManager:
         logger.info(f"SecretManager initialised with backend {self.backend_type}")
 
     def setup_backend_s3(self):
-        endpoint = retrieve_environment_variable("MINIO_MANAGER_S3_ENDPOINT")
-        access_key = retrieve_environment_variable("MINIO_MANAGER_SECRET_BACKEND_S3_ACCESS_KEY")
-        secret_key = retrieve_environment_variable("MINIO_MANAGER_SECRET_BACKEND_S3_SECRET_KEY")
+        endpoint = get_env_var("MINIO_MANAGER_S3_ENDPOINT")
+        access_key = get_env_var("MINIO_MANAGER_SECRET_BACKEND_S3_ACCESS_KEY")
+        secret_key = get_env_var("MINIO_MANAGER_SECRET_BACKEND_S3_SECRET_KEY")
         logger.debug(f"Setting up secret bucket {self.backend_bucket}")
         s3 = Minio(endpoint=endpoint, access_key=access_key, secret_key=secret_key, secure=self.backend_secure)
         try:
@@ -89,7 +89,7 @@ class SecretManager:
         Returns: PyKeePass object, with the kdbx file loaded
 
         """
-        self.backend_filename = retrieve_environment_variable("MINIO_MANAGER_KEEPASS_FILE", "secrets.kdbx")
+        self.backend_filename = get_env_var("MINIO_MANAGER_KEEPASS_FILE", "secrets.kdbx")
         tmp_file = NamedTemporaryFile(suffix=self.backend_filename, delete=False)
         self.keepass_temp_file_name = tmp_file.name
         try:
@@ -109,7 +109,7 @@ class SecretManager:
             response.close()
             response.release_conn()
 
-        kp_pass = retrieve_environment_variable("MINIO_MANAGER_KEEPASS_PASSWORD")
+        kp_pass = get_env_var("MINIO_MANAGER_KEEPASS_PASSWORD")
         logger.debug("Opening keepass database")
         kp = PyKeePass(self.keepass_temp_file_name, password=kp_pass)
         # noinspection PyTypeChecker
@@ -140,7 +140,6 @@ class SecretManager:
                 logger.warning(f"Entry for {name} not found!")
                 return MinioCredentials(name=name)
             logger.critical(f"Unhandled exception: {ae}")
-            sys.exit(13)
         else:
             return credentials
 
@@ -169,7 +168,6 @@ class SecretManager:
             # exiting, not every time after creating or updating an entry.
             # After saving, upload the updated file to the S3 bucket and clean up the temp file.
             tmp_file = Path(self.keepass_temp_file_name)
-            logger.debug(f"tmp_file stat: {tmp_file.stat()}")
             if isinstance(self.backend, PyKeePass):
                 logger.info(f"Saving {self.keepass_temp_file_name}")
                 self.backend.save()
