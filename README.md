@@ -103,24 +103,27 @@ Entries are found by way of the title of the entry, the username is not consider
 ### Required
 
 - `MINIO_MANAGER_CLUSTER_NAME` The name of the cluster, used for example in the secret backend
-- `MINIO_MANAGER_MINIO_ENDPOINT` What host:port to use as MinIO/S3 endpoint
+- `MINIO_MANAGER_S3_ENDPOINT` What host:port to use as MinIO/S3 endpoint
 - `MINIO_MANAGER_MINIO_CONTROLLER_USER` The entry of the MinIO controller user in the secret backend that contains its access and secret keys
-- `MINIO_MANAGER_CLUSTER_RESOURCES_FILE` The YAML file with the MinIO resource configuration (buckets, policies, etc.)
 - `MINIO_MANAGER_SECRET_BACKEND_TYPE` What secret backend to use. Currently only keepass is supported
 - `MINIO_MANAGER_SECRET_BACKEND_S3_ACCESS_KEY` The access key to the S3 bucket where the secret database is stored
 - `MINIO_MANAGER_SECRET_BACKEND_S3_SECRET_KEY` The secret key to the S3 bucket where the secret database is stored
+
+#### Required for Keepass
+
 - `MINIO_MANAGER_KEEPASS_PASSWORD` Keepass database password
 
 ### Optional
 
+- `MINIO_MANAGER_CLUSTER_RESOURCES_FILE` The YAML file with the MinIO resource configuration (buckets, policies, etc.), defaults to `resources.yaml`
 - `MINIO_MANAGER_MINIO_ENDPOINT_SECURE` Whether to use HTTPS for the endpoint. Defaults to `True`
 - `MINIO_MANAGER_SECRET_BACKEND_S3_BUCKET` The name of the bucket where the secret backend is kept. Defaults to `minio-manager-secrets`
 - `MINIO_MANAGER_KEEPASS_FILE` The name of the database file in the S3 bucket. Defaults to `secrets.kdbx`
 - `MINIO_MANAGER_LOG_LEVEL` The log level of the application. Defaults to `INFO`, may also use `DEBUG`
-- `MINIO_MANAGER_DEFAULT_BUCKET_VERSIONING` What bucket versioning level to use for all buckets by default if not specified on the bucket level. Defaults to "Disabled", can also configure "Enabled" or "Suspended"
+- `MINIO_MANAGER_DEFAULT_BUCKET_VERSIONING` What bucket versioning level to use for all buckets by default if not specified on the bucket level. Defaults to "Suspended", can also configure "Enabled"
 - `MINIO_MANAGER_DEFAULT_LIFECYCLE_POLICY` What lifecycle policy (in `mc ilm export` format) to attach to all buckets by default
-- `MINIO_MANAGER_DEFAULT_BUCKET_CREATE_SERVICE_ACCOUNT` Whether to automatically create service accounts for each bucket with access to just that bucket
-- `MINIO_MANAGER_SERVICE_ACCOUNT_POLICY_BASE_FILE` What policy to use as a base for a service account when automatically generated, defaults to [`service-account-policy-base.json`](/minio_manager/resources/service-account-policy-base.json)
+- `MINIO_MANAGER_DEFAULT_BUCKET_CREATE_SERVICE_ACCOUNT` Whether to automatically create service accounts for each bucket with access to just that bucket. Defaults to False
+- `MINIO_MANAGER_SERVICE_ACCOUNT_POLICY_BASE_FILE` What policy to use as a base for a service account when automatically generated, defaults to [`service-account-policy-base.json`](/minio_manager/resources/service-account-policy-base.json). MUST contain BUCKET_NAME_REPLACE_ME in the resources
 
 ## To do features
 
