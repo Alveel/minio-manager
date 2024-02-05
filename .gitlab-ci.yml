@@ -43,9 +43,6 @@ pages:
     - dockerbased
   script:
     - make docs-test
-  artifacts:
-    paths:
-      - site
   rules:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
