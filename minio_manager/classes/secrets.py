@@ -120,7 +120,7 @@ class SecretManager:
         logger.debug("Keepass configured as secret backend")
         return kp
 
-    def keepass_get_credentials(self, name) -> MinioCredentials | bool:
+    def keepass_get_credentials(self, name: str) -> MinioCredentials | bool:
         """Get a password from the configured Keepass database.
 
         Args:

@@ -16,7 +16,9 @@ default_bucket_create_service_account = get_env_var("MINIO_MANAGER_DEFAULT_BUCKE
 
 
 class ClusterResources:
-    """MinIO Cluster configuration object, aka the cluster contents: buckets, policies, etc."""
+    """ClusterResources
+
+    MinIO Cluster configuration object, aka the cluster contents: buckets, policies, etc."""
 
     buckets: list[Bucket]
     bucket_policies: list[BucketPolicy]
@@ -24,7 +26,7 @@ class ClusterResources:
     iam_policies: list[IamPolicy]
     iam_policy_attachments: list[IamPolicyAttachment]
 
-    def parse_buckets(self, buckets):
+    def parse_buckets(self, buckets: list[dict]) -> list[Bucket]:
         """Parse the provided buckets with the following steps:
         For each provided bucket
             1. check the provided versioning. If versioning is not provided, set the default.
@@ -47,7 +49,7 @@ class ClusterResources:
             for bucket in buckets:
                 vs = bucket.get("versioning", None)
                 vc = VersioningConfig(vs) if vs else VersioningConfig(default_bucket_versioning)
-                create_sa = bucket.get("create_service_account", default_bucket_create_service_account)
+                create_sa = bucket.get("create_service_account", bool(default_bucket_create_service_account))
                 lifecycle_file = bucket.get("object_lifecycle_file", default_bucket_lifecycle_policy)
                 lifecycle_config = self.parse_bucket_lifecycle_file(lifecycle_file)
                 bucket_objects.append(Bucket(bucket["name"], create_sa, vc, lifecycle_config))
@@ -85,7 +87,7 @@ class ClusterResources:
         return LifecycleConfig(rules)
 
     @staticmethod
-    def parse_bucket_lifecycle_rule(rule_data) -> Rule:
+    def parse_bucket_lifecycle_rule(rule_data: dict) -> Rule:
         """Parse a single bucket object lifecycle rule
         TODO: implement date and days in Expiration, implement Transition, NoncurrentVersionTransition, Filter, and
           AbortIncompleteMultipartUpload
@@ -98,12 +100,12 @@ class ClusterResources:
         """
         rule_dict = {"status": rule_data.get("Status"), "rule_id": rule_data.get("ID")}
 
-        expiration = rule_data.get("Expiration", None)
+        expiration = rule_data.get("Expiration")
         if expiration:
-            expire_delete_marker = expiration.get("ExpiredObjectDeleteMarker", None)
+            expire_delete_marker = expiration.get("ExpiredObjectDeleteMarker")
             rule_dict["expiration"] = Expiration(expired_object_delete_marker=expire_delete_marker)
 
-        noncurrent_version_expiration = rule_data.get("NoncurrentVersionExpiration", None)
+        noncurrent_version_expiration = rule_data.get("NoncurrentVersionExpiration")
         if noncurrent_version_expiration:
             noncurrent_expire_days = noncurrent_version_expiration.get("NoncurrentDays")
             rule_dict["noncurrent_version_expiration"] = NoncurrentVersionExpiration(noncurrent_expire_days)
