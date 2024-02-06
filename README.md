@@ -88,7 +88,7 @@ users are to be used as "bucket group" managers. For each bucket created under t
 
 #### Secret manager
 
-This is the controller user, that is able to authenticate to the secret backend, in order to retrieve the credentials to the service accounts
+This is the controller user, that is able to authenticate to the secret backend, in order to retrieve the credentials to the service accounts.
 
 #### Secret backend
 
@@ -100,17 +100,17 @@ We highly recommend to pass these variables via masked and/or protected variable
 
 Service accounts are used in order to create buckets, the are also the owner of these buckets. By default we have a one-on-one relationship between service accounts and buckets.
 
-However, there is an option to give ownership of multiple bucket to one service account. By specifying `create_service_account: False` for a bucket in the environment's `resource.yaml`. But you do have to specify the ownership through a `policy_file`:
+However, there is an option to give ownership of multiple bucket to one service account.
 ```
-buckets:
-  - name: infra-test-without-sa
-    create_service_account: False
 service_accounts:
   - name: infra-test-for-multiple-sa
     policy_file: service_account_policies/infra-test-two-buckets.json
 ```
 
-The Resource section of this json will specify which bucket this service account has ownership of, in this example it will have ownership over 2 buckets and all of its objects:
+But you do have to specify the ownership through a `policy_file`.
+
+
+In this example `policy_file` it will have ownership over 2 buckets and all of its objects:
 ```
 "Resource": [
                 "arn:aws:s3:::infra-test-without-sa",
@@ -129,7 +129,7 @@ Buckets are used to organize and store objects. The `resource.yaml` supports the
 ---|---|---|---|---
  `name` | YES | Specify the name of the bucket | None | `infra-test-tomato-bucket`
  `create_service_account` | NO | Do you want to automatically create a service account that has ownership of this bucket? | `TRUE` | `infra-test-tomato-bucket`
- `object_lifecycle_file` | NO | Specify the lifecycle policy that you want to attach to this bucket | None | `lifecycle_policies/my_lifecycle.json`
+ `object_lifecycle_file` | NO | Specify the lifecycle policy that you want to attach to this bucket | None | `/lifecycle_policies/my_lifecycle.json`
  `versioning` | NO | Do you want to enable versioning for this bucket? | `TRUE` | `TRUE`
 
 ##### Bucket policies
@@ -137,21 +137,21 @@ Bucket policies are used to restrict bucket access or action on a bucket level. 
  **Property** | **Required** | **Description** | **Default** | **Example**
 ---|---|---|---|---
  `name` | YES | Specify the name of the bucket | None | `infra-test-tomato-bucket`
-  `policy_file` | YES | Specify the name of the policy that should be assigned to the bucket | None | `bucket_policies/my_bucketpolicy.json`
+  `policy_file` | NO | Specify the name of the policy that should be assigned to the bucket | None | `/bucket_policies/my_bucket.json`
 
 #### Service accounts
 Service accounts are, by default, automatically created when creating a bucket. However, it is possible to create them seperately. The `resource.yaml` supports the following properties:
  **Property** | **Required** | **Description** | **Default** | **Example**
 ---|---|---|---|---
  `name` | YES | Specify the name of the service account | None | `infra-test-tomato-bucket`
-  `policy_file` | NO | Specify the policy file for this service account | None | `user_policies/my_user.json`
+  `policy_file` | NO | Specify the policy file for this service account | `/minio_manager/resources/service-account-policy-base.json` | `/sa_policies/my_sa.json`
 
 #### IAM policies
 IAM policies consist of actions and resources to which an authenticated user has access. Each policy describes one or more actions and conditions that outline the permissions of a user or group of users. The `resource.yaml` supports the following properties:
  **Property** | **Required** | **Description** | **Default** | **Example**
 ---|---|---|---|---
  `name` | YES | Specify the name of the IAM policy | None | `infra-test-adminpolicy`
-  `policy_file` | YES | Specify the policy file to use for this policy | None | `iam_policies/my_iam.json`
+  `policy_file` | YES | Specify the policy file to use for this policy | None | `/iam_policies/my_iam.json`
 
 #### IAM policy attachment
 For IAM policies to be effective we have to attach them to users. The `resource.yaml` supports the following properties:
