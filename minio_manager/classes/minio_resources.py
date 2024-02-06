@@ -25,9 +25,13 @@ class BucketPolicy:
 
 
 class ServiceAccount:
-    def __init__(self, name: str, bucket: str | None = None):
+    def __init__(
+        self, name: str, access_key: str | None = None, secret_key: str | None = None, policy_file: str | None = None
+    ):
         self.name = name
-        self.bucket = bucket
+        self.access_key = access_key
+        self.secret_key = secret_key
+        self.policy_file = policy_file
 
 
 class IamPolicy:

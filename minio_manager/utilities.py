@@ -6,7 +6,7 @@ import yaml
 
 from minio_manager.classes.logging_config import MinioManagerFilter
 
-logger = None
+logger = None  # type: Logger
 module_directory = os.path.dirname(__file__)
 
 

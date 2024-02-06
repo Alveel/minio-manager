@@ -101,3 +101,6 @@ def handle_service_account(account: ServiceAccount):
         policy_file = generate_service_account_policy(account)
         client.service_account_set_policy(credentials.access_key, str(policy_file))
         policy_file.unlink()
+
+    if account.policy_file:
+        client.service_account_set_policy()

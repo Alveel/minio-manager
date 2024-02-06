@@ -56,4 +56,5 @@ def handle_bucket(bucket: Bucket):
     if bucket.create_sa:
         # TODO: is there a nicer way to go about this?
         service_account = ServiceAccount(bucket.name, bucket.name)
+        # policy_file = generate_service_account_policy(bucket)
         handle_service_account(service_account)
