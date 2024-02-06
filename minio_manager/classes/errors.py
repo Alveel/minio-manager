@@ -49,7 +49,15 @@ error_map = {
 }
 
 
-def raise_specific_error(error_code, error_message):
+def raise_specific_error(error_code: str, error_message: str):
+    """Raise a specific Minio Manager error.
+
+    TODO: only _raise_ if log level is DEBUG. Just do logger.error/critical if it's INFO.
+
+    Args:
+        error_code (str): the error code
+        error_message (str): the error message
+    """
     if error_code not in error_map:
         raise MinioManagerBaseError(error_code, error_message)
     raise error_map[error_code](error_message)

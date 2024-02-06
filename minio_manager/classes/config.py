@@ -5,7 +5,7 @@ from pathlib import Path
 
 from minio.commonconfig import Filter
 from minio.lifecycleconfig import Expiration, LifecycleConfig, NoncurrentVersionExpiration, Rule
-from minio.versioningconfig import VersioningConfig
+from minio.versioningconfig import VersioningConfig as VeCo
 
 from minio_manager.classes.minio_resources import Bucket, BucketPolicy, IamPolicy, IamPolicyAttachment, ServiceAccount
 from minio_manager.utilities import get_env_var, logger, read_yaml
@@ -13,12 +13,18 @@ from minio_manager.utilities import get_env_var, logger, read_yaml
 default_bucket_versioning = get_env_var("MINIO_MANAGER_DEFAULT_BUCKET_VERSIONING", "Suspended")
 default_bucket_lifecycle_policy = get_env_var("MINIO_MANAGER_DEFAULT_LIFECYCLE_POLICY", "")
 default_bucket_create_service_account = get_env_var("MINIO_MANAGER_DEFAULT_BUCKET_CREATE_SERVICE_ACCOUNT", "True")
+default_bucket_allowed_prefix = get_env_var("MINIO_MANAGER_ALLOWED_BUCKET_PREFIX", "")
 
 
 class ClusterResources:
-    """ClusterResources
+    """ClusterResources is the object containing all the cluster resources:
 
-    MinIO Cluster configuration object, aka the cluster contents: buckets, policies, etc."""
+    - buckets
+    - bucket_policies
+    - service_accounts
+    - iam_policies
+    - iam_policy_attachments
+    """
 
     buckets: list[Bucket]
     bucket_policies: list[BucketPolicy]
@@ -47,12 +53,17 @@ class ClusterResources:
         bucket_objects = []
         try:
             for bucket in buckets:
-                vs = bucket.get("versioning", None)
-                vc = VersioningConfig(vs) if vs else VersioningConfig(default_bucket_versioning)
+                name = bucket["name"]
+                if not name.startswith(default_bucket_allowed_prefix):
+                    logger.error(f"Bucket {name} does not start with required prefix '{default_bucket_allowed_prefix}'")
+                    continue
+
+                versioning = bucket.get("versioning")
+                versioning_config = VeCo(versioning) if versioning else VeCo(default_bucket_versioning)
                 create_sa = bucket.get("create_service_account", bool(default_bucket_create_service_account))
                 lifecycle_file = bucket.get("object_lifecycle_file", default_bucket_lifecycle_policy)
                 lifecycle_config = self.parse_bucket_lifecycle_file(lifecycle_file)
-                bucket_objects.append(Bucket(bucket["name"], create_sa, vc, lifecycle_config))
+                bucket_objects.append(Bucket(name, create_sa, versioning_config, lifecycle_config))
         except AttributeError:
             logger.info("No buckets configured, skipping.")
 
@@ -74,6 +85,7 @@ class ClusterResources:
 
         rules: list = []
 
+        # TODO: E2E 5, catch and log FileNotFoundError and PermissionError
         with Path(lifecycle_file).open() as f:
             config_data = json.load(f)
 
@@ -136,7 +148,7 @@ class ClusterResources:
 
         service_account_objects = []
         for service_account in service_accounts:
-            bucket = service_account.get("bucket", None)
+            bucket = service_account.get("bucket")
             service_account_objects.append(ServiceAccount(service_account["name"], bucket))
 
         return service_account_objects
@@ -168,24 +180,24 @@ class ClusterResources:
     def parse_resources(self, resources_file: dict):
         resources_file = read_yaml(resources_file)
 
-        buckets = resources_file.get("buckets", [])
+        buckets = resources_file.get("buckets")
         self.buckets = self.parse_buckets(buckets)
 
-        bucket_policies = resources_file.get("bucket_policies", [])
+        bucket_policies = resources_file.get("bucket_policies")
         self.bucket_policies = self.parse_bucket_policies(bucket_policies)
 
-        service_accounts = resources_file.get("service_accounts", [])
+        service_accounts = resources_file.get("service_accounts")
         self.service_accounts = self.parse_service_accounts(service_accounts)
 
-        iam_policies = resources_file.get("iam_policies", [])
+        iam_policies = resources_file.get("iam_policies")
         self.iam_policies = self.parse_iam_policies(iam_policies)
 
-        iam_policy_attachments = resources_file.get("iam_policy_attachments", [])
+        iam_policy_attachments = resources_file.get("iam_policy_attachments")
         self.iam_policy_attachments = self.parse_iam_policy_attachments(iam_policy_attachments)
 
 
 class MinioConfig:
-    """MinIO server configuration object, the connection details."""
+    """MinioConfig is the MinIO server configuration object containing the connection details."""
 
     def __init__(self):
         self.name = get_env_var("MINIO_MANAGER_CLUSTER_NAME")

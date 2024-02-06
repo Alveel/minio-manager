@@ -42,7 +42,7 @@ def setup_logging():
 
 
 def sort_policy(policy: dict):
-    """
+    """Sort a JSON dict to allow for consistent comparisons of current vs desired policies
 
     Args:
         policy: dict

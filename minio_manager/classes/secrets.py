@@ -6,6 +6,7 @@ from tempfile import NamedTemporaryFile
 
 from minio import Minio, S3Error
 from pykeepass import PyKeePass
+from pykeepass.exceptions import CredentialsError
 
 from minio_manager.classes.config import MinioConfig
 from minio_manager.utilities import get_env_var, logger
@@ -42,7 +43,12 @@ class SecretManager:
         try:
             s3.bucket_exists(self.backend_bucket)
         except S3Error as s3e:
-            logger.critical(f"{s3e.code}: Does the bucket exist? Does the user have the correct permissions?")
+            if s3e.code == "SignatureDoesNotMatch":
+                logger.critical("Invalid secret key provided for the secret backend bucket user.")
+            if s3e.code == "InvalidAccessKeyId":
+                logger.critical("Invalid access key ID provided for the secret backend bucket user.")
+            if s3e.code == "AccessDenied":
+                logger.critical("Access denied for the secret backend bucket user.")
             sys.exit(10)
         return s3
 
@@ -111,7 +117,11 @@ class SecretManager:
 
         kp_pass = get_env_var("MINIO_MANAGER_KEEPASS_PASSWORD")
         logger.debug("Opening keepass database")
-        kp = PyKeePass(self.keepass_temp_file_name, password=kp_pass)
+        try:
+            kp = PyKeePass(self.keepass_temp_file_name, password=kp_pass)
+        except CredentialsError:
+            logger.critical("Invalid credentials for Keepass database.")
+            sys.exit(13)
         # noinspection PyTypeChecker
         self.keepass_group = kp.find_groups(path=["s3", self._cluster_name])
         if not self.keepass_group:
