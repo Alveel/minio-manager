@@ -59,17 +59,18 @@ class SecretManager:
         method = getattr(self, method_name)
         return method()
 
-    def get_credentials(self, name: str) -> MinioCredentials:
+    def get_credentials(self, name: str, required: bool = False) -> MinioCredentials:
         """Get a password from the configured secret backend.
 
         Args:
-            name: str, the name of the password entry
+            name (str): the name of the password entry
+            required (bool): whether the credentials must exist
 
         Returns: MinioCredentials
         """
         method_name = f"{self.backend_type}_get_credentials"
         method = getattr(self, method_name)
-        return method(name)
+        return method(name, required)
 
     def set_password(self, credentials: MinioCredentials):
         method_name = f"{self.backend_type}_set_password"
@@ -130,11 +131,12 @@ class SecretManager:
         logger.debug("Keepass configured as secret backend")
         return kp
 
-    def keepass_get_credentials(self, name: str) -> MinioCredentials | bool:
+    def keepass_get_credentials(self, name: str, required: bool) -> MinioCredentials | bool:
         """Get a password from the configured Keepass database.
 
         Args:
-            name: str, the name of the password entry
+            name (str): the name of the password entry
+            required (bool): if the entry must exist
 
         Returns:
             MinioCredentials if found, False if not found
@@ -147,7 +149,9 @@ class SecretManager:
             logger.debug(f"Found access key {credentials.access_key}")
         except AttributeError as ae:
             if not ae.obj:
-                logger.warning(f"Entry for {name} not found!")
+                if required:
+                    logger.critical(f"Required entry for {name} not found!")
+                    sys.exit(14)
                 return MinioCredentials(name=name)
             logger.critical(f"Unhandled exception: {ae}")
         else:
@@ -157,7 +161,7 @@ class SecretManager:
         """Set the password for the given credentials.
 
         Args:
-            credentials: MinioCredentials
+            credentials (MinioCredentials): the credentials to set
         """
         logger.info(f"Creating Keepass entry for {credentials.access_key}")
         self.backend.add_entry(

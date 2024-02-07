@@ -21,7 +21,7 @@ def main():
 
     logger.info("Loading secret backend...")
     s = get_secret_manager(config)
-    run_user_credentials = s.get_credentials(config.controller_user)
+    run_user_credentials = s.get_credentials(config.controller_user, required=True)
     config.access_key = run_user_credentials.access_key
     config.secret_key = run_user_credentials.secret_key
 
