@@ -20,6 +20,8 @@ class MinioCredentials:
 
 
 class SecretManager:
+    """SecretManager is responsible for managing credentials"""
+
     def __init__(self, config: MinioConfig):
         logger.debug("Initialising SecretManager")
         self._cluster_name = config.name
@@ -48,7 +50,10 @@ class SecretManager:
             if s3e.code == "InvalidAccessKeyId":
                 logger.critical("Invalid access key ID provided for the secret backend bucket user.")
             if s3e.code == "AccessDenied":
-                logger.critical("Access denied for the secret backend bucket user.")
+                logger.critical(
+                    "Access denied for the secret backend bucket user. Does the bucket exist, and does the "
+                    "user have the correct permissions to the bucket?"
+                )
             sys.exit(10)
         return s3
 
