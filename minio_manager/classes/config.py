@@ -206,21 +206,22 @@ class ClusterResources:
         return iam_policy_objects
 
     def parse_resources(self, resources_file: dict):
-        resources_file = read_yaml(resources_file)
+        resources = read_yaml(resources_file)
 
-        buckets = resources_file.get("buckets")
+        # TODO: exit if any resources are invalid.
+        buckets = resources.get("buckets")
         self.buckets = self.parse_buckets(buckets)
 
-        bucket_policies = resources_file.get("bucket_policies")
+        bucket_policies = resources.get("bucket_policies")
         self.bucket_policies = self.parse_bucket_policies(bucket_policies)
 
-        service_accounts = resources_file.get("service_accounts")
+        service_accounts = resources.get("service_accounts")
         self.service_accounts = self.parse_service_accounts(service_accounts)
 
-        iam_policies = resources_file.get("iam_policies")
+        iam_policies = resources.get("iam_policies")
         self.iam_policies = self.parse_iam_policies(iam_policies)
 
-        iam_policy_attachments = resources_file.get("iam_policy_attachments")
+        iam_policy_attachments = resources.get("iam_policy_attachments")
         self.iam_policy_attachments = self.parse_iam_policy_attachments(iam_policy_attachments)
 
 
