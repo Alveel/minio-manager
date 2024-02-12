@@ -6,7 +6,8 @@ import yaml
 
 from minio_manager.classes.logging_config import MinioManagerFilter
 
-logger = None  # type: Logger
+logger = logging.getLogger("root")
+logger_setup = False  # whether the logger is already configured or not
 module_directory = os.path.dirname(__file__)
 
 
@@ -83,5 +84,6 @@ def get_env_var(name: str, default=None) -> str:
     return default
 
 
-if not logger:
+if not logger_setup:
     setup_logging()
+    logger_setup = True
