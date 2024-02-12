@@ -51,21 +51,31 @@ class ClusterResources:
             return []
 
         bucket_objects = []
-        try:
-            for bucket in buckets:
-                name = bucket["name"]
-                if not name.startswith(default_bucket_allowed_prefix):
-                    logger.error(f"Bucket {name} does not start with required prefix '{default_bucket_allowed_prefix}'")
-                    continue
+        if not isinstance(buckets, list):
+            logger.error("buckets must be defined as a list!")
+            return bucket_objects
 
-                versioning = bucket.get("versioning")
+        lifecycle_config = self.parse_bucket_lifecycle_file(default_bucket_lifecycle_policy)
+
+        for bucket in buckets:
+            name = bucket["name"]
+            if not name.startswith(default_bucket_allowed_prefix):
+                logger.error(
+                    f"Bucket {name} does not start with required prefix '{default_bucket_allowed_prefix}', skipping."
+                )
+                continue
+
+            versioning = bucket.get("versioning")
+            try:
                 versioning_config = VeCo(versioning) if versioning else VeCo(default_bucket_versioning)
-                create_sa = bucket.get("create_service_account", bool(default_bucket_create_service_account))
-                lifecycle_file = bucket.get("object_lifecycle_file", default_bucket_lifecycle_policy)
+            except ValueError as ve:
+                logger.error(f"Error parsing versioning setting: {' '.join(ve.args)}")
+                continue
+            create_sa = bucket.get("create_service_account", bool(default_bucket_create_service_account))
+            lifecycle_file = bucket.get("object_lifecycle_file")
+            if lifecycle_file:
                 lifecycle_config = self.parse_bucket_lifecycle_file(lifecycle_file)
-                bucket_objects.append(Bucket(name, create_sa, versioning_config, lifecycle_config))
-        except AttributeError:
-            logger.info("No buckets configured, skipping.")
+            bucket_objects.append(Bucket(name, create_sa, versioning_config, lifecycle_config))
 
         return bucket_objects
 
@@ -85,13 +95,27 @@ class ClusterResources:
 
         rules: list = []
 
-        # TODO: E2E 5, catch and log FileNotFoundError and PermissionError
-        with Path(lifecycle_file).open() as f:
-            config_data = json.load(f)
+        try:
+            with Path(lifecycle_file).open() as f:
+                config_data = json.load(f)
+        except FileNotFoundError:
+            logger.error(f"Lifecycle file {lifecycle_file} not found, skipping configuration.")
+            return
+        except PermissionError:
+            logger.error(f"Incorrect file permissions on {lifecycle_file}, skipping configuration.")
+            return
 
-        for rule_data in config_data["Rules"]:
-            parsed_rule = self.parse_bucket_lifecycle_rule(rule_data)
-            rules.append(parsed_rule)
+        try:
+            rules_dict = config_data["Rules"]
+        except KeyError:
+            logger.error(f"Lifecycle file {lifecycle_file} is missing the required 'Rules' key.")
+            return
+        try:
+            for rule_data in rules_dict:
+                parsed_rule = self.parse_bucket_lifecycle_rule(rule_data)
+                rules.append(parsed_rule)
+        except AttributeError:
+            logger.error(f"Error parsing lifecycle file {lifecycle_file}. Is the format correct?")
 
         if not rules:
             return
