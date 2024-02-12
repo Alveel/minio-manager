@@ -59,6 +59,7 @@ class ClusterResources:
 
         for bucket in buckets:
             name = bucket["name"]
+            logger.debug(f"Parsing bucket {name}")
             if not name.startswith(default_bucket_allowed_prefix):
                 logger.error(
                     f"Bucket {name} does not start with required prefix '{default_bucket_allowed_prefix}', skipping."
@@ -74,7 +75,9 @@ class ClusterResources:
             create_sa = bucket.get("create_service_account", bool(default_bucket_create_service_account))
             lifecycle_file = bucket.get("object_lifecycle_file")
             if lifecycle_file:
-                lifecycle_config = self.parse_bucket_lifecycle_file(lifecycle_file)
+                bucket_lifecycle = self.parse_bucket_lifecycle_file(lifecycle_file)
+                if isinstance(bucket_lifecycle, LifecycleConfig):
+                    lifecycle_config = bucket_lifecycle
             bucket_objects.append(Bucket(name, create_sa, versioning_config, lifecycle_config))
 
         return bucket_objects
@@ -116,6 +119,7 @@ class ClusterResources:
                 rules.append(parsed_rule)
         except AttributeError:
             logger.error(f"Error parsing lifecycle file {lifecycle_file}. Is the format correct?")
+            return
 
         if not rules:
             return
