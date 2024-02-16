@@ -72,7 +72,7 @@ class ClusterResources:
             except ValueError as ve:
                 logger.error(f"Error parsing versioning setting: {' '.join(ve.args)}")
                 continue
-            create_sa = bucket.get("create_service_account", bool(default_bucket_create_service_account))
+            create_sa = bool(bucket.get("create_service_account", default_bucket_create_service_account))
             lifecycle_file = bucket.get("object_lifecycle_file")
             if lifecycle_file:
                 bucket_lifecycle = self.parse_bucket_lifecycle_file(lifecycle_file)
@@ -176,8 +176,9 @@ class ClusterResources:
 
         service_account_objects = []
         for service_account in service_accounts:
-            bucket = service_account.get("bucket")
-            service_account_objects.append(ServiceAccount(service_account["name"], bucket))
+            policy_file = service_account.get("policy_file")
+            sa_obj = ServiceAccount(name=service_account["name"], policy_file=policy_file)
+            service_account_objects.append(sa_obj)
 
         return service_account_objects
 
@@ -205,7 +206,7 @@ class ClusterResources:
 
         return iam_policy_objects
 
-    def parse_resources(self, resources_file: dict):
+    def parse_resources(self, resources_file: str):
         resources = read_yaml(resources_file)
 
         # TODO: exit if any resources are invalid.
