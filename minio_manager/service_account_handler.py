@@ -56,7 +56,11 @@ def handle_sa_policy(account: ServiceAccount):
     try:
         client.service_account_set_policy(account.access_key, str(account.policy_file))
     except MinioMalformedIamPolicyError:
-        logger.error("")
+        logger.error(
+            f"Policy for service account '{account.name}' is malformed, reverting to base policy for service account."
+        )
+        apply_base_policy(account)
+        return
 
     current_updated_policy = client.service_account_get_policy(account.access_key)
     policies_diff_post = compare_objects(current_updated_policy, desired_policy)
