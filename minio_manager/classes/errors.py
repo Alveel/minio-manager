@@ -9,6 +9,10 @@ class MinioInvalidIamCredentialsError(MinioManagerBaseError):
     """Raised when invalid IAM credentials are used."""
 
 
+class MinioMalformedIamPolicyError(MinioManagerBaseError):
+    """Raised when an invalid IAM policy is provided."""
+
+
 class MinioInvalidAccessKeyId(MinioManagerBaseError):
     """Raised when an invalid user access key ID is provided."""
 
@@ -41,6 +45,7 @@ error_map = {
     "XMinioInvalidIAMCredentials": MinioInvalidIamCredentialsError,
     "InvalidAccessKeyId": MinioInvalidAccessKeyId,
     "XMinioIAMServiceAccountNotAllowed": MinioIamServiceAccountNotAllowedError,
+    "XMinioMalformedIAMPolicy": MinioMalformedIamPolicyError,
     "InternalError": MinioInternalError,
     "XMinioAdminNoSuchUser": MinioNoSuchUserError,
     "XMinioAdminNoSuchPolicy": MinioNoSuchPolicyError,
