@@ -9,14 +9,8 @@ from pykeepass import PyKeePass
 from pykeepass.exceptions import CredentialsError
 
 from minio_manager.classes.config import MinioConfig
+from minio_manager.classes.minio_resources import ServiceAccount
 from minio_manager.utilities import get_env_var, logger
-
-
-class MinioCredentials:
-    def __init__(self, name: str, access_key: str | None = None, secret_key: str | None = None):
-        self.name = name
-        self.access_key = access_key
-        self.secret_key = secret_key
 
 
 class SecretManager:
@@ -34,7 +28,7 @@ class SecretManager:
         self.keepass_group = None
         self.backend_s3 = self.setup_backend_s3()
         self.backend = self.setup_backend()
-        logger.info(f"SecretManager initialised with backend {self.backend_type}")
+        logger.info(f"Secret backend initialised with {self.backend_type}")
 
     def setup_backend_s3(self):
         endpoint = get_env_var("MINIO_MANAGER_S3_ENDPOINT")
@@ -64,7 +58,7 @@ class SecretManager:
         method = getattr(self, method_name)
         return method()
 
-    def get_credentials(self, name: str, required: bool = False) -> MinioCredentials:
+    def get_credentials(self, name: str, required: bool = False) -> ServiceAccount:
         """Get a password from the configured secret backend.
 
         Args:
@@ -77,7 +71,7 @@ class SecretManager:
         method = getattr(self, method_name)
         return method(name, required)
 
-    def set_password(self, credentials: MinioCredentials):
+    def set_password(self, credentials: ServiceAccount):
         method_name = f"{self.backend_type}_set_password"
         method = getattr(self, method_name)
         self.backend_dirty = True
@@ -89,7 +83,7 @@ class SecretManager:
     def dummy_get_credentials(self, name):
         raise NotImplementedError
 
-    def dummy_set_password(self, credentials: MinioCredentials):
+    def dummy_set_password(self, credentials: ServiceAccount):
         raise NotImplementedError
 
     def retrieve_keepass_backend(self) -> PyKeePass:
@@ -136,7 +130,7 @@ class SecretManager:
         logger.debug("Keepass configured as secret backend")
         return kp
 
-    def keepass_get_credentials(self, name: str, required: bool) -> MinioCredentials | bool:
+    def keepass_get_credentials(self, name: str, required: bool) -> ServiceAccount:
         """Get a password from the configured Keepass database.
 
         Args:
@@ -144,29 +138,29 @@ class SecretManager:
             required (bool): if the entry must exist
 
         Returns:
-            MinioCredentials if found, False if not found
+            ServiceAccount
         """
         logger.debug(f"Finding Keepass entry for {name}")
         entry = self.backend.find_entries(title=name, group=self.keepass_group, first=True)
 
         try:
-            credentials = MinioCredentials(name, entry.username, entry.password)
+            credentials = ServiceAccount(name=name, access_key=entry.username, secret_key=entry.password)
             logger.debug(f"Found access key {credentials.access_key}")
         except AttributeError as ae:
             if not ae.obj:
                 if required:
                     logger.critical(f"Required entry for {name} not found!")
                     sys.exit(14)
-                return MinioCredentials(name=name)
+                return ServiceAccount(name=name)
             logger.critical(f"Unhandled exception: {ae}")
         else:
             return credentials
 
-    def keepass_set_password(self, credentials: MinioCredentials):
+    def keepass_set_password(self, credentials: ServiceAccount):
         """Set the password for the given credentials.
 
         Args:
-            credentials (MinioCredentials): the credentials to set
+            credentials (ServiceAccount): the credentials to set
         """
         logger.info(f"Creating Keepass entry for {credentials.access_key}")
         self.backend.add_entry(
@@ -178,7 +172,8 @@ class SecretManager:
 
     def cleanup(self):
         if not self.backend_dirty:
-            Path(self.keepass_temp_file_name).unlink()
+            if self.keepass_temp_file_name:
+                Path(self.keepass_temp_file_name).unlink()
             return
 
         # If we have dirty back-ends, we want to ensure they are saved before exiting.

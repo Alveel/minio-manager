@@ -3,11 +3,11 @@ import os
 import shutil
 import subprocess
 from pathlib import Path
-from types import SimpleNamespace
+
+from classes.minio_resources import ServiceAccount
 
 from minio_manager.classes.config import MinioConfig
 from minio_manager.classes.errors import MinioManagerBaseError, raise_specific_error
-from minio_manager.classes.secrets import MinioCredentials
 from minio_manager.utilities import logger
 
 
@@ -20,9 +20,9 @@ class McWrapper:
         self.mc_config_path = self.set_config_path()
         self.mc = self.find_mc_command()
         self.configure(config.endpoint, config.access_key, config.secret_key, config.secure)
-        logger.info("Initialised McWrapper")
+        logger.debug("McWrapper initialised")
 
-    def _run(self, args, multiline=False):
+    def _run(self, args, multiline=False) -> list[dict] | dict:
         """Execute mc command and return JSON output."""
         logger.debug(f"Running: {self.mc} --json {' '.join(args)}")
         proc = subprocess.run(
@@ -34,8 +34,8 @@ class McWrapper:
         if not proc.stdout:
             return [] if multiline else {}
         if multiline:
-            return [json.loads(line, object_hook=lambda d: SimpleNamespace(**d)) for line in proc.stdout.splitlines()]
-        return json.loads(proc.stdout, object_hook=lambda d: SimpleNamespace(**d))
+            return [json.loads(line) for line in proc.stdout.splitlines()]
+        return json.loads(proc.stdout)
 
     @staticmethod
     def set_config_path():
@@ -64,29 +64,31 @@ class McWrapper:
         logger.debug(f"Validating config for cluster {self.cluster_name}")
         cluster_ready = self._run(["ready", self.cluster_name])
         logger.debug(f"Cluster status: {cluster_ready}")
-        if not cluster_ready.error:
+        error = cluster_ready.get("error")
+        if not error:
             # Cluster is configured & available
             return
 
         logger.info("Endpoint is not configured or erroneous, configuring...")
         url = f"https://{endpoint}" if secure else f"http://{endpoint}"
         alias_set_resp = self._run(["alias", "set", self.cluster_name, url, access_key, secret_key])
-        if hasattr(alias_set_resp, "error"):
-            error_details = alias_set_resp.error.cause.error
+        if alias_set_resp.get("error"):
+            error_details = alias_set_resp["error"]["cause"]["error"]
             try:
-                raise_specific_error(error_details.Code, error_details.Message)
+                raise_specific_error(error_details["Code"], error_details["Message"])
             except AttributeError as ae:
                 logger.exception("Unknown error!")
-                raise MinioManagerBaseError(alias_set_resp.error.cause.message) from ae
+                raise MinioManagerBaseError(alias_set_resp["error"]["cause"]["message"]) from ae
 
         cluster_ready = self._run(["ready", self.cluster_name])
-        if cluster_ready.healthy:
+        healthy = cluster_ready.get("healthy")
+        if healthy:
             # Cluster is configured & available
             return
 
-        if hasattr(cluster_ready, "error"):
+        if cluster_ready.get("error"):
             # A connection error occurred
-            raise ConnectionError(cluster_ready.error)
+            raise ConnectionError(cluster_ready["error"])
 
     def _service_account_run(self, cmd, args):
         """
@@ -100,17 +102,18 @@ class McWrapper:
         """
         multiline = cmd in ["list", "ls"]
         resp = self._run(["admin", "user", "svcacct", cmd, self.cluster_name, *args], multiline=multiline)
-        if hasattr(resp, "error") and resp.error:
-            error_details = resp.error.cause.error
-            raise_specific_error(error_details.Code, error_details.Message)
+        resp_error = resp.get("error")
+        if resp_error:
+            error_details = resp["error"]["cause"]["error"]
+            raise_specific_error(error_details["Code"], error_details["Message"])
         return resp
 
-    def service_account_add(self, credentials: MinioCredentials) -> MinioCredentials:
+    def service_account_add(self, credentials: ServiceAccount) -> ServiceAccount:
         """
         mc admin user svcacct add alias-name 'username' --name "sa-test-key"
 
         Args:
-            credentials (MinioCredentials): object containing at least the user-friendly name of the service account
+            credentials (ServiceAccount): object containing at least the user-friendly name of the service account
 
         Returns: MinioCredentials with the access and secret keys added to it
         """
@@ -121,15 +124,15 @@ class McWrapper:
         if credentials.access_key:
             args.extend(["--access-key", credentials.access_key])
         resp = self._service_account_run("add", args)
-        credentials.access_key = resp.accessKey
-        credentials.secret_key = resp.secretKey
+        credentials.access_key = resp["accessKey"]
+        credentials.secret_key = resp["secretKey"]
         return credentials
 
-    def service_account_list(self, access_key):
+    def service_account_list(self, access_key) -> list[dict]:
         """mc admin user svcacct ls alias-name 'access_key'"""
         return self._service_account_run("ls", [access_key])
 
-    def service_account_info(self, access_key):
+    def service_account_info(self, access_key) -> dict:
         """mc admin user svcacct info alias-name service-account-access-key"""
         return self._service_account_run("info", [access_key])
 
@@ -137,6 +140,10 @@ class McWrapper:
         """mc admin user svcacct rm alias-name service-account-access-key"""
         raise NotImplementedError
 
-    def service_account_set_policy(self, access_key, policy_file):
+    def service_account_get_policy(self, access_key) -> dict:
+        info = self.service_account_info(access_key)
+        return info["policy"]
+
+    def service_account_set_policy(self, access_key: str, policy_file: str):
         """mc admin user svcacct edit alias-name service-account-access-key --policy policy-file"""
         return self._service_account_run("edit", [access_key, "--policy", policy_file])
