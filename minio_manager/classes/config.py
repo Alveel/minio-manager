@@ -183,7 +183,7 @@ class ClusterResources:
         return service_account_objects
 
     @staticmethod
-    def parse_iam_policy_attachments(iam_policy_attachments):
+    def parse_iam_attachments(iam_policy_attachments):
         if not iam_policy_attachments:
             logger.info("No IAM policy attachments configured, skipping.")
             return []
@@ -223,7 +223,7 @@ class ClusterResources:
         self.iam_policies = self.parse_iam_policies(iam_policies)
 
         iam_policy_attachments = resources.get("iam_policy_attachments")
-        self.iam_policy_attachments = self.parse_iam_policy_attachments(iam_policy_attachments)
+        self.iam_policy_attachments = self.parse_iam_attachments(iam_policy_attachments)
 
 
 class MinioConfig:
