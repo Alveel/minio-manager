@@ -1,8 +1,10 @@
 import json
 import logging
 import os
+from pathlib import Path
 
 import yaml
+from deepdiff import DeepDiff
 
 from minio_manager.classes.logging_config import MinioManagerLogger
 
@@ -11,7 +13,7 @@ logger_setup = False  # whether the logger is already configured or not
 module_directory = os.path.dirname(__file__)
 
 
-def read_yaml(file):
+def read_yaml(file: str | Path) -> dict:
     with open(file) as f:
         return yaml.safe_load(f)
 
@@ -29,7 +31,15 @@ def setup_logging():
     logger.debug(f"Configured log level: {log_level}")
 
 
-def sort_policy(policy: dict):
+def compare_objects(a: dict, b: dict, ignore_order: bool = True) -> bool | dict:
+    """Compare two dicts and return False if they match, the differences if they don't"""
+    result = DeepDiff(a, b, ignore_order=ignore_order)
+    if result:
+        return result
+    return False
+
+
+def sort_policy(policy: dict) -> dict:
     """Sort a JSON dict to allow for consistent comparisons of current vs desired policies
 
     Args:
