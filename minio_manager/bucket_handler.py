@@ -25,7 +25,7 @@ def configure_lifecycle(client, bucket):
     lifecycle_status = client.get_bucket_lifecycle(bucket.name)
     if lifecycle_status != bucket.lifecycle_config:
         client.set_bucket_lifecycle(bucket.name, bucket.lifecycle_config)
-        logger.debug(f"Lifecycle {bucket.lifecycle_config} for bucket {bucket.name}")
+        logger.debug(f"Lifecycle management configured for bucket {bucket.name}")
 
 
 def handle_bucket(bucket: Bucket):
@@ -55,6 +55,5 @@ def handle_bucket(bucket: Bucket):
 
     if bucket.create_sa:
         # TODO: is there a nicer way to go about this?
-        service_account = ServiceAccount(bucket.name, bucket.name)
-        # policy_file = generate_service_account_policy(bucket)
-        handle_service_account(service_account)
+        service_account = ServiceAccount(name=bucket.name)
+        handle_service_account(service_account, from_bucket_handler=True)
