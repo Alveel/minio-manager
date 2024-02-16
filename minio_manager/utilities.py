@@ -4,7 +4,7 @@ import os
 
 import yaml
 
-from minio_manager.classes.logging_config import MinioManagerFilter
+from minio_manager.classes.logging_config import MinioManagerLogger
 
 logger = logging.getLogger("root")
 logger_setup = False  # whether the logger is already configured or not
@@ -24,21 +24,8 @@ def read_json(file) -> dict:
 def setup_logging():
     global logger
     log_level = get_env_var("MINIO_MANAGER_LOG_LEVEL", "INFO")
-    logger = logging.getLogger("minio-manager") if log_level != "DEBUG" else logging.getLogger("root")
-    handler = logging.StreamHandler()
-    minio_manager_filter = MinioManagerFilter()
-
-    if log_level == "DEBUG":
-        logger.setLevel(logging.DEBUG)
-        log_format = "[{asctime}] [{levelname:^8s}] [{filename:>26s}:{lineno:<4d} - {funcName:<24s} ] {message}"
-    else:
-        logger.setLevel(logging.INFO)
-        log_format = "[{asctime}] [{levelname:^8s}] {message}"
-
-    formatter = logging.Formatter(log_format, style="{")
-    handler.setFormatter(formatter)
-    handler.addFilter(minio_manager_filter)
-    logger.addHandler(handler)
+    log_name = "root" if log_level == "DEBUG" else "minio-manager"
+    logger = MinioManagerLogger(log_name, log_level)
     logger.debug(f"Configured log level: {log_level}")
 
 
