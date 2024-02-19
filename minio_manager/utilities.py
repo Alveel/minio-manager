@@ -39,25 +39,6 @@ def compare_objects(a: dict, b: dict, ignore_order: bool = True) -> bool | dict:
     return False
 
 
-def sort_policy(policy: dict) -> dict:
-    """Sort a JSON dict to allow for consistent comparisons of current vs desired policies
-
-    Args:
-        policy: dict
-            MinIO policy documents use the same schema as AWS IAM Policy documents.
-            https://docs.aws.amazon.com/IAM/latest/UserGuide/access.html
-
-    Returns: dict with sorted Actions and Resources
-    """
-    for index, statement in enumerate(policy["Statement"]):
-        statement["Action"] = sorted(statement["Action"])
-        statement["Resource"] = sorted(statement["Resource"])
-        # TODO: also sort Principals
-        statement = dict(sorted(statement.items()))
-        policy["Statement"][index] = statement
-    return policy
-
-
 def get_env_var(name: str, default=None) -> str:
     """
     Get an environment variable and strip any leading and trailing single and double quotes.

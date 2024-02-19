@@ -5,7 +5,7 @@ from minio.error import MinioAdminException
 
 from minio_manager.classes.minio_resources import BucketPolicy, IamPolicy, IamPolicyAttachment
 from minio_manager.clients import get_minio_admin_client, get_s3_client
-from minio_manager.utilities import logger, read_json, sort_policy
+from minio_manager.utilities import compare_objects, logger, read_json
 
 
 def handle_bucket_policy(bucket_policy: BucketPolicy):
@@ -19,13 +19,13 @@ def handle_bucket_policy(bucket_policy: BucketPolicy):
         bucket_policy: BucketPolicy
     """
     client = get_s3_client()
-    current_policy = None
-    desired_policy = sort_policy(read_json(bucket_policy.policy_file))
+    current_policy = {}
+    desired_policy = read_json(bucket_policy.policy_file)
     desired_policy_json = json.dumps(desired_policy)
 
     try:
         current_policy_str = client.get_bucket_policy(bucket_policy.bucket)
-        current_policy = sort_policy(json.loads(current_policy_str))
+        current_policy = json.loads(current_policy_str)
     except S3Error as s3e:
         if s3e.code == "NoSuchBucketPolicy":
             logger.info(f"Creating bucket policy for {bucket_policy.bucket}")
@@ -37,7 +37,8 @@ def handle_bucket_policy(bucket_policy: BucketPolicy):
                     logger.exception("Do the resources in the policy file match the bucket name? Is it valid JSON?")
                     return
 
-    if current_policy == desired_policy:
+    policies_diff = compare_objects(current_policy, desired_policy)
+    if not policies_diff:
         return
 
     logger.info(f"Desired bucket policy for '{bucket_policy.bucket}' does not match current policy. Updating.")
@@ -58,11 +59,11 @@ def handle_iam_policy(iam_policy: IamPolicy):
     """
     client = get_minio_admin_client()
     current_policy = None
-    desired_policy = sort_policy(read_json(iam_policy.policy_file))
+    desired_policy = read_json(iam_policy.policy_file)
 
     try:
         current_policy_str = client.policy_info(iam_policy.name)
-        current_policy = sort_policy(json.loads(current_policy_str))
+        current_policy = json.loads(current_policy_str)
     except MinioAdminException as mae:
         # noinspection PyProtectedMember
         mae_obj = json.loads(mae._body)
@@ -73,7 +74,7 @@ def handle_iam_policy(iam_policy: IamPolicy):
         else:
             logger.exception("An unknown exception occurred")
 
-    if current_policy == desired_policy:
+    if not compare_objects(current_policy, desired_policy):
         return
 
     logger.info(f"Desired IAM policy '{iam_policy.name}' does not match current policy. Updating IAM policy.")
