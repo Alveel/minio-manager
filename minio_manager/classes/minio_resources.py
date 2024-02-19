@@ -41,6 +41,7 @@ class ServiceAccount:
         name: str,
         access_key: str | None = None,
         secret_key: str | None = None,
+        policy: dict | None = None,
         policy_file: Path | str | None = None,
     ):
         self.name = name
