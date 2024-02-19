@@ -44,7 +44,7 @@ def handle_bucket(bucket: Bucket):
             logger.info("Creating bucket %s" % bucket.name)
             client.make_bucket(bucket.name)
         else:
-            logger.info(f"Bucket {bucket.name} already exists")
+            logger.debug(f"Bucket {bucket.name} already exists")
     except S3Error as s3e:
         if s3e.code == "AccessDenied":
             logger.error(f"Controller user does not have permission to manage bucket {bucket.name}")
@@ -56,4 +56,5 @@ def handle_bucket(bucket: Bucket):
     if bucket.create_sa:
         # TODO: is there a nicer way to go about this?
         service_account = ServiceAccount(name=bucket.name)
-        handle_service_account(service_account, from_bucket_handler=True)
+        service_account.generate_service_account_policy()
+        handle_service_account(service_account)

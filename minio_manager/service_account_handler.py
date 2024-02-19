@@ -45,8 +45,7 @@ def handle_sa_policy(account: ServiceAccount):
     client = get_mc_wrapper()
     desired_policy = read_json(account.policy_file)
 
-    sa_info = client.service_account_info(account.access_key)
-    current_policy = sa_info["policy"]
+    current_policy = client.service_account_get_policy(account.access_key)
 
     policies_diff_pre = compare_objects(current_policy, desired_policy)
     if not policies_diff_pre:
@@ -62,6 +61,8 @@ def handle_sa_policy(account: ServiceAccount):
         apply_base_policy(account)
         return
 
+    # TODO: so this works as intended, but MinIO somehow now seems to accept a policy with more permissions?
+    #  it won't actually allow the actions, but the policy is still valid and now won't get updated..?
     current_updated_policy = client.service_account_get_policy(account.access_key)
     policies_diff_post = compare_objects(current_updated_policy, desired_policy)
     if not policies_diff_post:
@@ -82,7 +83,7 @@ def handle_sa_policy(account: ServiceAccount):
     apply_base_policy(account)
 
 
-def handle_service_account(account: ServiceAccount, from_bucket_handler: bool = False):
+def handle_service_account(account: ServiceAccount):
     """
     Manage service accounts.
 
@@ -96,7 +97,6 @@ def handle_service_account(account: ServiceAccount, from_bucket_handler: bool = 
 
     Args:
         account (ServiceAccount)
-        from_bucket_handler (bool): Whether the service account was created by the bucket handler
     """
     client = get_mc_wrapper()
     secrets = get_secret_manager(get_minio_config())
@@ -138,11 +138,6 @@ def handle_service_account(account: ServiceAccount, from_bucket_handler: bool = 
 
     account.access_key = credentials.access_key
     account.secret_key = credentials.secret_key
-
-    if from_bucket_handler:
-        # We can skip the big policy handler function
-        apply_base_policy(account)
-        return
 
     if account.policy_file:
         handle_sa_policy(account)
