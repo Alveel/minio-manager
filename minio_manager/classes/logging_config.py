@@ -40,8 +40,14 @@ class MinioManagerFilter(Filter):
 
 
 class MinioManagerFormatter(Formatter):
-    def __init__(self, log_format: str):
-        super().__init__(fmt=log_format, style="{")
+    def __init__(self, log_level: int):
+        self.log_level = log_level
+        if log_level is logging.INFO:
+            log_format = "[{asctime}] [{levelname:^8s}] {message}"
+            super().__init__(fmt=log_format, datefmt="%Y-%m-%d %H:%M:%S", style="{")
+        else:
+            log_format = "[{asctime}] [{levelname:^8s}] [{filename:>26s}:{lineno:<4d} - {funcName:<24s} ] {message}"
+            super().__init__(fmt=log_format, style="{")
 
     def format(self, record: LogRecord):  # noqa: A003
         if record.levelname in COLORS:
@@ -54,15 +60,13 @@ class MinioManagerFormatter(Formatter):
 class MinioManagerLogger(logging.Logger):
     def __init__(self, name: str, log_level: str):
         super().__init__(name)
-        if log_level == "DEBUG":
-            self.setLevel(logging.DEBUG)
-            log_format = "[{asctime}] [{levelname:^8s}] [{filename:>26s}:{lineno:<4d} - {funcName:<24s} ] {message}"
-        else:
+        if log_level == "INFO":
             self.setLevel(logging.INFO)
-            log_format = "[{asctime}] [{levelname:^8s}] {message}"
+        else:
+            self.setLevel(logging.DEBUG)
 
         handler = logging.StreamHandler()
-        formatter = MinioManagerFormatter(log_format)
+        formatter = MinioManagerFormatter(self.level)
         this_filter = MinioManagerFilter()
         handler.setFormatter(formatter)
         handler.addFilter(this_filter)
