@@ -4,10 +4,9 @@ import shutil
 import subprocess
 from pathlib import Path
 
-from classes.minio_resources import ServiceAccount
-
 from minio_manager.classes.config import MinioConfig
 from minio_manager.classes.errors import MinioManagerBaseError, raise_specific_error
+from minio_manager.classes.minio_resources import ServiceAccount
 from minio_manager.utilities import logger
 
 

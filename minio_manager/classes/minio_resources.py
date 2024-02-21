@@ -7,7 +7,8 @@ from typing import ClassVar
 
 from minio.lifecycleconfig import LifecycleConfig
 from minio.versioningconfig import VersioningConfig
-from utilities import get_env_var, module_directory
+
+from minio_manager.utilities import get_env_var, module_directory
 
 sa_policy_embedded = f"{module_directory}/resources/service-account-policy-base.json"
 sa_policy_base_file = get_env_var("MINIO_MANAGER_SERVICE_ACCOUNT_POLICY_BASE_FILE", sa_policy_embedded)
