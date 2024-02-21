@@ -101,11 +101,13 @@ class McWrapper:
         """
         multiline = cmd in ["list", "ls"]
         resp = self._run(["admin", "user", "svcacct", cmd, self.cluster_name, *args], multiline=multiline)
-        resp_error = resp.get("error")
-        if resp_error:
-            error_details = resp["error"]["cause"]["error"]
-            raise_specific_error(error_details["Code"], error_details["Message"])
-        return resp
+        try:
+            resp_error = resp.get("error")
+            if resp_error:
+                error_details = resp["error"]["cause"]["error"]
+                raise_specific_error(error_details["Code"], error_details["Message"])
+        except AttributeError:
+            return resp
 
     def service_account_add(self, credentials: ServiceAccount) -> ServiceAccount:
         """
