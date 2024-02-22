@@ -101,8 +101,10 @@ class McWrapper:
         """
         multiline = cmd in ["list", "ls"]
         resp = self._run(["admin", "user", "svcacct", cmd, self.cluster_name, *args], multiline=multiline)
-        if hasattr(resp, "error"):
-            error_details = resp["error"]["cause"]["error"]
+        resp_error = resp[0] if multiline else resp
+        if hasattr(resp_error, "error"):
+            resp_error = resp_error["error"]
+            error_details = resp_error["cause"]["error"]
             raise_specific_error(error_details["Code"], error_details["Message"])
         return resp
 
