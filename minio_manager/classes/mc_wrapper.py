@@ -101,13 +101,10 @@ class McWrapper:
         """
         multiline = cmd in ["list", "ls"]
         resp = self._run(["admin", "user", "svcacct", cmd, self.cluster_name, *args], multiline=multiline)
-        try:
-            resp_error = resp.get("error")
-            if resp_error:
-                error_details = resp["error"]["cause"]["error"]
-                raise_specific_error(error_details["Code"], error_details["Message"])
-        except AttributeError:
-            return resp
+        if hasattr(resp, "error"):
+            error_details = resp["error"]["cause"]["error"]
+            raise_specific_error(error_details["Code"], error_details["Message"])
+        return resp
 
     def service_account_add(self, credentials: ServiceAccount) -> ServiceAccount:
         """
@@ -116,7 +113,7 @@ class McWrapper:
         Args:
             credentials (ServiceAccount): object containing at least the user-friendly name of the service account
 
-        Returns: MinioCredentials with the access and secret keys added to it
+        Returns: ServiceAccount with the access and secret keys added to it
         """
         # Create the service account in MinIO
         args = [self.cluster_controller_user, "--name", credentials.name]
