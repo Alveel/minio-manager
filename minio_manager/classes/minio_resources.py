@@ -56,13 +56,16 @@ class ServiceAccount:
             self.description = description
         self.access_key = access_key
         self.secret_key = secret_key
-        if isinstance(policy_file, Path):
-            self.policy_file = policy_file
+        if policy_file:
+            if isinstance(policy_file, Path):
+                self.policy_file = policy_file
+            else:
+                self.policy_file = Path(policy_file)
         else:
-            self.policy_file = Path(policy_file)
+            self.policy_file = None
         if policy:
             self.policy = policy
-        else:
+        elif self.policy_file:
             try:
                 self.policy = read_json(self.policy_file)
             except FileNotFoundError:
