@@ -98,7 +98,7 @@ We highly recommend to pass these variables via masked and/or protected variable
 
 #### Service accounts
 
-Service accounts are used in order to create buckets, they are also the owner of these buckets. By default we have a one-on-one relationship between service accounts and buckets.
+Service accounts are used in order to create buckets, the are also the owner of these buckets. By default we have a one-on-one relationship between service accounts and buckets.
 
 However, there is an option to give ownership of multiple bucket to one service account. By specifying `create_service_account: False` for a bucket in the environment's `resource.yaml`. But you do have to specify the ownership through a `policy_file`:
 ```
@@ -110,7 +110,7 @@ service_accounts:
     policy_file: service_account_policies/infra-test-two-buckets.json
 ```
 
-The Resource section of this json will specify which bucket this service account has ownership of, in this example `infra-test-two-buckets.json` the service account will get ownership over 2 buckets and all of its objects:
+The Resource section of this json will specify which bucket this service account has ownership of, in this example it will have ownership over 2 buckets and all of its objects:
 ```
 "Resource": [
                 "arn:aws:s3:::infra-test-without-sa",
@@ -128,9 +128,9 @@ Buckets are used to organize and store objects. The `resource.yaml` supports the
  **Property** | **Required** | **Description** | **Default** | **Example**
 ---|---|---|---|---
  `name` | YES | Specify the name of the bucket | None | `infra-test-tomato-bucket`
- `create_service_account` | NO | Do you want to automatically create a service account that has ownership of this bucket? | `TRUE` | `FALSE`
+ `create_service_account` | NO | Do you want to automatically create a service account that has ownership of this bucket? | `TRUE` | `infra-test-tomato-bucket`
  `object_lifecycle_file` | NO | Specify the lifecycle policy that you want to attach to this bucket | None | `lifecycle_policies/my_lifecycle.json`
- `versioning` | NO | Do you want to enable versioning for this bucket? | `TRUE` | `FALSE`
+ `versioning` | NO | Do you want to enable versioning for this bucket? | `TRUE` | `TRUE`
 
 ##### Bucket policies
 Bucket policies are used to restrict bucket access or action on a bucket level. The `resource.yaml` supports the following properties:
