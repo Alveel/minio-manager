@@ -1,5 +1,5 @@
 THIS_FILE := $(lastword $(MAKEFILE_LIST))
-GIT_TAG := $(shell git describe --exact-match --tags)
+GIT_TAG := $(shell git for-each-ref --sort=creatordate --format '%(refname)' refs/tags | tail -n 1 | cut -d '/' -f 3)
 
 .PHONY: install
 install: ## Install the environment and install the pre-commit hooks
