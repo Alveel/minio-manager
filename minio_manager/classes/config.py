@@ -57,9 +57,14 @@ class ClusterResources:
             sys.exit(1)
 
         lifecycle_config = self.parse_bucket_lifecycle_file(default_bucket_lifecycle_policy)
+        bucket_names = []
 
         for bucket in buckets:
             name = bucket["name"]
+            if name in bucket_names:
+                logger.error(f"Bucket '{name}' defined multiple times. Stopping.")
+                sys.exit(1)
+            bucket_names.append(name)
             logger.debug(f"Parsing bucket {name}")
             if not name.startswith(default_bucket_allowed_prefix):
                 logger.error(f"Bucket {name} does not start with required prefix '{default_bucket_allowed_prefix}'.")
@@ -173,10 +178,15 @@ class ClusterResources:
             logger.info("No service accounts configured, skipping.")
             return []
 
-        service_account_objects = []
+        service_account_objects, service_account_names = [], []
         for service_account in service_accounts:
+            name = service_account["name"]
+            if name in service_account_names:
+                logger.error(f"Service account '{name}' defined multiple times. Stopping.")
+                sys.exit(1)
+            service_account_names.append(name)
             policy_file = service_account.get("policy_file")
-            sa_obj = ServiceAccount(name=service_account["name"], policy_file=policy_file)
+            sa_obj = ServiceAccount(name=name, policy_file=policy_file)
             service_account_objects.append(sa_obj)
 
         return service_account_objects
@@ -199,9 +209,14 @@ class ClusterResources:
             logger.info("No IAM policies configured, skipping.")
             return []
 
-        iam_policy_objects = []
+        iam_policy_objects, iam_policy_names = [], []
         for iam_policy in iam_policies:
-            iam_policy_objects.append(IamPolicy(iam_policy["name"], iam_policy["policy_file"]))
+            name = iam_policy["name"]
+            if name in iam_policy_names:
+                logger.error(f"IAM policy '{name}' defined multiple times. Stopping.")
+                sys.exit(1)
+            iam_policy_names.append(name)
+            iam_policy_objects.append(IamPolicy(name, iam_policy["policy_file"]))
 
         return iam_policy_objects
 
