@@ -1,16 +1,19 @@
 import json
 import logging
 import os
+from pathlib import Path
 
 import yaml
+from deepdiff import DeepDiff
 
-from minio_manager.classes.logging_config import MinioManagerFilter
+from minio_manager.classes.logging_config import MinioManagerLogger
 
-logger = None
+logger = logging.getLogger("root")
+logger_setup = False  # whether the logger is already configured or not
 module_directory = os.path.dirname(__file__)
 
 
-def read_yaml(file):
+def read_yaml(file: str | Path) -> dict:
     with open(file) as f:
         return yaml.safe_load(f)
 
@@ -23,41 +26,17 @@ def read_json(file) -> dict:
 def setup_logging():
     global logger
     log_level = get_env_var("MINIO_MANAGER_LOG_LEVEL", "INFO")
-    logger = logging.getLogger("minio-manager") if log_level != "DEBUG" else logging.getLogger("root")
-    handler = logging.StreamHandler()
-    minio_manager_filter = MinioManagerFilter()
-
-    if log_level == "DEBUG":
-        logger.setLevel(logging.DEBUG)
-        log_format = "[{asctime}] [{levelname:^8s}] [{filename:>26s}:{lineno:<4d} - {funcName:<24s} ] {message}"
-    else:
-        logger.setLevel(logging.INFO)
-        log_format = "[{asctime}] [{levelname:^8s}] {message}"
-
-    formatter = logging.Formatter(log_format, style="{")
-    handler.setFormatter(formatter)
-    handler.addFilter(minio_manager_filter)
-    logger.addHandler(handler)
+    log_name = "root" if log_level == "DEBUG" else "minio-manager"
+    logger = MinioManagerLogger(log_name, log_level)
     logger.debug(f"Configured log level: {log_level}")
 
 
-def sort_policy(policy: dict):
-    """
-
-    Args:
-        policy: dict
-            MinIO policy documents use the same schema as AWS IAM Policy documents.
-            https://docs.aws.amazon.com/IAM/latest/UserGuide/access.html
-
-    Returns: dict with sorted Actions and Resources
-    """
-    for index, statement in enumerate(policy["Statement"]):
-        statement["Action"] = sorted(statement["Action"])
-        statement["Resource"] = sorted(statement["Resource"])
-        # TODO: also sort Principals
-        statement = dict(sorted(statement.items()))
-        policy["Statement"][index] = statement
-    return policy
+def compare_objects(a: dict, b: dict, ignore_order: bool = True) -> bool | dict:
+    """Compare two dicts and return False if they match, the differences if they don't"""
+    result = DeepDiff(a, b, ignore_order=ignore_order)
+    if result:
+        return result
+    return False
 
 
 def get_env_var(name: str, default=None) -> str:
@@ -83,5 +62,6 @@ def get_env_var(name: str, default=None) -> str:
     return default
 
 
-if not logger:
+if not logger_setup:
     setup_logging()
+    logger_setup = True

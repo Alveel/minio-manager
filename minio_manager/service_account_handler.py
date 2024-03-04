@@ -1,47 +1,86 @@
-from pathlib import Path
-from tempfile import NamedTemporaryFile
-
-from minio_manager.classes.errors import MinioInvalidIamCredentialsError
+from minio_manager.classes.errors import MinioInvalidIamCredentialsError, MinioMalformedIamPolicyError
 from minio_manager.classes.mc_wrapper import McWrapper
 from minio_manager.classes.minio_resources import ServiceAccount
-from minio_manager.classes.secrets import MinioCredentials
-from minio_manager.clients import get_mc_wrapper, get_minio_config, get_secret_manager
-from minio_manager.utilities import get_env_var, logger, module_directory
-
-sa_policy_embedded = f"{module_directory}/resources/service-account-policy-base.json"
-sa_policy_base_file = get_env_var("MINIO_MANAGER_SERVICE_ACCOUNT_POLICY_BASE_FILE", sa_policy_embedded)
+from minio_manager.clients import get_controller_user_policy, get_mc_wrapper, get_minio_config, get_secret_manager
+from minio_manager.utilities import compare_objects, logger
 
 
-def service_account_exists(client: McWrapper, credentials: MinioCredentials):
+def service_account_exists(client: McWrapper, account: ServiceAccount):
     try:
-        if credentials.access_key:
-            client.service_account_info(credentials.access_key)
+        if account.access_key:
+            client.service_account_info(account.access_key)
             return True
     except MinioInvalidIamCredentialsError as e:
         # account does not exist in MinIO
-        logger.debug(f"Error for {credentials.access_key}: {e}")
+        logger.debug(f"Error for {account.access_key}: {e}")
 
-    logger.debug(f"Access key for {credentials.name} not found in secret backend, trying to find it in MinIO.")
+    logger.debug(f"Access key for {account.name} not found in secret backend, trying to find it in MinIO.")
     sa_list = client.service_account_list(client.cluster_controller_user)
     for sa in sa_list:
-        sa_info = client.service_account_info(sa.accessKey)
-        if hasattr(sa_info, "name") and sa_info.name == credentials.name:
-            logger.debug(f"Found access key '{sa_info.accessKey}' for '{credentials.name}' in MinIO: {sa_info}")
+        sa_info = client.service_account_info(sa["accessKey"])
+        if hasattr(sa_info, "name") and sa_info["name"] == account.name:
+            logger.debug(f"Found access key '{sa_info['accessKey']}' for '{account.name}' in MinIO: {sa_info}")
             return True
 
     return False
 
 
-def generate_service_account_policy(account: ServiceAccount) -> Path:
-    with Path(sa_policy_base_file).open() as base:
-        base_policy = base.read()
+def apply_base_policy(account: ServiceAccount):
+    client = get_mc_wrapper()
+    account.generate_service_account_policy()
+    client.service_account_set_policy(account.access_key, str(account.policy_file))
 
-    temp_file = NamedTemporaryFile(prefix=account.bucket, suffix=".json", delete=False)
-    with temp_file as out:
-        new_content = base_policy.replace("BUCKET_NAME_REPLACE_ME", account.bucket)
-        out.write(new_content.encode("utf-8"))
 
-    return Path(temp_file.name)
+def handle_sa_policy(account: ServiceAccount):
+    """
+    Manage policies for service accounts.
+
+    Compare the desired policy with what is currently applied, and update if needed.
+    Retrieves the updated policy and compares it again. If it does not match, compare to the controller user's policy.
+    If those match, the supplied policy had more permissions than allowed, and we have to revert to the base policy.
+
+    Args:
+        account (ServiceAccount)
+    """
+    client = get_mc_wrapper()
+    desired_policy = account.policy
+
+    current_policy = client.service_account_get_policy(account.access_key)
+
+    policies_diff_pre = compare_objects(current_policy, desired_policy)
+    if not policies_diff_pre:
+        return
+
+    logger.debug(f"Updating service account policy for '{account.name}'.")
+    try:
+        client.service_account_set_policy(account.access_key, str(account.policy_file))
+    except MinioMalformedIamPolicyError:
+        logger.error(
+            f"Policy for service account '{account.name}' is malformed, reverting to base policy for service account."
+        )
+        apply_base_policy(account)
+        return
+
+    # TODO: so this works as intended, but MinIO somehow now seems to accept a policy with more permissions?
+    #  it won't actually allow the actions, but the policy is still valid and now won't get updated..?
+    current_updated_policy = client.service_account_get_policy(account.access_key)
+    policies_diff_post = compare_objects(current_updated_policy, desired_policy)
+    if not policies_diff_post:
+        return
+
+    logger.warning(f"Applying policy for service account '{account.name}' failed.")
+    logger.debug("Retrieving controller user credentials...")
+    controller_user_policy = get_controller_user_policy()
+    logger.debug("Comparing controller user policy to currently applied policy...")
+    policies_diff_fallback = compare_objects(controller_user_policy, current_updated_policy)
+    if policies_diff_fallback:
+        logger.critical("Unknown situation where the live service account policy")
+        logger.critical("a) does not match what we tried to apply;")
+        logger.critical("b) also does not match to the controller user's policy, which it should fall back to if")
+        logger.critical("the policy we tried to apply has more permissions than the controller user's.")
+
+    logger.warning(f"Reverting to base policy for service account '{account.name}'")
+    apply_base_policy(account)
 
 
 def handle_service_account(account: ServiceAccount):
@@ -54,6 +93,7 @@ def handle_service_account(account: ServiceAccount):
     3) if it exists in MinIO but not the secret backend, throw an error and return
     4) if it exists in the secret backend but not in MinIO, create it using the secret backend credentials
     5) if it does not, create service account in minio and secret backend
+    6) if a policy_file is configured, load it and try to apply it for the service account
 
     Args:
         account (ServiceAccount)
@@ -96,8 +136,8 @@ def handle_service_account(account: ServiceAccount):
         secrets.set_password(credentials)
         logger.info(f"Created service account '{credentials.name}' with access key '{credentials.access_key}'")
 
-    if account.bucket:
-        # TODO: validate existing policy before assigning
-        policy_file = generate_service_account_policy(account)
-        client.service_account_set_policy(credentials.access_key, str(policy_file))
-        policy_file.unlink()
+    account.access_key = credentials.access_key
+    account.secret_key = credentials.secret_key
+
+    if account.policy_file:
+        handle_sa_policy(account)

@@ -1,3 +1,5 @@
+from minio import S3Error
+
 from minio_manager.classes.minio_resources import Bucket, ServiceAccount
 from minio_manager.clients import get_s3_client
 from minio_manager.service_account_handler import handle_service_account
@@ -11,6 +13,8 @@ def configure_versioning(client, bucket):
     versioning_status = client.get_bucket_versioning(bucket.name)
     if versioning_status.status != bucket.versioning.status:
         client.set_bucket_versioning(bucket.name, bucket.versioning)
+        if bucket.versioning.status == "Suspended":
+            logger.warning(f"Versioning on bucket {bucket.name} is suspended!")
         logger.debug(f"Versioning {bucket.versioning.status.lower()} for bucket {bucket.name}")
 
 
@@ -21,7 +25,7 @@ def configure_lifecycle(client, bucket):
     lifecycle_status = client.get_bucket_lifecycle(bucket.name)
     if lifecycle_status != bucket.lifecycle_config:
         client.set_bucket_lifecycle(bucket.name, bucket.lifecycle_config)
-        logger.debug(f"Lifecycle {bucket.lifecycle_config} for bucket {bucket.name}")
+        logger.debug(f"Lifecycle management configured for bucket {bucket.name}")
 
 
 def handle_bucket(bucket: Bucket):
@@ -35,16 +39,22 @@ def handle_bucket(bucket: Bucket):
         bucket (Bucket): The bucket to handle.
     """
     client = get_s3_client()
-    if not client.bucket_exists(bucket.name):
-        logger.info("Creating bucket %s" % bucket.name)
-        client.make_bucket(bucket.name)
-    else:
-        logger.info(f"Bucket {bucket.name} already exists")
+    try:
+        if not client.bucket_exists(bucket.name):
+            logger.info("Creating bucket %s" % bucket.name)
+            client.make_bucket(bucket.name)
+        else:
+            logger.debug(f"Bucket {bucket.name} already exists")
+    except S3Error as s3e:
+        if s3e.code == "AccessDenied":
+            logger.error(f"Controller user does not have permission to manage bucket {bucket.name}")
+            return
 
     configure_versioning(client, bucket)
     configure_lifecycle(client, bucket)
 
     if bucket.create_sa:
         # TODO: is there a nicer way to go about this?
-        service_account = ServiceAccount(bucket.name, bucket.name)
+        service_account = ServiceAccount(name=bucket.name)
+        service_account.generate_service_account_policy()
         handle_service_account(service_account)

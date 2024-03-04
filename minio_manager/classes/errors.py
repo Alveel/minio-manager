@@ -9,6 +9,10 @@ class MinioInvalidIamCredentialsError(MinioManagerBaseError):
     """Raised when invalid IAM credentials are used."""
 
 
+class MinioMalformedIamPolicyError(MinioManagerBaseError):
+    """Raised when an invalid IAM policy is provided."""
+
+
 class MinioInvalidAccessKeyId(MinioManagerBaseError):
     """Raised when an invalid user access key ID is provided."""
 
@@ -41,6 +45,7 @@ error_map = {
     "XMinioInvalidIAMCredentials": MinioInvalidIamCredentialsError,
     "InvalidAccessKeyId": MinioInvalidAccessKeyId,
     "XMinioIAMServiceAccountNotAllowed": MinioIamServiceAccountNotAllowedError,
+    "XMinioMalformedIAMPolicy": MinioMalformedIamPolicyError,
     "InternalError": MinioInternalError,
     "XMinioAdminNoSuchUser": MinioNoSuchUserError,
     "XMinioAdminNoSuchPolicy": MinioNoSuchPolicyError,
@@ -49,7 +54,15 @@ error_map = {
 }
 
 
-def raise_specific_error(error_code, error_message):
+def raise_specific_error(error_code: str, error_message: str):
+    """Raise a specific Minio Manager error.
+
+    TODO: only _raise_ if log level is DEBUG. Just do logger.error/critical if it's INFO.
+
+    Args:
+        error_code (str): the error code
+        error_message (str): the error message
+    """
     if error_code not in error_map:
         raise MinioManagerBaseError(error_code, error_message)
     raise error_map[error_code](error_message)

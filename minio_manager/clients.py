@@ -8,6 +8,7 @@ from minio_manager.classes.secrets import SecretManager
 from minio_manager.utilities import logger
 
 config, s3_client, admin_client, mc_wrapper, secrets = None, None, None, None, None
+controller_user_policy = {}
 
 
 def get_s3_client() -> Minio:
@@ -55,6 +56,14 @@ def get_mc_wrapper() -> McWrapper:
 
 
 def get_secret_manager(c: MinioConfig) -> SecretManager:
+    """Set up secret manager
+
+    Args:
+        c (MinioConfig): the MinIO server configuration
+
+    Returns:
+        SecretManager: the secret manager
+    """
     global secrets
     if not secrets:
         secrets = SecretManager(c)
@@ -62,8 +71,25 @@ def get_secret_manager(c: MinioConfig) -> SecretManager:
 
 
 def get_minio_config():
+    """Get the MinIO server configuration
+
+    Returns:
+        MinioConfig: the MinIO server configuration
+    """
     global config
     if not config:
         logger.info("Configuring...")
         config = MinioConfig()
     return config
+
+
+def get_controller_user_policy() -> dict:
+    global controller_user_policy
+    if controller_user_policy:
+        return controller_user_policy
+
+    client = get_mc_wrapper()
+    c = get_minio_config()
+    controller_user = client.service_account_info(c.access_key)
+    controller_user_policy = controller_user["policy"]
+    return controller_user_policy

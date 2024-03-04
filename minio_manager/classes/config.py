@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 
 from minio.commonconfig import Filter
 from minio.lifecycleconfig import Expiration, LifecycleConfig, NoncurrentVersionExpiration, Rule
-from minio.versioningconfig import VersioningConfig
+from minio.versioningconfig import VersioningConfig as VeCo
 
 from minio_manager.classes.minio_resources import Bucket, BucketPolicy, IamPolicy, IamPolicyAttachment, ServiceAccount
 from minio_manager.utilities import get_env_var, logger, read_yaml
@@ -13,12 +14,18 @@ from minio_manager.utilities import get_env_var, logger, read_yaml
 default_bucket_versioning = get_env_var("MINIO_MANAGER_DEFAULT_BUCKET_VERSIONING", "Suspended")
 default_bucket_lifecycle_policy = get_env_var("MINIO_MANAGER_DEFAULT_LIFECYCLE_POLICY", "")
 default_bucket_create_service_account = get_env_var("MINIO_MANAGER_DEFAULT_BUCKET_CREATE_SERVICE_ACCOUNT", "True")
+default_bucket_allowed_prefix = get_env_var("MINIO_MANAGER_ALLOWED_BUCKET_PREFIX", "")
 
 
 class ClusterResources:
-    """ClusterResources
+    """ClusterResources is the object containing all the cluster resources:
 
-    MinIO Cluster configuration object, aka the cluster contents: buckets, policies, etc."""
+    - buckets
+    - bucket_policies
+    - service_accounts
+    - iam_policies
+    - iam_policy_attachments
+    """
 
     buckets: list[Bucket]
     bucket_policies: list[BucketPolicy]
@@ -45,26 +52,47 @@ class ClusterResources:
             return []
 
         bucket_objects = []
-        try:
-            for bucket in buckets:
-                vs = bucket.get("versioning", None)
-                vc = VersioningConfig(vs) if vs else VersioningConfig(default_bucket_versioning)
-                create_sa = bucket.get("create_service_account", bool(default_bucket_create_service_account))
-                lifecycle_file = bucket.get("object_lifecycle_file", default_bucket_lifecycle_policy)
-                lifecycle_config = self.parse_bucket_lifecycle_file(lifecycle_file)
-                bucket_objects.append(Bucket(bucket["name"], create_sa, vc, lifecycle_config))
-        except AttributeError:
-            logger.info("No buckets configured, skipping.")
+        if not isinstance(buckets, list):
+            logger.error("buckets must be defined as a list!")
+            sys.exit(1)
+
+        lifecycle_config = self.parse_bucket_lifecycle_file(default_bucket_lifecycle_policy)
+        bucket_names = []
+
+        for bucket in buckets:
+            name = bucket["name"]
+            if name in bucket_names:
+                logger.error(f"Bucket '{name}' defined multiple times. Stopping.")
+                sys.exit(1)
+            bucket_names.append(name)
+            logger.debug(f"Parsing bucket {name}")
+            if not name.startswith(default_bucket_allowed_prefix):
+                logger.error(f"Bucket {name} does not start with required prefix '{default_bucket_allowed_prefix}'.")
+                sys.exit(1)
+
+            versioning = bucket.get("versioning")
+            try:
+                versioning_config = VeCo(versioning) if versioning else VeCo(default_bucket_versioning)
+            except ValueError as ve:
+                logger.error(f"Error parsing versioning setting: {' '.join(ve.args)}")
+                sys.exit(1)
+            create_sa = bool(bucket.get("create_service_account", default_bucket_create_service_account))
+            lifecycle_file = bucket.get("object_lifecycle_file")
+            if lifecycle_file:
+                bucket_lifecycle = self.parse_bucket_lifecycle_file(lifecycle_file)
+                if isinstance(bucket_lifecycle, LifecycleConfig):
+                    lifecycle_config = bucket_lifecycle
+            bucket_objects.append(Bucket(name, create_sa, versioning_config, lifecycle_config))
 
         return bucket_objects
 
     def parse_bucket_lifecycle_file(self, lifecycle_file: str) -> LifecycleConfig | None:
-        """Parse a list of bucket lifecycle config files.
+        """Parse a bucket lifecycle config file.
         The config files must be in JSON format and can be best obtained by running the following command:
             mc ilm rule export $cluster/$bucket > $policy_file.json
 
         Args:
-            lifecycle_file: list of lifecycle config files
+            lifecycle_file: lifecycle config file
 
         Returns:
             LifecycleConfig object
@@ -74,12 +102,28 @@ class ClusterResources:
 
         rules: list = []
 
-        with Path(lifecycle_file).open() as f:
-            config_data = json.load(f)
+        try:
+            with Path(lifecycle_file).open() as f:
+                config_data = json.load(f)
+        except FileNotFoundError:
+            logger.error(f"Lifecycle file {lifecycle_file} not found, skipping configuration.")
+            sys.exit(1)
+        except PermissionError:
+            logger.error(f"Incorrect file permissions on {lifecycle_file}, skipping configuration.")
+            sys.exit(1)
 
-        for rule_data in config_data["Rules"]:
-            parsed_rule = self.parse_bucket_lifecycle_rule(rule_data)
-            rules.append(parsed_rule)
+        try:
+            rules_dict = config_data["Rules"]
+        except KeyError:
+            logger.error(f"Lifecycle file {lifecycle_file} is missing the required 'Rules' key.")
+            sys.exit(1)
+        try:
+            for rule_data in rules_dict:
+                parsed_rule = self.parse_bucket_lifecycle_rule(rule_data)
+                rules.append(parsed_rule)
+        except AttributeError:
+            logger.error(f"Error parsing lifecycle file {lifecycle_file}. Is the format correct?")
+            sys.exit(1)
 
         if not rules:
             return
@@ -134,15 +178,21 @@ class ClusterResources:
             logger.info("No service accounts configured, skipping.")
             return []
 
-        service_account_objects = []
+        service_account_objects, service_account_names = [], []
         for service_account in service_accounts:
-            bucket = service_account.get("bucket", None)
-            service_account_objects.append(ServiceAccount(service_account["name"], bucket))
+            name = service_account["name"]
+            if name in service_account_names:
+                logger.error(f"Service account '{name}' defined multiple times. Stopping.")
+                sys.exit(1)
+            service_account_names.append(name)
+            policy_file = service_account.get("policy_file")
+            sa_obj = ServiceAccount(name=name, policy_file=policy_file)
+            service_account_objects.append(sa_obj)
 
         return service_account_objects
 
     @staticmethod
-    def parse_iam_policy_attachments(iam_policy_attachments):
+    def parse_iam_attachments(iam_policy_attachments):
         if not iam_policy_attachments:
             logger.info("No IAM policy attachments configured, skipping.")
             return []
@@ -159,33 +209,45 @@ class ClusterResources:
             logger.info("No IAM policies configured, skipping.")
             return []
 
-        iam_policy_objects = []
+        iam_policy_objects, iam_policy_names = [], []
         for iam_policy in iam_policies:
-            iam_policy_objects.append(IamPolicy(iam_policy["name"], iam_policy["policy_file"]))
+            name = iam_policy["name"]
+            if name in iam_policy_names:
+                logger.error(f"IAM policy '{name}' defined multiple times. Stopping.")
+                sys.exit(1)
+            iam_policy_names.append(name)
+            iam_policy_objects.append(IamPolicy(name, iam_policy["policy_file"]))
 
         return iam_policy_objects
 
-    def parse_resources(self, resources_file: dict):
-        resources_file = read_yaml(resources_file)
+    def parse_resources(self, resources_file: str):
+        try:
+            resources = read_yaml(resources_file)
+        except FileNotFoundError:
+            logger.error(f"Resources file {resources_file} not found. Stopping.")
+            sys.exit(1)
+        except PermissionError:
+            logger.error(f"Incorrect file permissions on {resources_file}. Stopping.")
+            sys.exit(1)
 
-        buckets = resources_file.get("buckets", [])
+        buckets = resources.get("buckets")
         self.buckets = self.parse_buckets(buckets)
 
-        bucket_policies = resources_file.get("bucket_policies", [])
+        bucket_policies = resources.get("bucket_policies")
         self.bucket_policies = self.parse_bucket_policies(bucket_policies)
 
-        service_accounts = resources_file.get("service_accounts", [])
+        service_accounts = resources.get("service_accounts")
         self.service_accounts = self.parse_service_accounts(service_accounts)
 
-        iam_policies = resources_file.get("iam_policies", [])
+        iam_policies = resources.get("iam_policies")
         self.iam_policies = self.parse_iam_policies(iam_policies)
 
-        iam_policy_attachments = resources_file.get("iam_policy_attachments", [])
-        self.iam_policy_attachments = self.parse_iam_policy_attachments(iam_policy_attachments)
+        iam_policy_attachments = resources.get("iam_policy_attachments")
+        self.iam_policy_attachments = self.parse_iam_attachments(iam_policy_attachments)
 
 
 class MinioConfig:
-    """MinIO server configuration object, the connection details."""
+    """MinioConfig is the MinIO server configuration object containing the connection details."""
 
     def __init__(self):
         self.name = get_env_var("MINIO_MANAGER_CLUSTER_NAME")

@@ -196,6 +196,7 @@ Entries are found by way of the title of the entry, the username is not consider
 - `MINIO_MANAGER_DEFAULT_LIFECYCLE_POLICY` What lifecycle policy (in `mc ilm export` format) to attach to all buckets by default
 - `MINIO_MANAGER_DEFAULT_BUCKET_CREATE_SERVICE_ACCOUNT` Whether to automatically create service accounts for each bucket with access to just that bucket. Defaults to False
 - `MINIO_MANAGER_SERVICE_ACCOUNT_POLICY_BASE_FILE` What policy to use as a base for a service account when automatically generated, defaults to [`service-account-policy-base.json`](/minio_manager/resources/service-account-policy-base.json). MUST contain BUCKET_NAME_REPLACE_ME in the resources
+- `MINIO_MANAGER_ALLOWED_BUCKET_PREFIX` If using multiple controller users, this defines what bucket names are allowed to be parsed.
 
 ## To do features
 
