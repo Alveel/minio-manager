@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 
 from minio.commonconfig import Filter
@@ -53,7 +54,7 @@ class ClusterResources:
         bucket_objects = []
         if not isinstance(buckets, list):
             logger.error("buckets must be defined as a list!")
-            return bucket_objects
+            sys.exit(1)
 
         lifecycle_config = self.parse_bucket_lifecycle_file(default_bucket_lifecycle_policy)
 
@@ -61,17 +62,15 @@ class ClusterResources:
             name = bucket["name"]
             logger.debug(f"Parsing bucket {name}")
             if not name.startswith(default_bucket_allowed_prefix):
-                logger.error(
-                    f"Bucket {name} does not start with required prefix '{default_bucket_allowed_prefix}', skipping."
-                )
-                continue
+                logger.error(f"Bucket {name} does not start with required prefix '{default_bucket_allowed_prefix}'.")
+                sys.exit(1)
 
             versioning = bucket.get("versioning")
             try:
                 versioning_config = VeCo(versioning) if versioning else VeCo(default_bucket_versioning)
             except ValueError as ve:
                 logger.error(f"Error parsing versioning setting: {' '.join(ve.args)}")
-                continue
+                sys.exit(1)
             create_sa = bool(bucket.get("create_service_account", default_bucket_create_service_account))
             lifecycle_file = bucket.get("object_lifecycle_file")
             if lifecycle_file:
@@ -83,12 +82,12 @@ class ClusterResources:
         return bucket_objects
 
     def parse_bucket_lifecycle_file(self, lifecycle_file: str) -> LifecycleConfig | None:
-        """Parse a list of bucket lifecycle config files.
+        """Parse a bucket lifecycle config file.
         The config files must be in JSON format and can be best obtained by running the following command:
             mc ilm rule export $cluster/$bucket > $policy_file.json
 
         Args:
-            lifecycle_file: list of lifecycle config files
+            lifecycle_file: lifecycle config file
 
         Returns:
             LifecycleConfig object
@@ -103,23 +102,23 @@ class ClusterResources:
                 config_data = json.load(f)
         except FileNotFoundError:
             logger.error(f"Lifecycle file {lifecycle_file} not found, skipping configuration.")
-            return
+            sys.exit(1)
         except PermissionError:
             logger.error(f"Incorrect file permissions on {lifecycle_file}, skipping configuration.")
-            return
+            sys.exit(1)
 
         try:
             rules_dict = config_data["Rules"]
         except KeyError:
             logger.error(f"Lifecycle file {lifecycle_file} is missing the required 'Rules' key.")
-            return
+            sys.exit(1)
         try:
             for rule_data in rules_dict:
                 parsed_rule = self.parse_bucket_lifecycle_rule(rule_data)
                 rules.append(parsed_rule)
         except AttributeError:
             logger.error(f"Error parsing lifecycle file {lifecycle_file}. Is the format correct?")
-            return
+            sys.exit(1)
 
         if not rules:
             return
@@ -207,9 +206,15 @@ class ClusterResources:
         return iam_policy_objects
 
     def parse_resources(self, resources_file: str):
-        resources = read_yaml(resources_file)
+        try:
+            resources = read_yaml(resources_file)
+        except FileNotFoundError:
+            logger.error(f"Resources file {resources_file} not found. Stopping.")
+            sys.exit(1)
+        except PermissionError:
+            logger.error(f"Incorrect file permissions on {resources_file}. Stopping.")
+            sys.exit(1)
 
-        # TODO: exit if any resources are invalid.
         buckets = resources.get("buckets")
         self.buckets = self.parse_buckets(buckets)
 

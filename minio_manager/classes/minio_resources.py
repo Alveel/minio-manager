@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import ClassVar
@@ -8,7 +9,7 @@ from typing import ClassVar
 from minio.lifecycleconfig import LifecycleConfig
 from minio.versioningconfig import VersioningConfig
 
-from minio_manager.utilities import get_env_var, module_directory
+from minio_manager.utilities import get_env_var, logger, module_directory, read_json
 
 sa_policy_embedded = f"{module_directory}/resources/service-account-policy-base.json"
 sa_policy_base_file = get_env_var("MINIO_MANAGER_SERVICE_ACCOUNT_POLICY_BASE_FILE", sa_policy_embedded)
@@ -29,6 +30,7 @@ class Bucket:
 
 
 class BucketPolicy:
+    # TODO: try loading the policy file in order to validate its contents
     def __init__(self, bucket: str, policy_file: str):
         self.bucket = bucket
         self.policy_file = policy_file
@@ -40,18 +42,32 @@ class ServiceAccount:
     def __init__(
         self,
         name: str,
+        description: str = "",
         access_key: str | None = None,
         secret_key: str | None = None,
         policy: dict | None = None,
         policy_file: Path | str | None = None,
     ):
-        self.name = name
+        if len(name) > 32:
+            self.name = name[:32]
+            self.description = name + " " + description
+        else:
+            self.name = name
+            self.description = description
         self.access_key = access_key
         self.secret_key = secret_key
         if isinstance(policy_file, Path):
             self.policy_file = policy_file
         else:
-            self.policy_file = policy_file
+            self.policy_file = Path(policy_file)
+        if policy:
+            self.policy = policy
+        else:
+            try:
+                self.policy = read_json(self.policy_file)
+            except FileNotFoundError:
+                logger.critical(f"Policy file '{self.policy_file}' for service account '{name}' not found!")
+                sys.exit(1)
 
     def generate_service_account_policy(self):
         """

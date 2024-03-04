@@ -2,7 +2,7 @@ from minio_manager.classes.errors import MinioInvalidIamCredentialsError, MinioM
 from minio_manager.classes.mc_wrapper import McWrapper
 from minio_manager.classes.minio_resources import ServiceAccount
 from minio_manager.clients import get_controller_user_policy, get_mc_wrapper, get_minio_config, get_secret_manager
-from minio_manager.utilities import compare_objects, logger, read_json
+from minio_manager.utilities import compare_objects, logger
 
 
 def service_account_exists(client: McWrapper, account: ServiceAccount):
@@ -43,7 +43,7 @@ def handle_sa_policy(account: ServiceAccount):
         account (ServiceAccount)
     """
     client = get_mc_wrapper()
-    desired_policy = read_json(account.policy_file)
+    desired_policy = account.policy
 
     current_policy = client.service_account_get_policy(account.access_key)
 

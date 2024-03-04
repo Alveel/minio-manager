@@ -119,6 +119,8 @@ class McWrapper:
         """
         # Create the service account in MinIO
         args = [self.cluster_controller_user, "--name", credentials.name]
+        if credentials.description:
+            args.extend(["--description", credentials.description])
         if credentials.secret_key:
             args.extend(["--secret-key", credentials.secret_key])
         if credentials.access_key:
