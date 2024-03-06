@@ -48,7 +48,7 @@ class ClusterResources:
             [Bucket]: list of Bucket objects
         """
         if not buckets:
-            logger.info("No buckets configured, skipping.")
+            logger.debug("No buckets configured, skipping.")
             return []
 
         bucket_objects = []
@@ -57,6 +57,7 @@ class ClusterResources:
         bucket_names = []
 
         try:
+            logger.debug(f"Parsing {len(buckets)} buckets...")
             for bucket in buckets:
                 name = bucket["name"]
                 if name in bucket_names:
@@ -167,11 +168,12 @@ class ClusterResources:
     @staticmethod
     def parse_bucket_policies(bucket_policies):
         if not bucket_policies:
-            logger.info("No bucket policies configured, skipping.")
+            logger.debug("No bucket policies configured, skipping.")
             return []
 
         bucket_policy_objects = []
         try:
+            logger.debug(f"Parsing {len(bucket_policies)} bucket policies...")
             for bucket_policy in bucket_policies:
                 bucket_policy_objects.append(BucketPolicy(bucket_policy["bucket"], bucket_policy["policy_file"]))
         except TypeError:
@@ -183,12 +185,13 @@ class ClusterResources:
     @staticmethod
     def parse_service_accounts(service_accounts):
         if not service_accounts:
-            logger.info("No service accounts configured, skipping.")
+            logger.debug("No service accounts configured, skipping.")
             return []
 
         service_account_objects, service_account_names = [], []
 
         try:
+            logger.debug(f"Parsing {len(service_accounts)} service accounts...")
             for service_account in service_accounts:
                 name = service_account["name"]
                 if name in service_account_names:
@@ -207,11 +210,12 @@ class ClusterResources:
     @staticmethod
     def parse_iam_attachments(iam_policy_attachments):
         if not iam_policy_attachments:
-            logger.info("No IAM policy attachments configured, skipping.")
+            logger.debug("No IAM policy attachments configured, skipping.")
             return []
 
         iam_policy_attachment_objects = []
         try:
+            logger.debug(f"Parsing {len(iam_policy_attachments)} IAM policy attachments...")
             for user in iam_policy_attachments:
                 iam_policy_attachments.append(IamPolicyAttachment(user["username"], user["policies"]))
         except TypeError:
@@ -223,11 +227,12 @@ class ClusterResources:
     @staticmethod
     def parse_iam_policies(iam_policies):
         if not iam_policies:
-            logger.info("No IAM policies configured, skipping.")
+            logger.debug("No IAM policies configured, skipping.")
             return []
 
         iam_policy_objects, iam_policy_names = [], []
         try:
+            logger.debug(f"Parsing {len(iam_policies)} IAM policies...")
             for iam_policy in iam_policies:
                 name = iam_policy["name"]
                 if name in iam_policy_names:
@@ -251,6 +256,10 @@ class ClusterResources:
             logger.error(f"Incorrect file permissions on {resources_file}. Stopping.")
             sys.exit(1)
 
+        if not resources:
+            logger.error("Is the resources file empty?")
+            sys.exit(1)
+
         buckets = resources.get("buckets")
         self.buckets = self.parse_buckets(buckets)
 
@@ -265,6 +274,10 @@ class ClusterResources:
 
         iam_policy_attachments = resources.get("iam_policy_attachments")
         self.iam_policy_attachments = self.parse_iam_attachments(iam_policy_attachments)
+
+        if not any([buckets, bucket_policies, service_accounts, iam_policies, iam_policy_attachments]):
+            logger.info("No resources configured.")
+            sys.exit(1)
 
 
 class MinioConfig:
