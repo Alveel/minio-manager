@@ -48,41 +48,45 @@ class ClusterResources:
             [Bucket]: list of Bucket objects
         """
         if not buckets:
-            logger.info("No buckets configured, skipping.")
+            logger.debug("No buckets configured, skipping.")
             return []
 
         bucket_objects = []
-        if not isinstance(buckets, list):
-            logger.error("buckets must be defined as a list!")
-            sys.exit(1)
 
         lifecycle_config = self.parse_bucket_lifecycle_file(default_bucket_lifecycle_policy)
         bucket_names = []
 
-        for bucket in buckets:
-            name = bucket["name"]
-            if name in bucket_names:
-                logger.error(f"Bucket '{name}' defined multiple times. Stopping.")
-                sys.exit(1)
-            bucket_names.append(name)
-            logger.debug(f"Parsing bucket {name}")
-            if not name.startswith(default_bucket_allowed_prefix):
-                logger.error(f"Bucket {name} does not start with required prefix '{default_bucket_allowed_prefix}'.")
-                sys.exit(1)
+        try:
+            logger.debug(f"Parsing {len(buckets)} buckets...")
+            for bucket in buckets:
+                name = bucket["name"]
+                if name in bucket_names:
+                    logger.error(f"Bucket '{name}' defined multiple times. Stopping.")
+                    sys.exit(1)
+                bucket_names.append(name)
+                logger.debug(f"Parsing bucket {name}")
+                if not name.startswith(default_bucket_allowed_prefix):
+                    logger.error(
+                        f"Bucket {name} does not start with required prefix '{default_bucket_allowed_prefix}'."
+                    )
+                    sys.exit(1)
 
-            versioning = bucket.get("versioning")
-            try:
-                versioning_config = VeCo(versioning) if versioning else VeCo(default_bucket_versioning)
-            except ValueError as ve:
-                logger.error(f"Error parsing versioning setting: {' '.join(ve.args)}")
-                sys.exit(1)
-            create_sa = bool(bucket.get("create_service_account", default_bucket_create_service_account))
-            lifecycle_file = bucket.get("object_lifecycle_file")
-            if lifecycle_file:
-                bucket_lifecycle = self.parse_bucket_lifecycle_file(lifecycle_file)
-                if isinstance(bucket_lifecycle, LifecycleConfig):
-                    lifecycle_config = bucket_lifecycle
-            bucket_objects.append(Bucket(name, create_sa, versioning_config, lifecycle_config))
+                versioning = bucket.get("versioning")
+                try:
+                    versioning_config = VeCo(versioning) if versioning else VeCo(default_bucket_versioning)
+                except ValueError as ve:
+                    logger.error(f"Error parsing versioning setting: {' '.join(ve.args)}")
+                    sys.exit(1)
+                create_sa = bool(bucket.get("create_service_account", default_bucket_create_service_account))
+                lifecycle_file = bucket.get("object_lifecycle_file")
+                if lifecycle_file:
+                    bucket_lifecycle = self.parse_bucket_lifecycle_file(lifecycle_file)
+                    if isinstance(bucket_lifecycle, LifecycleConfig):
+                        lifecycle_config = bucket_lifecycle
+                bucket_objects.append(Bucket(name, create_sa, versioning_config, lifecycle_config))
+        except TypeError:
+            logger.error("Buckets must be defined as a list of YAML dictionaries!")
+            sys.exit(1)
 
         return bucket_objects
 
@@ -117,6 +121,7 @@ class ClusterResources:
         except KeyError:
             logger.error(f"Lifecycle file {lifecycle_file} is missing the required 'Rules' key.")
             sys.exit(1)
+
         try:
             for rule_data in rules_dict:
                 parsed_rule = self.parse_bucket_lifecycle_rule(rule_data)
@@ -163,60 +168,81 @@ class ClusterResources:
     @staticmethod
     def parse_bucket_policies(bucket_policies):
         if not bucket_policies:
-            logger.info("No bucket policies configured, skipping.")
+            logger.debug("No bucket policies configured, skipping.")
             return []
 
         bucket_policy_objects = []
-        for bucket_policy in bucket_policies:
-            bucket_policy_objects.append(BucketPolicy(bucket_policy["bucket"], bucket_policy["policy_file"]))
+        try:
+            logger.debug(f"Parsing {len(bucket_policies)} bucket policies...")
+            for bucket_policy in bucket_policies:
+                bucket_policy_objects.append(BucketPolicy(bucket_policy["bucket"], bucket_policy["policy_file"]))
+        except TypeError:
+            logger.error("Bucket policies must be defined as a list of YAML dictionaries!")
+            sys.exit(1)
 
         return bucket_policy_objects
 
     @staticmethod
     def parse_service_accounts(service_accounts):
         if not service_accounts:
-            logger.info("No service accounts configured, skipping.")
+            logger.debug("No service accounts configured, skipping.")
             return []
 
         service_account_objects, service_account_names = [], []
-        for service_account in service_accounts:
-            name = service_account["name"]
-            if name in service_account_names:
-                logger.error(f"Service account '{name}' defined multiple times. Stopping.")
-                sys.exit(1)
-            service_account_names.append(name)
-            policy_file = service_account.get("policy_file")
-            sa_obj = ServiceAccount(name=name, policy_file=policy_file)
-            service_account_objects.append(sa_obj)
+
+        try:
+            logger.debug(f"Parsing {len(service_accounts)} service accounts...")
+            for service_account in service_accounts:
+                name = service_account["name"]
+                if name in service_account_names:
+                    logger.error(f"Service account '{name}' defined multiple times. Stopping.")
+                    sys.exit(1)
+                service_account_names.append(name)
+                policy_file = service_account.get("policy_file")
+                sa_obj = ServiceAccount(name=name, policy_file=policy_file)
+                service_account_objects.append(sa_obj)
+        except TypeError:
+            logger.error("Service accounts must be defined as a list of YAML dictionaries!")
+            sys.exit(1)
 
         return service_account_objects
 
     @staticmethod
     def parse_iam_attachments(iam_policy_attachments):
         if not iam_policy_attachments:
-            logger.info("No IAM policy attachments configured, skipping.")
+            logger.debug("No IAM policy attachments configured, skipping.")
             return []
 
         iam_policy_attachment_objects = []
-        for user in iam_policy_attachments:
-            iam_policy_attachments.append(IamPolicyAttachment(user["username"], user["policies"]))
+        try:
+            logger.debug(f"Parsing {len(iam_policy_attachments)} IAM policy attachments...")
+            for user in iam_policy_attachments:
+                iam_policy_attachments.append(IamPolicyAttachment(user["username"], user["policies"]))
+        except TypeError:
+            logger.error("IAM policy attachments must be defined as a list of YAML dictionaries!")
+            sys.exit(1)
 
         return iam_policy_attachment_objects
 
     @staticmethod
     def parse_iam_policies(iam_policies):
         if not iam_policies:
-            logger.info("No IAM policies configured, skipping.")
+            logger.debug("No IAM policies configured, skipping.")
             return []
 
         iam_policy_objects, iam_policy_names = [], []
-        for iam_policy in iam_policies:
-            name = iam_policy["name"]
-            if name in iam_policy_names:
-                logger.error(f"IAM policy '{name}' defined multiple times. Stopping.")
-                sys.exit(1)
-            iam_policy_names.append(name)
-            iam_policy_objects.append(IamPolicy(name, iam_policy["policy_file"]))
+        try:
+            logger.debug(f"Parsing {len(iam_policies)} IAM policies...")
+            for iam_policy in iam_policies:
+                name = iam_policy["name"]
+                if name in iam_policy_names:
+                    logger.error(f"IAM policy '{name}' defined multiple times. Stopping.")
+                    sys.exit(1)
+                iam_policy_names.append(name)
+                iam_policy_objects.append(IamPolicy(name, iam_policy["policy_file"]))
+        except TypeError:
+            logger.error("IAM policies must be defined as a list of YAML dictionaries!")
+            sys.exit(1)
 
         return iam_policy_objects
 
@@ -228,6 +254,10 @@ class ClusterResources:
             sys.exit(1)
         except PermissionError:
             logger.error(f"Incorrect file permissions on {resources_file}. Stopping.")
+            sys.exit(1)
+
+        if not resources:
+            logger.error("Is the resources file empty?")
             sys.exit(1)
 
         buckets = resources.get("buckets")
@@ -244,6 +274,10 @@ class ClusterResources:
 
         iam_policy_attachments = resources.get("iam_policy_attachments")
         self.iam_policy_attachments = self.parse_iam_attachments(iam_policy_attachments)
+
+        if not any([buckets, bucket_policies, service_accounts, iam_policies, iam_policy_attachments]):
+            logger.warning("No resources configured.")
+            sys.exit(0)
 
 
 class MinioConfig:
