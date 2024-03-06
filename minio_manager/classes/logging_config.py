@@ -24,10 +24,11 @@ class MinioManagerFilter(Filter):
     alias_set_secret_re = re.compile(r"alias set .+ (?P<secret>[\w+/]*)$")
 
     def filter(self, record: LogRecord) -> bool:
-        if "--secret" in record.msg:
-            record.msg = self.mask_secret(record.msg, self.wrapper_secret_re)
-        if "alias set" in record.msg:
-            record.msg = self.mask_secret(record.msg, self.alias_set_secret_re)
+        if isinstance(record.msg, str):
+            if "--secret" in record.msg:
+                record.msg = self.mask_secret(record.msg, self.wrapper_secret_re)
+            if "alias set" in record.msg:
+                record.msg = self.mask_secret(record.msg, self.alias_set_secret_re)
 
         return True
 
@@ -52,7 +53,6 @@ class MinioManagerFormatter(Formatter):
     def format(self, record: LogRecord):  # noqa: A003
         if record.levelname in COLORS:
             record.msg = COLORS[record.levelname] + record.msg + RESET
-            # record.levelname = COLORS[record.levelname] + record.levelname + RESET
 
         return super().format(record)
 
