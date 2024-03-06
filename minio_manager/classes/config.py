@@ -83,9 +83,8 @@ class ClusterResources:
                     if isinstance(bucket_lifecycle, LifecycleConfig):
                         lifecycle_config = bucket_lifecycle
                 bucket_objects.append(Bucket(name, create_sa, versioning_config, lifecycle_config))
-        except TypeError as te:
+        except TypeError:
             logger.error("Buckets must be defined as a list of YAML dictionaries!")
-            logger.exception(te)
             sys.exit(1)
 
         return bucket_objects
@@ -121,6 +120,7 @@ class ClusterResources:
         except KeyError:
             logger.error(f"Lifecycle file {lifecycle_file} is missing the required 'Rules' key.")
             sys.exit(1)
+
         try:
             for rule_data in rules_dict:
                 parsed_rule = self.parse_bucket_lifecycle_rule(rule_data)
@@ -174,9 +174,8 @@ class ClusterResources:
         try:
             for bucket_policy in bucket_policies:
                 bucket_policy_objects.append(BucketPolicy(bucket_policy["bucket"], bucket_policy["policy_file"]))
-        except TypeError as te:
+        except TypeError:
             logger.error("Bucket policies must be defined as a list of YAML dictionaries!")
-            logger.exception(te)
             sys.exit(1)
 
         return bucket_policy_objects
@@ -199,9 +198,8 @@ class ClusterResources:
                 policy_file = service_account.get("policy_file")
                 sa_obj = ServiceAccount(name=name, policy_file=policy_file)
                 service_account_objects.append(sa_obj)
-        except TypeError as te:
+        except TypeError:
             logger.error("Service accounts must be defined as a list of YAML dictionaries!")
-            logger.exception(te)
             sys.exit(1)
 
         return service_account_objects
@@ -216,9 +214,8 @@ class ClusterResources:
         try:
             for user in iam_policy_attachments:
                 iam_policy_attachments.append(IamPolicyAttachment(user["username"], user["policies"]))
-        except TypeError as te:
+        except TypeError:
             logger.error("IAM policy attachments must be defined as a list of YAML dictionaries!")
-            logger.exception(te)
             sys.exit(1)
 
         return iam_policy_attachment_objects
@@ -238,9 +235,8 @@ class ClusterResources:
                     sys.exit(1)
                 iam_policy_names.append(name)
                 iam_policy_objects.append(IamPolicy(name, iam_policy["policy_file"]))
-        except TypeError as te:
+        except TypeError:
             logger.error("IAM policies must be defined as a list of YAML dictionaries!")
-            logger.exception(te)
             sys.exit(1)
 
         return iam_policy_objects
