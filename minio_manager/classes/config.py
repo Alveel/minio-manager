@@ -276,8 +276,8 @@ class ClusterResources:
         self.iam_policy_attachments = self.parse_iam_attachments(iam_policy_attachments)
 
         if not any([buckets, bucket_policies, service_accounts, iam_policies, iam_policy_attachments]):
-            logger.info("No resources configured.")
-            sys.exit(1)
+            logger.warning("No resources configured.")
+            sys.exit(0)
 
 
 class MinioConfig:
