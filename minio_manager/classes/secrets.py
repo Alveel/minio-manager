@@ -162,7 +162,7 @@ class SecretManager:
         Args:
             credentials (ServiceAccount): the credentials to set
         """
-        logger.info(f"Creating Keepass entry for {credentials.access_key}")
+        logger.debug(f"Creating Keepass entry '{credentials.name}' with access key '{credentials.access_key}'")
         self.backend.add_entry(
             destination_group=self.keepass_group,
             title=credentials.name,
