@@ -14,7 +14,7 @@ from minio_manager.utilities import get_env_var, logger, read_yaml
 default_bucket_versioning = get_env_var("MINIO_MANAGER_DEFAULT_BUCKET_VERSIONING", "Suspended")
 default_bucket_lifecycle_policy = get_env_var("MINIO_MANAGER_DEFAULT_LIFECYCLE_POLICY", "")
 default_bucket_create_service_account = get_env_var("MINIO_MANAGER_DEFAULT_BUCKET_CREATE_SERVICE_ACCOUNT", "True")
-default_bucket_allowed_prefix = get_env_var("MINIO_MANAGER_ALLOWED_BUCKET_PREFIX", "")
+default_bucket_allowed_prefixes = get_env_var("MINIO_MANAGER_ALLOWED_BUCKET_PREFIX", "")
 
 
 class ClusterResources:
@@ -65,9 +65,10 @@ class ClusterResources:
                     sys.exit(1)
                 bucket_names.append(name)
                 logger.debug(f"Parsing bucket {name}")
-                if not name.startswith(default_bucket_allowed_prefix):
+                allowed_prefixes_list = tuple(default_bucket_allowed_prefixes.split(","))
+                if not name.startswith(allowed_prefixes_list):
                     logger.error(
-                        f"Bucket {name} does not start with required prefix '{default_bucket_allowed_prefix}'."
+                        f"Bucket '{name}' does not start with one of the required prefixes {allowed_prefixes_list}!"
                     )
                     sys.exit(1)
 
