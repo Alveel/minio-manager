@@ -12,26 +12,28 @@
         <meta name="author" content="Alwyn Kik">
       
       
-        <link rel="canonical" href="https://alveel.github.io/minio-manager/">
+        <link rel="canonical" href="https://alveel.github.io/minio-manager/configuration/">
       
       
+        <link rel="prev" href="../setup/">
       
-        <link rel="next" href="resources/">
+      
+        <link rel="next" href="../modules/">
       
       
-      <link rel="icon" href="assets/images/favicon.png">
+      <link rel="icon" href="../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.9">
     
     
       
-        <title>MinIO Manager</title>
+        <title>Configuration - MinIO Manager</title>
       
     
     
-      <link rel="stylesheet" href="assets/stylesheets/main.f2e4d321.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.f2e4d321.min.css">
       
         
-        <link rel="stylesheet" href="assets/stylesheets/palette.06af60db.min.css">
+        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
       
       
 
@@ -50,9 +52,9 @@
       
     
     
-      <link rel="stylesheet" href="assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
     
-    <script>__md_scope=new URL(".",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -78,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#minio-manager" class="md-skip">
+        <a href="#configuration" class="md-skip">
           Skip to content
         </a>
       
@@ -94,7 +96,7 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="." title="MinIO Manager" class="md-header__button md-logo" aria-label="MinIO Manager" data-md-component="logo">
+    <a href=".." title="MinIO Manager" class="md-header__button md-logo" aria-label="MinIO Manager" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
@@ -114,7 +116,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Home
+              Configuration
             
           </span>
         </div>
@@ -227,7 +229,7 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="." title="MinIO Manager" class="md-nav__button md-logo" aria-label="MinIO Manager" data-md-component="logo">
+    <a href=".." title="MinIO Manager" class="md-nav__button md-logo" aria-label="MinIO Manager" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
@@ -254,6 +256,66 @@
       
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Home
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../resources/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    MinIO Resources
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../setup/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Setup
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
     
   
   
@@ -270,18 +332,18 @@
           
   
   <span class="md-ellipsis">
-    Home
+    Configuration
   </span>
   
 
           <span class="md-nav__icon md-icon"></span>
         </label>
       
-      <a href="." class="md-nav__link md-nav__link--active">
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
-    Home
+    Configuration
   </span>
   
 
@@ -303,38 +365,53 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#description" class="md-nav__link">
+  <a href="#environment-variables" class="md-nav__link">
     <span class="md-ellipsis">
-      Description
+      Environment variables
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#requirements" class="md-nav__link">
+  <a href="#examples" class="md-nav__link">
     <span class="md-ellipsis">
-      Requirements
+      Examples
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#configenv" class="md-nav__link">
+    <span class="md-ellipsis">
+      config.env
     </span>
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#getting-started-with-your-project" class="md-nav__link">
+        
+          <li class="md-nav__item">
+  <a href="#resourcesyaml" class="md-nav__link">
     <span class="md-ellipsis">
-      Getting started with your project
+      resources.yaml
     </span>
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#to-do-features" class="md-nav__link">
+        
+          <li class="md-nav__item">
+  <a href="#service-account-policy-base-file" class="md-nav__link">
     <span class="md-ellipsis">
-      To do features
+      Service account policy base file
     </span>
   </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -353,67 +430,7 @@
   
   
     <li class="md-nav__item">
-      <a href="resources/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    MinIO Resources
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="setup/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Setup
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="configuration/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Configuration
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="modules/" class="md-nav__link">
+      <a href="../modules/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -453,38 +470,53 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#description" class="md-nav__link">
+  <a href="#environment-variables" class="md-nav__link">
     <span class="md-ellipsis">
-      Description
+      Environment variables
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#requirements" class="md-nav__link">
+  <a href="#examples" class="md-nav__link">
     <span class="md-ellipsis">
-      Requirements
+      Examples
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#configenv" class="md-nav__link">
+    <span class="md-ellipsis">
+      config.env
     </span>
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#getting-started-with-your-project" class="md-nav__link">
+        
+          <li class="md-nav__item">
+  <a href="#resourcesyaml" class="md-nav__link">
     <span class="md-ellipsis">
-      Getting started with your project
+      resources.yaml
     </span>
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#to-do-features" class="md-nav__link">
+        
+          <li class="md-nav__item">
+  <a href="#service-account-policy-base-file" class="md-nav__link">
     <span class="md-ellipsis">
-      To do features
+      Service account policy base file
     </span>
   </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -506,43 +538,206 @@
   
 
 
-<h1 id="minio-manager">minio-manager<a class="headerlink" href="#minio-manager" title="Permanent link">&para;</a></h1>
-<p><a href="https://img.shields.io/github/v/release/Alveel/minio-manager?include_prereleases"><img alt="Release" src="https://img.shields.io/github/v/release/Alveel/minio-manager?include_prereleases" /></a>
-<a href="https://github.com/alveel/minio-manager/actions/workflows/main.yml?query=branch%3Amain"><img alt="Build status" src="https://img.shields.io/github/actions/workflow/status/Alveel/minio-manager/main.yaml" /></a>
-<a href="https://img.shields.io/github/commit-activity/m/alveel/minio-manager"><img alt="Commit activity" src="https://img.shields.io/github/commit-activity/m/alveel/minio-manager" /></a>
-<a href="https://img.shields.io/github/license/alveel/minio-manager"><img alt="License" src="https://img.shields.io/github/license/alveel/minio-manager" /></a></p>
-<p>Declare what MinIO buckets, IAM policies, ILM policies you want, and let MinIO Manager do the work.</p>
-<ul>
-<li><strong>GitHub repository</strong>: <a href="https://github.com/alveel/minio-manager/">https://github.com/alveel/minio-manager/</a></li>
-<li><strong>Documentation</strong> <a href="https://alveel.github.io/minio-manager/">https://alveel.github.io/minio-manager/</a></li>
-</ul>
-<h2 id="description">Description<a class="headerlink" href="#description" title="Permanent link">&para;</a></h2>
-<p>The concept for management is to have so-called "bucket groups".</p>
-<p>Each bucket group is managed by an account that only has access to buckets in that group.</p>
-<p>It should be noted that this is explicitly intended for the <em>creation and updating of resources in MinIO</em>. It does <em>not</em>
-delete any resources anywhere.</p>
-<h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permanent link">&para;</a></h2>
-<ul>
-<li><a href="https://www.python.org/">Python</a> (3.9 or newer)</li>
-<li><a href="https://pdm-project.org/">PDM</a></li>
-<li><a href="https://min.io/docs/minio/linux/reference/minio-mc.html">MinIO Client</a></li>
-</ul>
-<h2 id="getting-started-with-your-project">Getting started with your project<a class="headerlink" href="#getting-started-with-your-project" title="Permanent link">&para;</a></h2>
-<p>Install the environment and the pre-commit hooks with</p>
-<div class="highlight"><pre><span></span><code>make<span class="w"> </span>install
+<h1 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h1>
+<h2 id="environment-variables">Environment variables<a class="headerlink" href="#environment-variables" title="Permanent link">&para;</a></h2>
+<p>Required variables without a default value must be manually configured.</p>
+<table>
+<thead>
+<tr>
+<th><strong>Variable</strong></th>
+<th><strong>Description</strong></th>
+<th><strong>Required</strong></th>
+<th><strong>Default</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>MINIO_MANAGER_CLUSTER_NAME</code></td>
+<td>The name of the cluster, used to query the secret backend</td>
+<td>Yes</td>
+<td></td>
+</tr>
+<tr>
+<td><code>MINIO_MANAGER_S3_ENDPOINT</code>¹</td>
+<td>What host:port to use as MinIO/S3 endpoint</td>
+<td>Yes</td>
+<td></td>
+</tr>
+<tr>
+<td><code>MINIO_MANAGER_MINIO_CONTROLLER_USER</code></td>
+<td>The name of the entry in the secret backend for the controller user</td>
+<td>Yes</td>
+<td></td>
+</tr>
+<tr>
+<td><code>MINIO_MANAGER_SECRET_BACKEND_TYPE</code>²</td>
+<td>What secret backend to use</td>
+<td>Yes</td>
+<td></td>
+</tr>
+<tr>
+<td><code>MINIO_MANAGER_SECRET_BACKEND_S3_ACCESS_KEY</code></td>
+<td>The access key to the S3 bucket where the secret database is stored</td>
+<td>Yes</td>
+<td></td>
+</tr>
+<tr>
+<td><code>MINIO_MANAGER_SECRET_BACKEND_S3_SECRET_KEY</code></td>
+<td>The secret key to the S3 bucket where the secret database is stored</td>
+<td>Yes</td>
+<td></td>
+</tr>
+<tr>
+<td><code>MINIO_MANAGER_KEEPASS_PASSWORD</code></td>
+<td>Keepass database password</td>
+<td>With Keepass</td>
+<td></td>
+</tr>
+<tr>
+<td><code>MINIO_MANAGER_KEEPASS_FILE</code></td>
+<td>he name of the database file in the S3 bucket</td>
+<td>Yes</td>
+<td><code>secrets.kdbx</code></td>
+</tr>
+<tr>
+<td><code>MINIO_MANAGER_CLUSTER_RESOURCES_FILE</code></td>
+<td>The YAML file with the MinIO resource configuration (buckets, policies, etc.)</td>
+<td>Yes</td>
+<td><code>resources.yaml</code></td>
+</tr>
+<tr>
+<td><code>MINIO_MANAGER_MINIO_ENDPOINT_SECURE</code></td>
+<td>Whether to use HTTPS for the endpoint</td>
+<td>Yes</td>
+<td><code>True</code></td>
+</tr>
+<tr>
+<td><code>MINIO_MANAGER_SECRET_BACKEND_S3_BUCKET</code></td>
+<td>The name of the bucket where the secret backend is kept</td>
+<td>Yes</td>
+<td><code>minio-manager-secrets</code></td>
+</tr>
+<tr>
+<td><code>MINIO_MANAGER_LOG_LEVEL</code>³</td>
+<td>The log level of the application.</td>
+<td>No</td>
+<td><code>INFO</code></td>
+</tr>
+<tr>
+<td><code>MINIO_MANAGER_DEFAULT_BUCKET_VERSIONING</code></td>
+<td>Whether to globally enable (<code>Enabled</code>) or suspend (<code>Suspended</code>) bucket versioning</td>
+<td>Yes</td>
+<td><code>Suspended</code></td>
+</tr>
+<tr>
+<td><code>MINIO_MANAGER_DEFAULT_LIFECYCLE_POLICY</code></td>
+<td>What lifecycle policy (in <code>mc ilm export</code> format) to attach to all buckets by default</td>
+<td>No</td>
+<td></td>
+</tr>
+<tr>
+<td><code>MINIO_MANAGER_AUTO_CREATE_SERVICE_ACCOUNT</code></td>
+<td>Whether to automatically create service accounts for each bucket with access to just that bucket</td>
+<td>No</td>
+<td><code>True</code></td>
+</tr>
+<tr>
+<td><code>MINIO_MANAGER_SERVICE_ACCOUNT_POLICY_BASE_FILE</code>⁴</td>
+<td>What policy to use as a base for a service account when automatically generated</td>
+<td>No</td>
+<td><code>service-account-policy-base.json</code></td>
+</tr>
+<tr>
+<td><code>MINIO_MANAGER_ALLOWED_BUCKET_PREFIXES</code></td>
+<td>Comma-separated list of prefixes of bucket names this controller user is allowed to manage</td>
+<td>No</td>
+<td><code>""</code></td>
+</tr>
+</tbody>
+</table>
+<ol>
+<li>Only specify the host and port as per the <a href="#configenv">example <code>.env</code></a>, without <code>https://</code> or trailing slashes</li>
+<li>Currently only Keepass is supported</li>
+<li>Possible values are <code>INFO</code> or <code>DEBUG</code></li>
+<li>Defaults to <a href="https://github.com/Alveel/minio-manager/blob/main/minio_manager/resources/service-account-policy-base.json"><code>service-account-policy-base.json</code></a>. MUST contain <code>BUCKET_NAME_REPLACE_ME</code> in the resources to work</li>
+</ol>
+<h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
+<h3 id="configenv"><code>config.env</code><a class="headerlink" href="#configenv" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># Required</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">MINIO_MANAGER_CLUSTER_NAME</span><span class="o">=</span>local-test
+<span class="nb">export</span><span class="w"> </span><span class="nv">MINIO_MANAGER_S3_ENDPOINT</span><span class="o">=</span><span class="m">127</span>.0.0.1:9000
+<span class="nb">export</span><span class="w"> </span><span class="nv">MINIO_MANAGER_MINIO_CONTROLLER_USER</span><span class="o">=</span>minioadmin
+<span class="nb">export</span><span class="w"> </span><span class="nv">MINIO_MANAGER_SECRET_BACKEND_TYPE</span><span class="o">=</span>keepass
+<span class="nb">export</span><span class="w"> </span><span class="nv">MINIO_MANAGER_SECRET_BACKEND_S3_ACCESS_KEY</span><span class="o">=</span>minioadmin
+<span class="nb">export</span><span class="w"> </span><span class="nv">MINIO_MANAGER_SECRET_BACKEND_S3_SECRET_KEY</span><span class="o">=</span><span class="s2">&quot;minioadmin&quot;</span>
+
+<span class="c1"># Required for Keepass</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">MINIO_MANAGER_KEEPASS_PASSWORD</span><span class="o">=</span><span class="s2">&quot;very-secure-much-wow&quot;</span>
+
+<span class="c1"># Optional</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">MINIO_MANAGER_CLUSTER_RESOURCES_FILE</span><span class="o">=</span>resources.yaml
+<span class="nb">export</span><span class="w"> </span><span class="nv">MINIO_MANAGER_S3_ENDPOINT_SECURE</span><span class="o">=</span>False
+<span class="nb">export</span><span class="w"> </span><span class="nv">MINIO_MANAGER_SECRET_BACKEND_S3_BUCKET</span><span class="o">=</span>minio-manager-secrets
+<span class="nb">export</span><span class="w"> </span><span class="nv">MINIO_MANAGER_KEEPASS_FILE</span><span class="o">=</span>secrets.kdbx
+<span class="nb">export</span><span class="w"> </span><span class="nv">MINIO_MANAGER_LOG_LEVEL</span><span class="o">=</span>INFO
+<span class="nb">export</span><span class="w"> </span><span class="nv">MINIO_MANAGER_DEFAULT_BUCKET_VERSIONING</span><span class="o">=</span>Enabled
+<span class="nb">export</span><span class="w"> </span><span class="nv">MINIO_MANAGER_DEFAULT_LIFECYCLE_POLICY</span><span class="o">=</span>lifecycle_policies/my_lifecycle.json
+<span class="nb">export</span><span class="w"> </span><span class="nv">MINIO_MANAGER_AUTO_CREATE_SERVICE_ACCOUNT</span><span class="o">=</span>True
+<span class="nb">export</span><span class="w"> </span><span class="nv">MINIO_MANAGER_SERVICE_ACCOUNT_POLICY_BASE_FILE</span><span class="o">=</span>my_service_account_policy.json
+<span class="nb">export</span><span class="w"> </span><span class="nv">MINIO_MANAGER_ALLOWED_BUCKET_PREFIXES</span><span class="o">=</span>infra-test-,infra-dev-
 </code></pre></div>
-<p>You are now ready to start development on your project! The CI/CD
-pipeline will be triggered when you open a pull request, merge to main,
-or when you create a new release.</p>
-<p>To finalize the set-up for publishing to PyPi or Artifactory, see
-<a href="https://fpgmaas.github.io/cookiecutter-pdm/features/publishing/#set-up-for-pypi">here</a>.
-For activating the automatic documentation with MkDocs, see
-<a href="https://fpgmaas.github.io/cookiecutter-pdm/features/mkdocs/#enabling-the-documentation-on-github">here</a>.
-To enable the code coverage reports, see <a href="https://fpgmaas.github.io/cookiecutter-pdm/features/codecov/">here</a>.</p>
-<h2 id="to-do-features">To do features<a class="headerlink" href="#to-do-features" title="Permanent link">&para;</a></h2>
-<p>Check the open <a href="https://github.com/Alveel/minio-manager/issues?q=is%3Aissue+is%3Aopen+label%3Aenhancement">enhancement</a> issues.</p>
+<p><a href="https://github.com/Alveel/minio-manager/blob/main/examples/my_group/.env">Source</a></p>
+<h3 id="resourcesyaml"><code>resources.yaml</code><a class="headerlink" href="#resourcesyaml" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="nn">---</span>
+
+<span class="nt">buckets</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-test-bucket</span>
+<span class="w">    </span><span class="nt">create_service_account</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">True</span>
+<span class="w">    </span><span class="nt">object_lifecycle_file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">lifecycle_policies/my_lifecycle.json</span>
+<span class="w">    </span><span class="nt">versioning</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Enabled</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">second-test-bucket</span>
+<span class="w">    </span><span class="nt">create_service_account</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">False</span>
+
+<span class="nt">service_accounts</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sa-for-second-test-bucket</span>
+<span class="w">    </span><span class="nt">policy_file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">user_policies/my_user.json</span>
+</code></pre></div>
+<p><a href="https://github.com/Alveel/minio-manager/blob/main/examples/my_group/resources.yaml">Source</a></p>
+<h3 id="service-account-policy-base-file">Service account policy base file<a class="headerlink" href="#service-account-policy-base-file" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;Version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2012-10-17&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;Statement&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;Effect&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Allow&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;Action&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">                </span><span class="s2">&quot;s3:ListBucket&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">&quot;s3:*Object&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">&quot;s3:*ObjectTagging&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">&quot;s3:GetObjectVersion&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">&quot;s3:*ObjectVersionTagging&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">&quot;s3:*BucketNotification&quot;</span>
+<span class="w">            </span><span class="p">],</span>
+<span class="w">            </span><span class="nt">&quot;Resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">                </span><span class="s2">&quot;arn:aws:s3:::BUCKET_NAME_REPLACE_ME&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">&quot;arn:aws:s3:::BUCKET_NAME_REPLACE_ME/*&quot;</span>
+<span class="w">            </span><span class="p">]</span>
+<span class="w">        </span><span class="p">},</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;Effect&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Allow&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;Action&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">                </span><span class="s2">&quot;s3:ListBucket&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">&quot;s3:*Object&quot;</span>
+<span class="w">            </span><span class="p">],</span>
+<span class="w">            </span><span class="nt">&quot;Resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">                </span><span class="s2">&quot;arn:aws:s3:::access-always-needed&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">&quot;arn:aws:s3:::access-always-needed/*&quot;</span>
+<span class="w">            </span><span class="p">]</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+<p><a href="https://github.com/Alveel/minio-manager/blob/main/minio_manager/resources/service-account-policy-base.json">Source</a></p>
 <hr />
-<p>Repository initiated with <a href="https://github.com/fpgmaas/cookiecutter-pdm">fpgmaas/cookiecutter-pdm</a>.</p>
 
 
 
@@ -619,10 +814,10 @@ To enable the code coverage reports, see <a href="https://fpgmaas.github.io/cook
     </div>
     
     
-    <script id="__config" type="application/json">{"base": ".", "features": [], "search": "assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "..", "features": [], "search": "../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="assets/javascripts/bundle.8fd75fb4.min.js"></script>
+      <script src="../assets/javascripts/bundle.8fd75fb4.min.js"></script>
       
     
   </body>

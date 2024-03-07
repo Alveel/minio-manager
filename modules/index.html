@@ -15,7 +15,7 @@
         <link rel="canonical" href="https://alveel.github.io/minio-manager/modules/">
       
       
-        <link rel="prev" href="..">
+        <link rel="prev" href="../configuration/">
       
       
       
@@ -262,6 +262,66 @@
   
   <span class="md-ellipsis">
     Home
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../resources/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    MinIO Resources
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../setup/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Setup
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Configuration
   </span>
   
 
@@ -1189,7 +1249,8 @@
 <span class="normal">277</span>
 <span class="normal">278</span>
 <span class="normal">279</span>
-<span class="normal">280</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">ClusterResources</span><span class="p">:</span>
+<span class="normal">280</span>
+<span class="normal">281</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">ClusterResources</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;ClusterResources is the object containing all the cluster resources:</span>
 
 <span class="sd">    - buckets</span>
@@ -1237,9 +1298,10 @@
                     <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
                 <span class="n">bucket_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Parsing bucket </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-                <span class="k">if</span> <span class="ow">not</span> <span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">default_bucket_allowed_prefix</span><span class="p">):</span>
+                <span class="n">allowed_prefixes_list</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">default_bucket_allowed_prefixes</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">))</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">allowed_prefixes_list</span><span class="p">):</span>
                     <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;Bucket </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> does not start with required prefix &#39;</span><span class="si">{</span><span class="n">default_bucket_allowed_prefix</span><span class="si">}</span><span class="s2">&#39;.&quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;Bucket &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; does not start with one of the required prefixes </span><span class="si">{</span><span class="n">allowed_prefixes_list</span><span class="si">}</span><span class="s2">!&quot;</span>
                     <span class="p">)</span>
                     <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
 
@@ -1481,7 +1543,7 @@
   
       <p>Parse a bucket lifecycle config file.
 The config files must be in JSON format and can be best obtained by running the following command:
-    mc ilm rule export <span class="arithmatex">\(cluster/\)</span>bucket &gt; $policy_file.json</p>
+    mc ilm rule export $cluster/$bucket &gt; $policy_file.json</p>
 
 
 
@@ -1539,8 +1601,7 @@ The config files must be in JSON format and can be best obtained by running the 
 
           <details class="quote">
             <summary>Source code in <code>minio_manager/classes/config.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 93</span>
-<span class="normal"> 94</span>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 94</span>
 <span class="normal"> 95</span>
 <span class="normal"> 96</span>
 <span class="normal"> 97</span>
@@ -1582,7 +1643,8 @@ The config files must be in JSON format and can be best obtained by running the 
 <span class="normal">133</span>
 <span class="normal">134</span>
 <span class="normal">135</span>
-<span class="normal">136</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">parse_bucket_lifecycle_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lifecycle_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">LifecycleConfig</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">136</span>
+<span class="normal">137</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">parse_bucket_lifecycle_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lifecycle_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">LifecycleConfig</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Parse a bucket lifecycle config file.</span>
 <span class="sd">    The config files must be in JSON format and can be best obtained by running the following command:</span>
 <span class="sd">        mc ilm rule export $cluster/$bucket &gt; $policy_file.json</span>
@@ -1710,8 +1772,7 @@ TODO: implement date and days in Expiration, implement Transition, NoncurrentVer
 
           <details class="quote">
             <summary>Source code in <code>minio_manager/classes/config.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">138</span>
-<span class="normal">139</span>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">139</span>
 <span class="normal">140</span>
 <span class="normal">141</span>
 <span class="normal">142</span>
@@ -1738,7 +1799,8 @@ TODO: implement date and days in Expiration, implement Transition, NoncurrentVer
 <span class="normal">163</span>
 <span class="normal">164</span>
 <span class="normal">165</span>
-<span class="normal">166</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@staticmethod</span>
+<span class="normal">166</span>
+<span class="normal">167</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="k">def</span> <span class="nf">parse_bucket_lifecycle_rule</span><span class="p">(</span><span class="n">rule_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Rule</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Parse a single bucket object lifecycle rule</span>
 <span class="sd">    TODO: implement date and days in Expiration, implement Transition, NoncurrentVersionTransition, Filter, and</span>
@@ -1905,7 +1967,8 @@ For each provided bucket
 <span class="normal">88</span>
 <span class="normal">89</span>
 <span class="normal">90</span>
-<span class="normal">91</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">parse_buckets</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">buckets</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Bucket</span><span class="p">]:</span>
+<span class="normal">91</span>
+<span class="normal">92</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">parse_buckets</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">buckets</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Bucket</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Parse the provided buckets with the following steps:</span>
 <span class="sd">    For each provided bucket</span>
 <span class="sd">        1. check the provided versioning. If versioning is not provided, set the default.</span>
@@ -1937,9 +2000,10 @@ For each provided bucket
                 <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
             <span class="n">bucket_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Parsing bucket </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">default_bucket_allowed_prefix</span><span class="p">):</span>
+            <span class="n">allowed_prefixes_list</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">default_bucket_allowed_prefixes</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">))</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">allowed_prefixes_list</span><span class="p">):</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;Bucket </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> does not start with required prefix &#39;</span><span class="si">{</span><span class="n">default_bucket_allowed_prefix</span><span class="si">}</span><span class="s2">&#39;.&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;Bucket &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; does not start with one of the required prefixes </span><span class="si">{</span><span class="n">allowed_prefixes_list</span><span class="si">}</span><span class="s2">!&quot;</span>
                 <span class="p">)</span>
                 <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
 
@@ -1987,8 +2051,7 @@ For each provided bucket
 
             <details class="quote">
               <summary>Source code in <code>minio_manager/classes/config.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">283</span>
-<span class="normal">284</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">284</span>
 <span class="normal">285</span>
 <span class="normal">286</span>
 <span class="normal">287</span>
@@ -1999,7 +2062,8 @@ For each provided bucket
 <span class="normal">292</span>
 <span class="normal">293</span>
 <span class="normal">294</span>
-<span class="normal">295</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">MinioConfig</span><span class="p">:</span>
+<span class="normal">295</span>
+<span class="normal">296</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">MinioConfig</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;MinioConfig is the MinIO server configuration object containing the connection details.&quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>

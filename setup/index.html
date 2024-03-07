@@ -12,22 +12,28 @@
         <meta name="author" content="Alwyn Kik">
       
       
+        <link rel="canonical" href="https://alveel.github.io/minio-manager/setup/">
       
       
+        <link rel="prev" href="../resources/">
       
-      <link rel="icon" href="/minio-manager/assets/images/favicon.png">
+      
+        <link rel="next" href="../configuration/">
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.9">
     
     
       
-        <title>MinIO Manager</title>
+        <title>Setup - MinIO Manager</title>
       
     
     
-      <link rel="stylesheet" href="/minio-manager/assets/stylesheets/main.f2e4d321.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.f2e4d321.min.css">
       
         
-        <link rel="stylesheet" href="/minio-manager/assets/stylesheets/palette.06af60db.min.css">
+        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
       
       
 
@@ -46,9 +52,9 @@
       
     
     
-      <link rel="stylesheet" href="/minio-manager/assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
     
-    <script>__md_scope=new URL("/minio-manager/",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -73,6 +79,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#set-up" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -85,7 +96,7 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="/minio-manager/." title="MinIO Manager" class="md-header__button md-logo" aria-label="MinIO Manager" data-md-component="logo">
+    <a href=".." title="MinIO Manager" class="md-header__button md-logo" aria-label="MinIO Manager" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
@@ -105,7 +116,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              
+              Setup
             
           </span>
         </div>
@@ -218,7 +229,7 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="/minio-manager/." title="MinIO Manager" class="md-nav__button md-logo" aria-label="MinIO Manager" data-md-component="logo">
+    <a href=".." title="MinIO Manager" class="md-nav__button md-logo" aria-label="MinIO Manager" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
@@ -248,7 +259,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/minio-manager/." class="md-nav__link">
+      <a href=".." class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -268,7 +279,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/minio-manager/resources/" class="md-nav__link">
+      <a href="../resources/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -285,10 +296,30 @@
       
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="/minio-manager/setup/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Setup
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
@@ -297,6 +328,95 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      Steps
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#minio" class="md-nav__link">
+    <span class="md-ellipsis">
+      MinIO
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="MinIO">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#secret-manager" class="md-nav__link">
+    <span class="md-ellipsis">
+      Secret manager
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#secret-backend" class="md-nav__link">
+    <span class="md-ellipsis">
+      Secret backend
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#service-accounts" class="md-nav__link">
+    <span class="md-ellipsis">
+      Service accounts
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#keepass" class="md-nav__link">
+    <span class="md-ellipsis">
+      Keepass
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configuration variables
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -308,7 +428,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/minio-manager/configuration/" class="md-nav__link">
+      <a href="../configuration/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -328,7 +448,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/minio-manager/modules/" class="md-nav__link">
+      <a href="../modules/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -358,6 +478,85 @@
   
   
   
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      Steps
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#minio" class="md-nav__link">
+    <span class="md-ellipsis">
+      MinIO
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="MinIO">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#secret-manager" class="md-nav__link">
+    <span class="md-ellipsis">
+      Secret manager
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#secret-backend" class="md-nav__link">
+    <span class="md-ellipsis">
+      Secret backend
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#service-accounts" class="md-nav__link">
+    <span class="md-ellipsis">
+      Service accounts
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#keepass" class="md-nav__link">
+    <span class="md-ellipsis">
+      Keepass
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configuration variables
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
   
 </nav>
                   </div>
@@ -369,8 +568,122 @@
             <div class="md-content" data-md-component="content">
               <article class="md-content__inner md-typeset">
                 
-  <h1>404 - Not found</h1>
+                  
 
+  
+  
+
+
+<h1 id="set-up">Set up<a class="headerlink" href="#set-up" title="Permanent link">&para;</a></h1>
+<p>An admin user should be used for these steps.</p>
+<h2 id="steps">Steps<a class="headerlink" href="#steps" title="Permanent link">&para;</a></h2>
+<ol>
+<li>
+<p>Create the bucket for the secret backend <code>minio-manager-secrets</code></p>
+<p><code>mc mb $ALIAS/minio-manager-secrets</code></p>
+</li>
+<li>
+<p>Create a user (either in MinIO or your identity provider)</p>
+<p>You can use <code>mc admin user add $ALIAS minio-manager</code> for a MinIO user</p>
+</li>
+<li>
+<p>Create a policy that gives read/write access to the bucket for the secret backend</p>
+<p>You can use the example provided in the <code>examples</code> directory:</p>
+<p><code>mc admin policy create $ALIAS minio-manager examples/minio-manager-secrets-policy.json</code></p>
+</li>
+<li>
+<p>Attach the policy to the user:</p>
+</li>
+<li>
+<p>For MinIO: <code>mc admin policy attach $ALIAS minio-manager --user=minio-manager</code></p>
+</li>
+<li>
+<p>For LDAP: <code>mc idp ldap policy attach $ALIAS minio-manager --user='uid=minio-manager,cn=users,dc=your,dc=domain'</code></p>
+</li>
+<li>
+<p>Upload your secret backend (e.g. <code>secrets.kdbx</code>) to the bucket root</p>
+</li>
+<li>
+<p>Create a MinIO service account/access key with either option:</p>
+</li>
+<li>
+<p><code>mc admin user svcacct add $ALIAS minio-manager</code> and note down the access and secret keys</p>
+</li>
+<li>
+<p>Copy <code>.env.example</code> to <code>.env</code> and set the following variables to the obtained keys</p>
+</li>
+<li>
+<p><code>MINIO_MANAGER_SECRET_BACKEND_S3_ACCESS_KEY</code></p>
+</li>
+<li>
+<p><code>MINIO_MANAGER_SECRET_BACKEND_S3_SECRET_KEY</code></p>
+</li>
+<li>
+<p>Configure the other variables in the <code>.env</code> file. Descriptions of each variable can be found in the
+   <a href="#environment-variables">Environment variables</a> section</p>
+</li>
+<li>
+<p>Each "bucket group" manager user must get its own policy.</p>
+</li>
+<li>You can find an example in <code>examples/bucket-group-user-policy.json</code></li>
+<li><code>mc admin policy create $ALIAS infra-test-manager examples/bucket-group-user-policy.json</code></li>
+<li><code>mc idp ldap policy attach $ALIAS infra-test-manager --user='uid=infra-test-manager,cn=users,dc=your,dc=domain'</code></li>
+<li>You can then log in to the web console with this user to create an access key exactly like how we did it previously</li>
+</ol>
+<h2 id="minio">MinIO<a class="headerlink" href="#minio" title="Permanent link">&para;</a></h2>
+<p>At least two users are required in MinIO. One with access to a single bucket containing the secret backend, all other
+users are to be used as "bucket group" managers. For each bucket created under this manager user a service account
+(or access key in S3/MinIO terms) will be created.</p>
+<h3 id="secret-manager">Secret manager<a class="headerlink" href="#secret-manager" title="Permanent link">&para;</a></h3>
+<p>This is the controller user, that is able to authenticate to the secret backend, in order to retrieve the credentials to the service accounts</p>
+<h3 id="secret-backend">Secret backend<a class="headerlink" href="#secret-backend" title="Permanent link">&para;</a></h3>
+<p>We store our Keepass database inside a MinIO bucket. You can specify the name of this bucket by using the <code>MINIO_MANAGER_SECRET_BACKEND_S3_BUCKET</code> variable.
+The credentials for this bucket
+In addition, you have to specify the password of this database with <code>MINIO_MANAGER_SECRET_BACKEND_S3_SECRET_KEY</code>, so that the controller user specified in <code>MINIO_MANAGER_SECRET_BACKEND_S3_ACCESS_KEY</code> can access it.</p>
+<p>We strongly suggest to pass these variables via masked and/or protected variables.</p>
+<h3 id="service-accounts">Service accounts<a class="headerlink" href="#service-accounts" title="Permanent link">&para;</a></h3>
+<p>Service accounts are used in order to create buckets, they are also the owner of these buckets. By default, we have a one-on-one relationship between service accounts and buckets.</p>
+<p>However, there is an option to give ownership of multiple bucket to one service account. By specifying <code>create_service_account: False</code> for a bucket in the environment's <code>resource.yaml</code>.
+You must then specify the ownership through a <code>policy_file</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">buckets</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infra-test-without-sa</span>
+<span class="w">    </span><span class="nt">create_service_account</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">False</span>
+
+<span class="nt">service_accounts</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infra-test-for-multiple-sa</span>
+<span class="w">    </span><span class="nt">policy_file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">service_account_policies/infra-test-two-buckets.json</span>
+</code></pre></div>
+<p>The Resource section of this json will specify which bucket this service account has ownership of, in this example <code>infra-test-two-buckets.json</code>.
+The service account will get ownership over 2 buckets and all of its objects:</p>
+<div class="highlight"><pre><span></span><code><span class="w">            </span><span class="nt">&quot;Resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">                </span><span class="s2">&quot;arn:aws:s3:::infra-test-without-sa&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">&quot;arn:aws:s3:::infra-test-without-sa/*&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">&quot;arn:aws:s3:::infra-test-multiple-access&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">&quot;arn:aws:s3:::infra-test-multiple-access/*&quot;</span>
+<span class="w">            </span><span class="p">]</span>
+</code></pre></div>
+<h2 id="keepass">Keepass<a class="headerlink" href="#keepass" title="Permanent link">&para;</a></h2>
+<ul>
+<li>The Keepass database's root group must be named "Passwords".</li>
+<li>You must have a group called "s3" and subgroups with the name of each MinIO cluster.</li>
+<li>Entry names must be unique.</li>
+<li>Entries are found by way of the title of the entry, the username is not considered when searching.</li>
+</ul>
+<h2 id="configuration-variables">Configuration variables<a class="headerlink" href="#configuration-variables" title="Permanent link">&para;</a></h2>
+<p>See <a class="autorefs autorefs-internal" href="../configuration/#environment-variables">Configuration environment variables</a></p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
               </article>
             </div>
           
@@ -434,10 +747,10 @@
     </div>
     
     
-    <script id="__config" type="application/json">{"base": "/minio-manager/", "features": [], "search": "/minio-manager/assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "..", "features": [], "search": "../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="/minio-manager/assets/javascripts/bundle.8fd75fb4.min.js"></script>
+      <script src="../assets/javascripts/bundle.8fd75fb4.min.js"></script>
       
     
   </body>
