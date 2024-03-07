@@ -52,5 +52,6 @@ markdown_extensions:
       permalink: true
   - pymdownx.highlight:
   - pymdownx.snippets:
+      base_path: ['.']
       check_paths: true
   - pymdownx.superfences:
