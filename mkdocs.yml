@@ -10,9 +10,13 @@ copyright: Maintained by <a href="https://github.com/alveel">Alwyn Kik</a>.
 
 nav:
   - Home: index.md
+  - MinIO Resources: resources.md
+  - Setup: setup.md
+  - Configuration: configuration.md
   - Modules: modules.md
 plugins:
   - search
+  - autorefs
   - mkdocstrings: {}
 theme:
   name: material
@@ -46,5 +50,8 @@ extra:
 markdown_extensions:
   - toc:
       permalink: true
-  - pymdownx.arithmatex:
-      generic: true
+  - pymdownx.highlight:
+  - pymdownx.snippets:
+      base_path: ['.']
+      check_paths: true
+  - pymdownx.superfences:
