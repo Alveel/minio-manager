@@ -67,7 +67,7 @@ Service accounts are used in order to create buckets, they are also the owner of
 However, there is an option to give ownership of multiple bucket to one service account. By specifying `create_service_account: False` for a bucket in the environment's `resource.yaml`.
 You must then specify the ownership through a `policy_file`:
 
-```
+``` yaml
 buckets:
   - name: infra-test-without-sa
     create_service_account: False
@@ -80,7 +80,7 @@ service_accounts:
 The Resource section of this json will specify which bucket this service account has ownership of, in this example `infra-test-two-buckets.json`.
 The service account will get ownership over 2 buckets and all of its objects:
 
-```
+``` json
             "Resource": [
                 "arn:aws:s3:::infra-test-without-sa",
                 "arn:aws:s3:::infra-test-without-sa/*",
