@@ -1,5 +1,5 @@
 config.yaml
-!tests/resources/config.yaml
+!tests/resources/config.yaml
 environments/*
 docs/source
 *.kdbx
@@ -119,6 +119,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+!examples/*/.env
 
 # Spyder project settings
 .spyderproject
