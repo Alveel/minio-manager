@@ -15,7 +15,7 @@ def main():
     start_time = time.time()
     config = get_minio_config()
 
-    logger.info("Loading resources...")
+    logger.info("Loading and parsing resources...")
     cluster_resources = ClusterResources()
     cluster_resources.parse_resources(config.cluster_resources)
 

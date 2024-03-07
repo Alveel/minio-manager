@@ -146,19 +146,6 @@ Service accounts are, by default, automatically created when creating a bucket. 
  `name` | YES | Specify the name of the service account | None | `infra-test-tomato-bucket`
   `policy_file` | NO | Specify the policy file for this service account | None | `user_policies/my_user.json`
 
-#### IAM policies
-IAM policies consist of actions and resources to which an authenticated user has access. Each policy describes one or more actions and conditions that outline the permissions of a user or group of users. The `resource.yaml` supports the following properties:
- **Property** | **Required** | **Description** | **Default** | **Example**
----|---|---|---|---
- `name` | YES | Specify the name of the IAM policy | None | `infra-test-adminpolicy`
-  `policy_file` | YES | Specify the policy file to use for this policy | None | `iam_policies/my_iam.json`
-
-#### IAM policy attachment
-For IAM policies to be effective we have to attach them to users. The `resource.yaml` supports the following properties:
- **Property** | **Required** | **Description** | **Default** | **Example**
----|---|---|---|---
- `username` | YES | Specify the username which should get a specific policy assigned | None | `my-user`
-  `policies` | YES | Specify a **list** of policies to assign to this specific `username` | None | `policy-1`
 
 ### Keepass
 
@@ -196,7 +183,7 @@ Entries are found by way of the title of the entry, the username is not consider
 - `MINIO_MANAGER_DEFAULT_LIFECYCLE_POLICY` What lifecycle policy (in `mc ilm export` format) to attach to all buckets by default
 - `MINIO_MANAGER_DEFAULT_BUCKET_CREATE_SERVICE_ACCOUNT` Whether to automatically create service accounts for each bucket with access to just that bucket. Defaults to False
 - `MINIO_MANAGER_SERVICE_ACCOUNT_POLICY_BASE_FILE` What policy to use as a base for a service account when automatically generated, defaults to [`service-account-policy-base.json`](/minio_manager/resources/service-account-policy-base.json). MUST contain BUCKET_NAME_REPLACE_ME in the resources
-- `MINIO_MANAGER_ALLOWED_BUCKET_PREFIX` If using multiple controller users, this defines what bucket names are allowed to be parsed.
+- `MINIO_MANAGER_ALLOWED_BUCKET_PREFIXES` If using multiple controller users, this defines what bucket names are allowed to be parsed. Prefixes must be comma-separated.
 
 ## To do features
 
