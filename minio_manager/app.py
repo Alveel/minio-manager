@@ -10,7 +10,7 @@ from minio_manager.utilities import logger
 
 def main():
     # Load environment variables from .env file from the current working directory.
-    load_dotenv(find_dotenv(usecwd=True), verbose=True)
+    load_dotenv(find_dotenv(filename="config.env", usecwd=True), override=True, verbose=True)
     logger.info("Starting MinIO Manager...")
     start_time = time.time()
     config = get_minio_config()
