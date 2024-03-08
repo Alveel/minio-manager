@@ -22,6 +22,8 @@ COLORS = {
 class MinioManagerFilter(Filter):
     wrapper_secret_re = re.compile(r"--secret-key (?P<secret>[\w+/]*)")
     alias_set_secret_re = re.compile(r"alias set .+ (?P<secret>[\w+/]*)$")
+    env_keepass_password_re = re.compile(r"MINIO_MANAGER_KEEPASS_PASSWORD: (?P<secret>[\w+/]*)$")
+    env_secret_key_re = re.compile(r"MINIO_MANAGER_SECRET_BACKEND_S3_SECRET_KEY: (?P<secret>[\w+/]*)$")
 
     def filter(self, record: LogRecord) -> bool:
         if not isinstance(record.msg, str):
@@ -31,6 +33,10 @@ class MinioManagerFilter(Filter):
             record.msg = self.mask_secret(record.msg, self.wrapper_secret_re)
         if "alias set" in record.msg:
             record.msg = self.mask_secret(record.msg, self.alias_set_secret_re)
+        if "MINIO_MANAGER_KEEPASS_PASSWORD" in record.msg:
+            record.msg = self.mask_secret(record.msg, self.env_keepass_password_re)
+        if "MINIO_MANAGER_SECRET_BACKEND_S3_SECRET_KEY" in record.msg:
+            record.msg = self.mask_secret(record.msg, self.env_secret_key_re)
 
         return True
 

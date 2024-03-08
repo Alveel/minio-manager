@@ -65,3 +65,12 @@ def get_env_var(name: str, default=None) -> str:
 if not logger_setup:
     setup_logging()
     logger_setup = True
+
+
+def init_debug():
+    logger.debug("Current working directory: " + os.getcwd())
+    logger.debug("Configured environment variables:")
+
+    for env in os.environ:
+        if env.startswith("MINIO_MANAGER_"):
+            logger.debug(f"{env}: {os.environ[env]}")

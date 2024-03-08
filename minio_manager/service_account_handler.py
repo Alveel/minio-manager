@@ -18,7 +18,7 @@ def service_account_exists(client: McWrapper, account: ServiceAccount):
     sa_list = client.service_account_list(client.cluster_controller_user)
     for sa in sa_list:
         sa_info = client.service_account_info(sa["accessKey"])
-        if hasattr(sa_info, "name") and sa_info["name"] == account.name:
+        if "name" in sa_info and sa_info["name"] == account.name:
             logger.debug(f"Found access key '{sa_info['accessKey']}' for '{account.name}' in MinIO: {sa_info}")
             return True
 
