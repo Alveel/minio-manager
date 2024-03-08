@@ -12,7 +12,11 @@ def configure_versioning(client, bucket):
 
     versioning_status = client.get_bucket_versioning(bucket.name)
     if versioning_status.status != bucket.versioning.status:
-        client.set_bucket_versioning(bucket.name, bucket.versioning)
+        try:
+            client.set_bucket_versioning(bucket.name, bucket.versioning)
+        except S3Error as s3e:
+            if s3e.code == "InvalidBucketState":
+                logger.error(f"Error setting versioning for bucket {bucket.name}: {s3e.message}")
         if bucket.versioning.status == "Suspended":
             logger.warning(f"Versioning on bucket {bucket.name} is suspended!")
         logger.debug(f"Versioning {bucket.versioning.status.lower()} for bucket {bucket.name}")
