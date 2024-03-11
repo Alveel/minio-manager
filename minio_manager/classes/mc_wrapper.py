@@ -42,12 +42,12 @@ class McWrapper:
         env_mc_config_path = os.getenv("MC_CONFIG_PATH")
         env_home = os.getenv("HOME")
         mc_paths = [
-            f"{env_mc_config_path}/config.json",
-            f"{env_home}/.mc/config.json",
-            f"{env_home}/.mcli/config.json",
+            Path(f"{env_mc_config_path}/config.json"),
+            Path(f"{env_home}/.mc/config.json"),
+            Path(f"{env_home}/.mcli/config.json"),
         ]
         for path in mc_paths:
-            if os.path.exists(path):
+            if path.exists():
                 return path
 
     @staticmethod
@@ -149,3 +149,8 @@ class McWrapper:
     def service_account_set_policy(self, access_key: str, policy_file: str):
         """mc admin user svcacct edit alias-name service-account-access-key --policy policy-file"""
         return self._service_account_run("edit", [access_key, "--policy", policy_file])
+
+    def cleanup(self):
+        """We want to clean up the mc config file before the process finishes as otherwise it can cause issues with subsequent runs for different environments."""
+        logger.debug(f"Deleting mc config {self.mc_config_path.name}")
+        self.mc_config_path.unlink(missing_ok=True)

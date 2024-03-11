@@ -5,7 +5,7 @@ from logging import DEBUG
 from dotenv import find_dotenv, load_dotenv
 
 from minio_manager.classes.config import ClusterResources
-from minio_manager.clients import get_minio_config, get_secret_manager
+from minio_manager.clients import get_mc_wrapper, get_minio_config, get_secret_manager
 from minio_manager.resource_handler import handle_resources
 from minio_manager.utilities import init_debug, logger
 
@@ -19,7 +19,7 @@ def main():
     de_loaded = load_dotenv(find_dotenv(filename="config.env", usecwd=True), override=True, verbose=True)
 
     if not de_loaded:
-        logger.debug("Failed to load config.env file from current working directory!")
+        logger.critical("Failed to load config.env file from current working directory!")
         sys.exit(1)
     if logger.level == DEBUG:
         init_debug()
@@ -31,8 +31,8 @@ def main():
     cluster_resources.parse_resources(config.cluster_resources)
 
     logger.info("Loading secret backend...")
-    s = get_secret_manager(config)
-    run_user_credentials = s.get_credentials(config.controller_user, required=True)
+    secrets = get_secret_manager(config)
+    run_user_credentials = secrets.get_credentials(config.controller_user, required=True)
     config.access_key = run_user_credentials.access_key
     config.secret_key = run_user_credentials.secret_key
 
@@ -40,6 +40,7 @@ def main():
         logger.info("Handling cluster resources...")
         handle_resources(cluster_resources)
     finally:
-        s.cleanup()
+        secrets.cleanup()
+        get_mc_wrapper().cleanup()
         end_time = time.time()
         logger.info(f"Execution took {end_time - start_time:.2f} seconds.")

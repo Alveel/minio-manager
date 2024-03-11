@@ -74,10 +74,10 @@ def handle_sa_policy(account: ServiceAccount):
     logger.debug("Comparing controller user policy to currently applied policy...")
     policies_diff_fallback = compare_objects(controller_user_policy, current_updated_policy)
     if policies_diff_fallback:
-        logger.critical("Unknown situation where the live service account policy")
-        logger.critical("a) does not match what we tried to apply;")
-        logger.critical("b) also does not match to the controller user's policy, which it should fall back to if")
-        logger.critical("the policy we tried to apply has more permissions than the controller user's.")
+        logger.error("Unknown situation where the live service account policy")
+        logger.error("a) does not match what we tried to apply;")
+        logger.error("b) also does not match to the controller user's policy, which it should fall back to if")
+        logger.error("the policy we tried to apply has more permissions than the controller user's.")
 
     logger.warning(f"Reverting to base policy for service account '{account.name}'")
     apply_base_policy(account)
