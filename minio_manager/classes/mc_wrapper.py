@@ -1,8 +1,8 @@
 import json
-import os
 import shutil
 import subprocess
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 from minio_manager.classes.config import MinioConfig
 from minio_manager.classes.errors import MinioManagerBaseError, raise_specific_error
@@ -29,6 +29,7 @@ class McWrapper:
             capture_output=True,
             timeout=self.timeout,
             text=True,
+            env={"MC_CONFIG_DIR": str(self.mc_config_path)},
         )
         if not proc.stdout:
             return [] if multiline else {}
@@ -37,18 +38,9 @@ class McWrapper:
         return json.loads(proc.stdout)
 
     @staticmethod
-    def set_config_path():
+    def set_config_path() -> Path:
         """Set the path to the mc config.json file"""
-        env_mc_config_path = os.getenv("MC_CONFIG_PATH")
-        env_home = os.getenv("HOME")
-        mc_paths = [
-            Path(f"{env_mc_config_path}/config.json"),
-            Path(f"{env_home}/.mc/config.json"),
-            Path(f"{env_home}/.mcli/config.json"),
-        ]
-        for path in mc_paths:
-            if path.exists():
-                return path
+        return Path(TemporaryDirectory(prefix="mc", delete=True).name)
 
     @staticmethod
     def find_mc_command() -> Path:
@@ -151,6 +143,11 @@ class McWrapper:
         return self._service_account_run("edit", [access_key, "--policy", policy_file])
 
     def cleanup(self):
-        """We want to clean up the mc config file before the process finishes as otherwise it can cause issues with subsequent runs for different environments."""
+        """
+        We want to clean up the mc config file before the process finishes as otherwise it can cause issues with
+        subsequent runs for different environments.
+        """
+        if not self.mc_config_path.name.startswith("/tmp"):  # noqa: S108
+            raise MinioManagerBaseError("CleanUpError", "Error during cleanup: temporary directory is not in /tmp")
         logger.debug(f"Deleting mc config {self.mc_config_path.name}")
-        self.mc_config_path.unlink(missing_ok=True)
+        shutil.rmtree(self.mc_config_path)
