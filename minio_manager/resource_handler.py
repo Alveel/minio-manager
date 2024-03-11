@@ -1,5 +1,5 @@
 from minio_manager.bucket_handler import handle_bucket
-from minio_manager.classes.config import ClusterResources
+from minio_manager.classes.resource_parser import ClusterResources
 from minio_manager.policy_handler import handle_bucket_policy, handle_iam_policy, handle_iam_policy_attachments
 from minio_manager.service_account_handler import handle_service_account
 from minio_manager.utilities import logger

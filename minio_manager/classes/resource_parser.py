@@ -4,17 +4,18 @@ import json
 import sys
 from pathlib import Path
 
+from config import (
+    default_bucket_allowed_prefixes,
+    default_bucket_create_service_account,
+    default_bucket_lifecycle_policy,
+    default_bucket_versioning,
+)
 from minio.commonconfig import Filter
 from minio.lifecycleconfig import Expiration, LifecycleConfig, NoncurrentVersionExpiration, Rule
 from minio.versioningconfig import VersioningConfig as VeCo
 
 from minio_manager.classes.minio_resources import Bucket, BucketPolicy, IamPolicy, IamPolicyAttachment, ServiceAccount
 from minio_manager.utilities import get_env_var, logger, read_yaml
-
-default_bucket_versioning = get_env_var("MINIO_MANAGER_DEFAULT_BUCKET_VERSIONING", "Suspended")
-default_bucket_lifecycle_policy = get_env_var("MINIO_MANAGER_DEFAULT_LIFECYCLE_POLICY", "")
-default_bucket_create_service_account = get_env_var("MINIO_MANAGER_AUTO_CREATE_SERVICE_ACCOUNT", "True")
-default_bucket_allowed_prefixes = get_env_var("MINIO_MANAGER_ALLOWED_BUCKET_PREFIX", "")
 
 
 class ClusterResources:

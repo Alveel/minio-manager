@@ -8,8 +8,8 @@ from minio import Minio, S3Error
 from pykeepass import PyKeePass
 from pykeepass.exceptions import CredentialsError
 
-from minio_manager.classes.config import MinioConfig
 from minio_manager.classes.minio_resources import ServiceAccount
+from minio_manager.classes.resource_parser import MinioConfig
 from minio_manager.utilities import get_env_var, logger
 
 

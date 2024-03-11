@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from minio import Minio, MinioAdmin, credentials
 
-from minio_manager.classes.config import MinioConfig
 from minio_manager.classes.mc_wrapper import McWrapper
+from minio_manager.classes.resource_parser import MinioConfig
 from minio_manager.classes.secrets import SecretManager
 from minio_manager.utilities import logger
 
