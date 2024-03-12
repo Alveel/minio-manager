@@ -17,6 +17,7 @@ def configure_versioning(client, bucket):
         except S3Error as s3e:
             if s3e.code == "InvalidBucketState":
                 logger.error(f"Error setting versioning for bucket {bucket.name}: {s3e.message}")
+                return
         if bucket.versioning.status == "Suspended":
             logger.warning(f"Versioning on bucket {bucket.name} is suspended!")
         logger.debug(f"Versioning {bucket.versioning.status.lower()} for bucket {bucket.name}")

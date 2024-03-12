@@ -41,6 +41,14 @@ class MinioIamServiceAccountNotAllowedError(MinioManagerBaseError):
     """Raised when trying to add a service account that already exists."""
 
 
+class MinioAccessDeniedError(MinioManagerBaseError):
+    """Raised when executing an action that is not allowed."""
+
+    def __init__(self, code, message):
+        cause = "Verify the access policies of the controller user and configured access key."
+        super().__init__(code, cause)
+
+
 error_map = {
     "XMinioInvalidIAMCredentials": MinioInvalidIamCredentialsError,
     "InvalidAccessKeyId": MinioInvalidAccessKeyId,
@@ -51,6 +59,7 @@ error_map = {
     "XMinioAdminNoSuchPolicy": MinioNoSuchPolicyError,
     "XMinioAdminInvalidSecretKey": MinioInvalidSecretKeyError,
     "XMinioAdminInvalidAccessKey": MinioInvalidAccessKeyError,
+    "AccessDenied": MinioAccessDeniedError,
 }
 
 

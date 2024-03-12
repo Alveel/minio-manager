@@ -96,7 +96,7 @@ class SecretManager:
 
         """
         self.backend_filename = get_env_var("MINIO_MANAGER_KEEPASS_FILE", "secrets.kdbx")
-        tmp_file = NamedTemporaryFile(suffix=self.backend_filename, delete=False)
+        tmp_file = NamedTemporaryFile(prefix=self.backend_filename, delete=False)
         self.keepass_temp_file_name = tmp_file.name
         try:
             response = self.backend_s3.get_object(self.backend_bucket, self.backend_filename)
