@@ -141,3 +141,5 @@ def handle_service_account(account: ServiceAccount):
 
     if account.policy_file:
         handle_sa_policy(account)
+        if account.policy_generated:
+            account.policy_file.unlink(missing_ok=True)
