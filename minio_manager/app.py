@@ -1,4 +1,3 @@
-import sys
 import time
 from logging import DEBUG
 
@@ -19,8 +18,7 @@ def main():
     de_loaded = load_dotenv(find_dotenv(filename="config.env", usecwd=True), override=True, verbose=True)
 
     if not de_loaded:
-        logger.critical("Failed to load config.env file from current working directory!")
-        sys.exit(1)
+        logger.debug("Failed to load config.env file from current working directory")
     if logger.level == DEBUG:
         init_debug()
 
