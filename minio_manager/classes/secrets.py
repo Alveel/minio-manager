@@ -24,7 +24,7 @@ class SecretManager:
         self.backend_bucket = config.secret_s3_bucket
         self.backend_secure = config.secure
         self.backend_filename = None
-        self.keepass_temp_file_name = None
+        self.keepass_temp_file = None
         self.keepass_group = None
         self.backend_s3 = self.setup_backend_s3()
         self.backend = self.setup_backend()
@@ -96,8 +96,8 @@ class SecretManager:
 
         """
         self.backend_filename = get_env_var("MINIO_MANAGER_KEEPASS_FILE", "secrets.kdbx")
-        tmp_file = NamedTemporaryFile(prefix=self.backend_filename, delete=False)
-        self.keepass_temp_file_name = tmp_file.name
+        tmp_file = NamedTemporaryFile(prefix=f"mm.{self.backend_filename}.", delete=False)
+        self.keepass_temp_file = tmp_file
         try:
             response = self.backend_s3.get_object(self.backend_bucket, self.backend_filename)
             with tmp_file as f:
@@ -118,7 +118,7 @@ class SecretManager:
         kp_pass = get_env_var("MINIO_MANAGER_KEEPASS_PASSWORD")
         logger.debug("Opening keepass database")
         try:
-            kp = PyKeePass(self.keepass_temp_file_name, password=kp_pass)
+            kp = PyKeePass(self.keepass_temp_file.name, password=kp_pass)
         except CredentialsError:
             logger.critical("Invalid credentials for Keepass database.")
             sys.exit(13)
@@ -172,8 +172,9 @@ class SecretManager:
 
     def cleanup(self):
         if not self.backend_dirty:
-            if self.keepass_temp_file_name:
-                Path(self.keepass_temp_file_name).unlink()
+            if self.keepass_temp_file:
+                self.keepass_temp_file.close()
+                Path(self.keepass_temp_file.name).unlink(missing_ok=True)
             return
 
         # If we have dirty back-ends, we want to ensure they are saved before exiting.
@@ -181,11 +182,11 @@ class SecretManager:
             # The PyKeePass save() function can take some time. So we want to run it once when the application is
             # exiting, not every time after creating or updating an entry.
             # After saving, upload the updated file to the S3 bucket and clean up the temp file.
-            tmp_file = Path(self.keepass_temp_file_name)
             if isinstance(self.backend, PyKeePass):
-                logger.info(f"Saving {self.keepass_temp_file_name}")
+                logger.info(f"Saving {self.keepass_temp_file}")
                 self.backend.save()
-                logger.info(f"Uploading modified {self.keepass_temp_file_name} to bucket {self.backend_bucket}")
-                self.backend_s3.fput_object(self.backend_bucket, self.backend_filename, tmp_file)
-            logger.debug(f"Cleaning up {tmp_file}")
-            tmp_file.unlink()
+                logger.info(f"Uploading modified {self.keepass_temp_file} to bucket {self.backend_bucket}")
+                self.backend_s3.fput_object(self.backend_bucket, self.backend_filename, self.keepass_temp_file.name)
+            logger.debug(f"Cleaning up {self.keepass_temp_file.name}")
+            self.keepass_temp_file.close()
+            Path(self.keepass_temp_file.name).unlink(missing_ok=True)

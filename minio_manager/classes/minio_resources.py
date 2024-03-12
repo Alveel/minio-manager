@@ -38,6 +38,8 @@ class BucketPolicy:
 
 class ServiceAccount:
     policy = ClassVar[dict]
+    policy_file: Path | None
+    policy_generated = False
 
     def __init__(
         self,
@@ -86,6 +88,7 @@ class ServiceAccount:
 
         self.policy = json.loads(new_content)
         self.policy_file = Path(temp_file.name)
+        self.policy_generated = True
 
 
 class IamPolicy:
