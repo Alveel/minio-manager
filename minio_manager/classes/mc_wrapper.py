@@ -23,13 +23,14 @@ class McWrapper:
 
     def _run(self, args, multiline=False) -> list[dict] | dict:
         """Execute mc command and return JSON output."""
-        logger.debug(f"Running: {self.mc} --json {' '.join(args)}")
+        cmd = [self.mc, "--config-dir", self.mc_config_path.name, "--json", *args]
+        logger.debug(f"Running: {' '.join(cmd)}")
         proc = subprocess.run(
-            [self.mc, "--json", *args],  # noqa: S603
+            cmd,  # noqa: S603
             capture_output=True,
             timeout=self.timeout,
             text=True,
-            env={"MC_CONFIG_DIR": str(self.mc_config_path)},
+            env={"MC_CONFIG_DIR": self.mc_config_path.name},
         )
         if not proc.stdout:
             return [] if multiline else {}
@@ -38,9 +39,9 @@ class McWrapper:
         return json.loads(proc.stdout)
 
     @staticmethod
-    def set_config_path() -> Path:
+    def set_config_path() -> TemporaryDirectory:
         """Set the path to the mc config.json file"""
-        return Path(TemporaryDirectory(prefix="mc", delete=True).name)
+        return TemporaryDirectory(prefix="mc")
 
     @staticmethod
     def find_mc_command() -> Path:
@@ -150,4 +151,4 @@ class McWrapper:
         if not self.mc_config_path.name.startswith("/tmp"):  # noqa: S108
             raise MinioManagerBaseError("CleanUpError", "Error during cleanup: temporary directory is not in /tmp")
         logger.debug(f"Deleting mc config {self.mc_config_path.name}")
-        shutil.rmtree(self.mc_config_path)
+        self.mc_config_path.cleanup()
