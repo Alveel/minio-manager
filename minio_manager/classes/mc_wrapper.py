@@ -23,7 +23,7 @@ class McWrapper:
 
     def _run(self, args, multiline=False) -> list[dict] | dict:
         """Execute mc command and return JSON output."""
-        cmd = [self.mc, "--config-dir", self.mc_config_path.name, "--json", *args]
+        cmd = [self.mc.name, "--config-dir", self.mc_config_path.name, "--json", *args]
         logger.debug(f"Running: {' '.join(cmd)}")
         proc = subprocess.run(
             cmd,  # noqa: S603
