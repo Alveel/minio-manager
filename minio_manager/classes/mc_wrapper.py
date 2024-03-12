@@ -16,32 +16,25 @@ class McWrapper:
         self.cluster_name = config.name
         self.cluster_controller_user = config.controller_user
         self.timeout = timeout
-        self.mc_config_path = self.set_config_path()
+        self.mc_config_path = TemporaryDirectory(prefix="mm.mc.")
         self.mc = self.find_mc_command()
         self.configure(config.endpoint, config.access_key, config.secret_key, config.secure)
         logger.debug("McWrapper initialised")
 
     def _run(self, args, multiline=False) -> list[dict] | dict:
         """Execute mc command and return JSON output."""
-        cmd = [self.mc, "--config-dir", self.mc_config_path.name, "--json", *args]
-        logger.debug(f"Running: {' '.join(cmd)}")
+        logger.debug(f"Running: {self.mc} --config-dir {self.mc_config_path.name} --json {' '.join(args)}")
         proc = subprocess.run(
-            cmd,  # noqa: S603
+            [self.mc, "--config-dir", self.mc_config_path.name, "--json", *args],  # noqa: S603
             capture_output=True,
             timeout=self.timeout,
             text=True,
-            env={"MC_CONFIG_DIR": self.mc_config_path.name},
         )
         if not proc.stdout:
             return [] if multiline else {}
         if multiline:
             return [json.loads(line) for line in proc.stdout.splitlines()]
         return json.loads(proc.stdout)
-
-    @staticmethod
-    def set_config_path() -> TemporaryDirectory:
-        """Set the path to the mc config.json file"""
-        return TemporaryDirectory(prefix="mc")
 
     @staticmethod
     def find_mc_command() -> Path:
@@ -53,15 +46,7 @@ class McWrapper:
 
     def configure(self, endpoint, access_key, secret_key, secure: bool):
         """Ensure the proper alias is configured for the cluster."""
-        logger.debug(f"Validating config for cluster {self.cluster_name}")
-        cluster_ready = self._run(["ready", self.cluster_name])
-        logger.debug(f"Cluster status: {cluster_ready}")
-        error = cluster_ready.get("error")
-        if not error:
-            # Cluster is configured & available
-            return
-
-        logger.info("Endpoint is not configured or erroneous, configuring...")
+        logger.info("Configuring 'mc'...")
         url = f"https://{endpoint}" if secure else f"http://{endpoint}"
         alias_set_resp = self._run(["alias", "set", self.cluster_name, url, access_key, secret_key])
         if alias_set_resp.get("error"):
@@ -150,5 +135,5 @@ class McWrapper:
         """
         if not self.mc_config_path.name.startswith("/tmp"):  # noqa: S108
             raise MinioManagerBaseError("CleanUpError", "Error during cleanup: temporary directory is not in /tmp")
-        logger.debug(f"Deleting mc config {self.mc_config_path.name}")
+        logger.debug(f"Deleting temporary mc config directory {self.mc_config_path.name}")
         self.mc_config_path.cleanup()
