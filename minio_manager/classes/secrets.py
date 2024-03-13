@@ -183,9 +183,9 @@ class SecretManager:
             # exiting, not every time after creating or updating an entry.
             # After saving, upload the updated file to the S3 bucket and clean up the temp file.
             if isinstance(self.backend, PyKeePass):
-                logger.info(f"Saving {self.keepass_temp_file}")
+                logger.debug(f"Saving {self.keepass_temp_file.name}")
                 self.backend.save()
-                logger.info(f"Uploading modified {self.keepass_temp_file} to bucket {self.backend_bucket}")
+                logger.info(f"Uploading modified {self.keepass_temp_file.name} to bucket {self.backend_bucket}")
                 self.backend_s3.fput_object(self.backend_bucket, self.backend_filename, self.keepass_temp_file.name)
             logger.debug(f"Cleaning up {self.keepass_temp_file.name}")
             self.keepass_temp_file.close()
