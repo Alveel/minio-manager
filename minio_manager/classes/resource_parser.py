@@ -62,10 +62,10 @@ class ClusterResources:
                     sys.exit(1)
                 bucket_names.append(name)
                 logger.debug(f"Parsing bucket {name}")
-                allowed_prefixes_list = tuple(settings.allowed_bucket_prefixes)
-                if not name.startswith(allowed_prefixes_list):
+                allowed_prefixes = settings.allowed_bucket_prefixes
+                if allowed_prefixes and not name.startswith(allowed_prefixes):
                     logger.error(
-                        f"Bucket '{name}' does not start with one of the required prefixes {allowed_prefixes_list}!"
+                        f"Bucket '{name}' does not start with one of the required prefixes {allowed_prefixes}!"
                     )
                     sys.exit(1)
 
