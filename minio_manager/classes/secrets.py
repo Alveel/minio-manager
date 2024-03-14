@@ -28,7 +28,7 @@ class SecretManager:
         self.keepass_group = None
         self.backend_s3 = self.setup_backend_s3()
         self.backend = self.setup_backend()
-        logger.info(f"Secret backend initialised with {self.backend_type}")
+        logger.debug(f"Secret backend initialised with {self.backend_type}")
 
     def setup_backend_s3(self):
         endpoint = get_env_var("MINIO_MANAGER_S3_ENDPOINT")
@@ -183,10 +183,14 @@ class SecretManager:
             # exiting, not every time after creating or updating an entry.
             # After saving, upload the updated file to the S3 bucket and clean up the temp file.
             if isinstance(self.backend, PyKeePass):
+                t_filename = self.keepass_temp_file.name  # temp file name
+                s_bucket_name = self.backend_bucket  # bucket name
+                s_filename = self.backend_filename  # file name in bucket
                 logger.debug(f"Saving {self.keepass_temp_file.name}")
                 self.backend.save()
-                logger.info(f"Uploading modified {self.keepass_temp_file.name} to bucket {self.backend_bucket}")
-                self.backend_s3.fput_object(self.backend_bucket, self.backend_filename, self.keepass_temp_file.name)
+                logger.debug(f"Uploading modified {t_filename} to bucket {s_bucket_name}")
+                self.backend_s3.fput_object(s_bucket_name, s_filename, t_filename)
+                logger.info(f"Successfully saved modified {s_filename}.")
             logger.debug(f"Cleaning up {self.keepass_temp_file.name}")
             self.keepass_temp_file.close()
             Path(self.keepass_temp_file.name).unlink(missing_ok=True)

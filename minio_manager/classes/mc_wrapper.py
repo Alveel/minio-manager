@@ -67,14 +67,14 @@ class McWrapper:
             # A connection error occurred
             raise ConnectionError(cluster_ready["error"])
 
-    def _service_account_run(self, cmd, args):
+    def _service_account_run(self, cmd, args) -> list[dict] | dict:
         """
         mc admin user svcacct helper function, no need to specify the cluster name
         Args:
             cmd: str, the svcacct command
             args: list of arguments to the command
 
-        Returns: a SimpleNamespace object
+        Returns: list | dict
 
         """
         multiline = cmd in ["list", "ls"]
@@ -99,10 +99,10 @@ class McWrapper:
         args = [self.cluster_controller_user, "--name", credentials.name]
         if credentials.description:
             args.extend(["--description", credentials.description])
-        if credentials.secret_key:
-            args.extend(["--secret-key", credentials.secret_key])
         if credentials.access_key:
             args.extend(["--access-key", credentials.access_key])
+        if credentials.secret_key:
+            args.extend(["--secret-key", credentials.secret_key])
         resp = self._service_account_run("add", args)
         credentials.access_key = resp["accessKey"]
         credentials.secret_key = resp["secretKey"]
