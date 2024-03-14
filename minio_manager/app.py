@@ -1,18 +1,14 @@
 import time
-from logging import DEBUG
 
+from minio_manager.classes.logging_config import logger
 from minio_manager.classes.resource_parser import ClusterResources
 from minio_manager.clients import get_mc_wrapper, get_minio_config, get_secret_manager
 from minio_manager.resource_handler import handle_resources
-from minio_manager.utilities import init_debug, logger
 
 
 def main():
     start_time = time.time()
     logger.info("Starting MinIO Manager...")
-
-    if logger.level == DEBUG:
-        init_debug()
 
     config = get_minio_config()
 

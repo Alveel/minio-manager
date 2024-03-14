@@ -8,9 +8,10 @@ from minio import Minio, S3Error
 from pykeepass import PyKeePass
 from pykeepass.exceptions import CredentialsError
 
+from minio_manager.classes.logging_config import logger
 from minio_manager.classes.minio_resources import ServiceAccount
 from minio_manager.classes.resource_parser import MinioConfig
-from minio_manager.utilities import get_env_var, logger
+from minio_manager.classes.settings import settings
 
 
 class SecretManager:
@@ -31,9 +32,9 @@ class SecretManager:
         logger.debug(f"Secret backend initialised with {self.backend_type}")
 
     def setup_backend_s3(self):
-        endpoint = get_env_var("MINIO_MANAGER_S3_ENDPOINT")
-        access_key = get_env_var("MINIO_MANAGER_SECRET_BACKEND_S3_ACCESS_KEY")
-        secret_key = get_env_var("MINIO_MANAGER_SECRET_BACKEND_S3_SECRET_KEY")
+        endpoint = settings.s3_endpoint
+        access_key = settings.secret_backend_s3_access_key
+        secret_key = settings.secret_backend_s3_secret_key
         logger.debug(f"Setting up secret bucket {self.backend_bucket}")
         s3 = Minio(endpoint=endpoint, access_key=access_key, secret_key=secret_key, secure=self.backend_secure)
         try:
@@ -95,7 +96,7 @@ class SecretManager:
         Returns: PyKeePass object, with the kdbx file loaded
 
         """
-        self.backend_filename = get_env_var("MINIO_MANAGER_KEEPASS_FILE", "secrets.kdbx")
+        self.backend_filename = settings.keepass_filename
         tmp_file = NamedTemporaryFile(prefix=f"mm.{self.backend_filename}.", delete=False)
         self.keepass_temp_file = tmp_file
         try:
@@ -115,7 +116,7 @@ class SecretManager:
             response.close()
             response.release_conn()
 
-        kp_pass = get_env_var("MINIO_MANAGER_KEEPASS_PASSWORD")
+        kp_pass = settings.keepass_password
         logger.debug("Opening keepass database")
         try:
             kp = PyKeePass(self.keepass_temp_file.name, password=kp_pass)

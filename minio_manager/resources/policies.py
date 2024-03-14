@@ -1,4 +1,4 @@
-{
+service_account_policy_base = {
     "Version": "2012-10-17",
     "Statement": [
         {
@@ -13,12 +13,9 @@
                 "s3:*MultipartUploads",
                 "s3:GetBucketLocation",
                 "s3:GetBucketObjectLockConfiguration",
-                "s3:GetBucketPolicy"
+                "s3:GetBucketPolicy",
             ],
-            "Resource": [
-                "arn:aws:s3:::BUCKET_NAME_REPLACE_ME",
-                "arn:aws:s3:::BUCKET_NAME_REPLACE_ME/*"
-            ]
+            "Resource": ["arn:aws:s3:::BUCKET_NAME_REPLACE_ME", "arn:aws:s3:::BUCKET_NAME_REPLACE_ME/*"],
         }
-    ]
+    ],
 }

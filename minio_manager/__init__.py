@@ -1,5 +1,3 @@
-from dotenv import find_dotenv, load_dotenv
-
-# Load environment variables from .env file from the current working directory.
-dotenv_path = find_dotenv(filename="config.env", usecwd=True)
-load_dotenv(dotenv_path, override=True, verbose=True)
+# Initialise the settings
+from minio_manager.classes.logging_config import logger as logger
+from minio_manager.classes.settings import settings as settings

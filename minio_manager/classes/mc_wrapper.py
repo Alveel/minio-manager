@@ -5,9 +5,9 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from minio_manager.classes.errors import MinioManagerBaseError, raise_specific_error
+from minio_manager.classes.logging_config import logger
 from minio_manager.classes.minio_resources import ServiceAccount
 from minio_manager.classes.resource_parser import MinioConfig
-from minio_manager.utilities import logger
 
 
 class McWrapper:

@@ -1,9 +1,9 @@
 from minio import S3Error
 
+from minio_manager.classes.logging_config import logger
 from minio_manager.classes.minio_resources import Bucket, ServiceAccount
 from minio_manager.clients import get_s3_client
 from minio_manager.service_account_handler import handle_service_account
-from minio_manager.utilities import logger
 
 
 def configure_versioning(client, bucket):

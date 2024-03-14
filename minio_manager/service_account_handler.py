@@ -1,8 +1,9 @@
 from minio_manager.classes.errors import MinioInvalidIamCredentialsError, MinioMalformedIamPolicyError
+from minio_manager.classes.logging_config import logger
 from minio_manager.classes.mc_wrapper import McWrapper
 from minio_manager.classes.minio_resources import ServiceAccount
 from minio_manager.clients import get_controller_user_policy, get_mc_wrapper, get_minio_config, get_secret_manager
-from minio_manager.utilities import compare_objects, logger
+from minio_manager.utilities import compare_objects
 
 
 def service_account_exists(client: McWrapper, account: ServiceAccount):
