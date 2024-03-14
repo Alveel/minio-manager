@@ -10,7 +10,6 @@ from minio_manager.classes.logging_config import MinioManagerLogger
 
 logger = logging.getLogger("root")
 logger_setup = False  # whether the logger is already configured or not
-module_directory = os.path.dirname(__file__)
 
 
 def read_yaml(file: str | Path) -> dict:
@@ -62,11 +61,6 @@ def get_env_var(name: str, default=None) -> str:
     return default
 
 
-if not logger_setup:
-    setup_logging()
-    logger_setup = True
-
-
 def init_debug():
     logger.debug("Current working directory: " + os.getcwd())
     logger.debug("Configured environment variables:")
@@ -74,3 +68,8 @@ def init_debug():
     for env in os.environ:
         if env.startswith("MINIO_MANAGER_"):
             logger.debug(f"{env}: {os.environ[env]}")
+
+
+if not logger_setup:
+    setup_logging()
+    logger_setup = True
