@@ -22,6 +22,10 @@ COLORS = {
 
 
 class MinioManagerFilter(Filter):
+    """
+    The MinioManagerFilter is a custom logging Filter that masks secret values.
+    """
+
     wrapper_secret_re = re.compile(r"--secret-key (?P<secret>[\w+/]*)")
     alias_set_secret_re = re.compile(r"alias set .+ (?P<secret>[\w+/]*)$")
     env_keepass_password_re = re.compile(r"MINIO_MANAGER_KEEPASS_PASSWORD: (?P<secret>[\w+/]*)$")
@@ -52,6 +56,10 @@ class MinioManagerFilter(Filter):
 
 
 class MinioManagerFormatter(Formatter):
+    """
+    The MinioManagerFormatter is a custom logging Formatter that provides formatting and colourises log messages.
+    """
+
     def __init__(self, level: int):
         self.log_level = level
         if level is INFO:
@@ -71,6 +79,10 @@ class MinioManagerFormatter(Formatter):
 
 
 class MinioManagerLogger(Logger):
+    """
+    The MinioManagerLogger is a custom Logger that implements our MinioManagerFilter and MinioManagerFormatter.
+    """
+
     def __init__(self, name: str, level: str):
         super().__init__(name)
         if level == "INFO":

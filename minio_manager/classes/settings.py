@@ -38,6 +38,11 @@ class CustomDotEnvSettingsSource(DotEnvSettingsSource):
 
 
 class Settings(BaseSettings):
+    """
+    The Settings class is responsible for loading the settings from environment variables and the dotenv file, and
+    making them available to the rest of the application.
+    """
+
     model_config = SettingsConfigDict(
         env_prefix="MINIO_MANAGER_", env_file="config.env", env_file_encoding="utf-8", extra="ignore"
     )
