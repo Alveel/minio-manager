@@ -1,5 +1,5 @@
-::: minio_manager.classes.config.ClusterResources
-::: minio_manager.classes.config.MinioConfig
+::: minio_manager.classes.resource_parser.ClusterResources
+::: minio_manager.classes.resource_parser.MinioConfig
 
 ::: minio_manager.classes.errors.MinioManagerBaseError
 
@@ -16,3 +16,5 @@
 ::: minio_manager.classes.minio_resources.IamPolicyAttachment
 
 ::: minio_manager.classes.secrets.SecretManager
+
+::: minio_manager.classes.settings.Settings

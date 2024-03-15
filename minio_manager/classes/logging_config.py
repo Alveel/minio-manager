@@ -1,6 +1,7 @@
-import logging
 import re
-from logging import Filter, Formatter, LogRecord
+from logging import DEBUG, INFO, Filter, Formatter, Logger, LogRecord, StreamHandler
+
+from minio_manager.classes.settings import settings
 
 RED = "\033[0;31m"
 GREEN = "\033[0;32m"
@@ -20,6 +21,10 @@ COLORS = {
 
 
 class MinioManagerFilter(Filter):
+    """
+    The MinioManagerFilter is a custom logging Filter that masks secret values.
+    """
+
     wrapper_secret_re = re.compile(r"--secret-key (?P<secret>[\w+/]*)")
     alias_set_secret_re = re.compile(r"alias set .+ (?P<secret>[\w+/]*)$")
     env_keepass_password_re = re.compile(r"MINIO_MANAGER_KEEPASS_PASSWORD: (?P<secret>[\w+/]*)$")
@@ -49,33 +54,48 @@ class MinioManagerFilter(Filter):
 
 
 class MinioManagerFormatter(Formatter):
-    def __init__(self, log_level: int):
-        self.log_level = log_level
-        if log_level is logging.INFO:
+    """
+    The MinioManagerFormatter is a custom logging Formatter that provides formatting and colourises log messages.
+    """
+
+    def __init__(self, level: int):
+        self.log_level = level
+        if level is INFO:
             log_format = "[{asctime}] [{levelname:^8s}] {message}"
             super().__init__(fmt=log_format, datefmt="%Y-%m-%d %H:%M:%S", style="{")
         else:
             log_format = "[{asctime}] [{levelname:^8s}] [{filename:>26s}:{lineno:<4d} - {funcName:<24s} ] {message}"
             super().__init__(fmt=log_format, style="{")
 
-    def format(self, record: LogRecord):  # noqa: A003
+    def format(self, record: LogRecord):
         if isinstance(record.msg, str) and record.levelname in COLORS:
             record.msg = COLORS[record.levelname] + record.msg + RESET
 
+        # noinspection StrFormat
         return super().format(record)
 
 
-class MinioManagerLogger(logging.Logger):
-    def __init__(self, name: str, log_level: str):
-        super().__init__(name)
-        if log_level == "INFO":
-            self.setLevel(logging.INFO)
-        else:
-            self.setLevel(logging.DEBUG)
+class MinioManagerLogger(Logger):
+    """
+    The MinioManagerLogger is a custom Logger that implements our MinioManagerFilter and MinioManagerFormatter.
+    """
 
-        handler = logging.StreamHandler()
+    def __init__(self, name: str, level: str):
+        super().__init__(name)
+        if level == "INFO":
+            self.setLevel(INFO)
+        else:
+            self.setLevel(DEBUG)
+
+        handler = StreamHandler()
         formatter = MinioManagerFormatter(self.level)
         this_filter = MinioManagerFilter()
         handler.setFormatter(formatter)
         handler.addFilter(this_filter)
         self.addHandler(handler)
+
+
+log_level = settings.log_level
+log_name = "root" if log_level == "DEBUG" else "minio-manager"
+logger = MinioManagerLogger(log_name, log_level)
+logger.debug(f"Configured log level: {log_level}")

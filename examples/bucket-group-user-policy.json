@@ -14,7 +14,8 @@
         {
             "Effect": "Allow",
             "Action": [
-                "admin:ListServiceAccounts"
+                "admin:ListServiceAccounts",
+                "admin:UpdateServiceAccount"
             ]
         }
     ]

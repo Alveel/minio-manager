@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from minio import Minio, MinioAdmin, credentials
 
-from minio_manager.classes.config import MinioConfig
+from minio_manager.classes.logging_config import logger
 from minio_manager.classes.mc_wrapper import McWrapper
+from minio_manager.classes.resource_parser import MinioConfig
 from minio_manager.classes.secrets import SecretManager
-from minio_manager.utilities import logger
 
 config, s3_client, admin_client, mc_wrapper, secrets = None, None, None, None, None
 controller_user_policy = {}
@@ -55,18 +55,15 @@ def get_mc_wrapper() -> McWrapper:
     return mc_wrapper
 
 
-def get_secret_manager(c: MinioConfig) -> SecretManager:
+def get_secret_manager() -> SecretManager:
     """Set up secret manager
-
-    Args:
-        c (MinioConfig): the MinIO server configuration
 
     Returns:
         SecretManager: the secret manager
     """
     global secrets
     if not secrets:
-        secrets = SecretManager(c)
+        secrets = SecretManager()
     return secrets
 
 

@@ -45,8 +45,8 @@ class MinioAccessDeniedError(MinioManagerBaseError):
     """Raised when executing an action that is not allowed."""
 
     def __init__(self, message, cause=None):
-        cause = cause + ": verify the access policies of the controller user and configured access key."
-        super().__init__(message, cause)
+        message = "Verify the access policies of the controller user and configured access key."
+        super().__init__(message)
 
 
 error_map = {

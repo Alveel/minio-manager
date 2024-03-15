@@ -8,13 +8,10 @@ from minio.commonconfig import Filter
 from minio.lifecycleconfig import Expiration, LifecycleConfig, NoncurrentVersionExpiration, Rule
 from minio.versioningconfig import VersioningConfig as VeCo
 
+from minio_manager.classes.logging_config import logger
 from minio_manager.classes.minio_resources import Bucket, BucketPolicy, IamPolicy, IamPolicyAttachment, ServiceAccount
-from minio_manager.utilities import get_env_var, logger, read_yaml
-
-default_bucket_versioning = get_env_var("MINIO_MANAGER_DEFAULT_BUCKET_VERSIONING", "Suspended")
-default_bucket_lifecycle_policy = get_env_var("MINIO_MANAGER_DEFAULT_LIFECYCLE_POLICY", "")
-default_bucket_create_service_account = get_env_var("MINIO_MANAGER_AUTO_CREATE_SERVICE_ACCOUNT", "True")
-default_bucket_allowed_prefixes = get_env_var("MINIO_MANAGER_ALLOWED_BUCKET_PREFIX", "")
+from minio_manager.classes.settings import settings
+from minio_manager.utilities import read_yaml
 
 
 class ClusterResources:
@@ -53,7 +50,7 @@ class ClusterResources:
 
         bucket_objects = []
 
-        lifecycle_config = self.parse_bucket_lifecycle_file(default_bucket_lifecycle_policy)
+        lifecycle_config = self.parse_bucket_lifecycle_file(settings.default_lifecycle_policy_file)
         bucket_names = []
 
         try:
@@ -65,20 +62,20 @@ class ClusterResources:
                     sys.exit(1)
                 bucket_names.append(name)
                 logger.debug(f"Parsing bucket {name}")
-                allowed_prefixes_list = tuple(default_bucket_allowed_prefixes.split(","))
-                if not name.startswith(allowed_prefixes_list):
+                allowed_prefixes = settings.allowed_bucket_prefixes
+                if allowed_prefixes and not name.startswith(allowed_prefixes):
                     logger.error(
-                        f"Bucket '{name}' does not start with one of the required prefixes {allowed_prefixes_list}!"
+                        f"Bucket '{name}' does not start with one of the required prefixes {allowed_prefixes}!"
                     )
                     sys.exit(1)
 
                 versioning = bucket.get("versioning")
                 try:
-                    versioning_config = VeCo(versioning) if versioning else VeCo(default_bucket_versioning)
+                    versioning_config = VeCo(versioning) if versioning else VeCo(settings.default_bucket_versioning)
                 except ValueError as ve:
                     logger.error(f"Error parsing versioning setting: {' '.join(ve.args)}")
                     sys.exit(1)
-                create_sa = bool(bucket.get("create_service_account", default_bucket_create_service_account))
+                create_sa = bool(bucket.get("create_service_account", settings.default_bucket_versioning))
                 lifecycle_file = bucket.get("object_lifecycle_file")
                 if lifecycle_file:
                     bucket_lifecycle = self.parse_bucket_lifecycle_file(lifecycle_file)
@@ -285,12 +282,12 @@ class MinioConfig:
     """MinioConfig is the MinIO server configuration object containing the connection details."""
 
     def __init__(self):
-        self.name = get_env_var("MINIO_MANAGER_CLUSTER_NAME")
-        self.endpoint = get_env_var("MINIO_MANAGER_S3_ENDPOINT")
-        self.secure = get_env_var("MINIO_MANAGER_S3_ENDPOINT_SECURE", True)
-        self.controller_user = get_env_var("MINIO_MANAGER_MINIO_CONTROLLER_USER")
+        self.name = settings.cluster_name
+        self.endpoint = settings.s3_endpoint
+        self.secure = settings.s3_endpoint_secure
+        self.controller_user = settings.minio_controller_user
         self.access_key = None
         self.secret_key = None
-        self.cluster_resources = get_env_var("MINIO_MANAGER_CLUSTER_RESOURCES_FILE", "resources.yaml")
-        self.secret_backend_type = get_env_var("MINIO_MANAGER_SECRET_BACKEND_TYPE")
-        self.secret_s3_bucket = get_env_var("MINIO_MANAGER_SECRET_BACKEND_S3_BUCKET", "minio-manager-secrets")
+        self.cluster_resources = settings.cluster_resources_file
+        self.secret_backend_type = settings.secret_backend_type
+        self.secret_s3_bucket = settings.secret_backend_s3_bucket

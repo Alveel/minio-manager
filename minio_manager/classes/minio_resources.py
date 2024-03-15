@@ -9,17 +9,16 @@ from typing import ClassVar
 from minio.lifecycleconfig import LifecycleConfig
 from minio.versioningconfig import VersioningConfig
 
-from minio_manager.utilities import get_env_var, logger, module_directory, read_json
-
-sa_policy_embedded = f"{module_directory}/resources/service-account-policy-base.json"
-sa_policy_base_file = get_env_var("MINIO_MANAGER_SERVICE_ACCOUNT_POLICY_BASE_FILE", sa_policy_embedded)
+from minio_manager.classes.logging_config import logger
+from minio_manager.classes.settings import settings
+from minio_manager.utilities import read_json
 
 
 class Bucket:
     def __init__(
         self,
         name: str,
-        create_service_account: bool = True,
+        create_service_account: bool = settings.auto_create_service_account,
         versioning: VersioningConfig | None = None,
         lifecycle_config: LifecycleConfig | None = None,
     ):
@@ -78,8 +77,13 @@ class ServiceAccount:
         """
         Generate a policy for a service account that gives access to a bucket with the same name as the service account.
         """
-        with Path(sa_policy_base_file).open() as base:
-            base_policy = base.read()
+        if settings.service_account_policy_base_file:
+            with Path(settings.service_account_policy_base_file).open() as base:
+                base_policy = base.read()
+        else:
+            from minio_manager.resources.policies import service_account_policy_base
+
+            base_policy = json.dumps(service_account_policy_base)
 
         temp_file = NamedTemporaryFile(prefix=self.name, suffix=".json", delete=False)
         with temp_file as out:

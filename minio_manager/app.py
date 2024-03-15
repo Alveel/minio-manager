@@ -1,26 +1,14 @@
 import time
-from logging import DEBUG
 
-from dotenv import find_dotenv, load_dotenv
-
-from minio_manager.classes.config import ClusterResources
+from minio_manager.classes.logging_config import logger
+from minio_manager.classes.resource_parser import ClusterResources
 from minio_manager.clients import get_mc_wrapper, get_minio_config, get_secret_manager
 from minio_manager.resource_handler import handle_resources
-from minio_manager.utilities import init_debug, logger
 
 
 def main():
     start_time = time.time()
     logger.info("Starting MinIO Manager...")
-
-    # Load environment variables from .env file from the current working directory.
-    logger.debug("Loading config.env file from current working directory...")
-    de_loaded = load_dotenv(find_dotenv(filename="config.env", usecwd=True), override=True, verbose=True)
-
-    if not de_loaded:
-        logger.debug("Failed to load config.env file from current working directory")
-    if logger.level == DEBUG:
-        init_debug()
 
     config = get_minio_config()
 
@@ -29,7 +17,7 @@ def main():
     cluster_resources.parse_resources(config.cluster_resources)
 
     logger.info("Loading secret backend...")
-    secrets = get_secret_manager(config)
+    secrets = get_secret_manager()
     run_user_credentials = secrets.get_credentials(config.controller_user, required=True)
     config.access_key = run_user_credentials.access_key
     config.secret_key = run_user_credentials.secret_key

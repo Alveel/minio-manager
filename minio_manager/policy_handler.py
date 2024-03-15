@@ -3,9 +3,10 @@ import json
 from minio import S3Error
 from minio.error import MinioAdminException
 
+from minio_manager.classes.logging_config import logger
 from minio_manager.classes.minio_resources import BucketPolicy, IamPolicy, IamPolicyAttachment
 from minio_manager.clients import get_minio_admin_client, get_s3_client
-from minio_manager.utilities import compare_objects, logger, read_json
+from minio_manager.utilities import compare_objects, read_json
 
 
 def handle_bucket_policy(bucket_policy: BucketPolicy):
