@@ -1,5 +1,4 @@
 import re
-import typing
 from logging import DEBUG, INFO, Filter, Formatter, Logger, LogRecord, StreamHandler
 
 from minio_manager.classes.settings import settings
@@ -31,7 +30,6 @@ class MinioManagerFilter(Filter):
     env_keepass_password_re = re.compile(r"MINIO_MANAGER_KEEPASS_PASSWORD: (?P<secret>[\w+/]*)$")
     env_secret_key_re = re.compile(r"MINIO_MANAGER_SECRET_BACKEND_S3_SECRET_KEY: (?P<secret>[\w+/]*)$")
 
-    @typing.override
     def filter(self, record: LogRecord) -> bool:
         if not isinstance(record.msg, str):
             return True
@@ -69,7 +67,6 @@ class MinioManagerFormatter(Formatter):
             log_format = "[{asctime}] [{levelname:^8s}] [{filename:>26s}:{lineno:<4d} - {funcName:<24s} ] {message}"
             super().__init__(fmt=log_format, style="{")
 
-    @typing.override
     def format(self, record: LogRecord):
         if isinstance(record.msg, str) and record.levelname in COLORS:
             record.msg = COLORS[record.levelname] + record.msg + RESET
