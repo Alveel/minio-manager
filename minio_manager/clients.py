@@ -58,9 +58,6 @@ def get_mc_wrapper() -> McWrapper:
 def get_secret_manager() -> SecretManager:
     """Set up secret manager
 
-    Args:
-        c (MinioConfig): the MinIO server configuration
-
     Returns:
         SecretManager: the secret manager
     """

@@ -186,9 +186,10 @@ class SecretManager:
                 t_filename = self.keepass_temp_file.name  # temp file name
                 s_bucket_name = self.backend_bucket  # bucket name
                 s_filename = self.backend_filename  # file name in bucket
-                logger.debug(f"Saving {self.keepass_temp_file.name}")
+                logger.info(f"Saving modified {s_filename} and uploading back to bucket {s_bucket_name}.")
+                logger.debug(f"Saving temp file {t_filename}")
                 self.backend.save()
-                logger.debug(f"Uploading modified {t_filename} to bucket {s_bucket_name}")
+                logger.debug(f"Uploading {t_filename} to bucket {s_bucket_name}")
                 self.backend_s3.fput_object(s_bucket_name, s_filename, t_filename)
                 logger.info(f"Successfully saved modified {s_filename}.")
             logger.debug(f"Cleaning up {self.keepass_temp_file.name}")
