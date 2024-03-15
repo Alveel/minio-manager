@@ -133,11 +133,12 @@ def handle_service_account(account: ServiceAccount):
         #  service account with the same access key, which sometimes happens.
         # Create the service account in MinIO
         credentials = client.service_account_add(credentials)
-        account.access_key = credentials.access_key
-        account.secret_key = credentials.secret_key
         # Create credentials in the secret backend
-        secrets.set_password(account)
+        secrets.set_password(credentials)
         logger.info(f"Created service account '{credentials.name}' with access key '{credentials.access_key}'")
+
+    account.access_key = credentials.access_key
+    account.secret_key = credentials.secret_key
 
     if account.policy_file:
         handle_sa_policy(account)
