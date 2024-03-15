@@ -1,5 +1,6 @@
 import re
 from logging import DEBUG, INFO, Filter, Formatter, Logger, LogRecord, StreamHandler
+from typing import override
 
 from minio_manager.classes.settings import settings
 
@@ -26,6 +27,7 @@ class MinioManagerFilter(Filter):
     env_keepass_password_re = re.compile(r"MINIO_MANAGER_KEEPASS_PASSWORD: (?P<secret>[\w+/]*)$")
     env_secret_key_re = re.compile(r"MINIO_MANAGER_SECRET_BACKEND_S3_SECRET_KEY: (?P<secret>[\w+/]*)$")
 
+    @override
     def filter(self, record: LogRecord) -> bool:
         if not isinstance(record.msg, str):
             return True
@@ -50,26 +52,28 @@ class MinioManagerFilter(Filter):
 
 
 class MinioManagerFormatter(Formatter):
-    def __init__(self, log_level: int):
-        self.log_level = log_level
-        if log_level is INFO:
+    def __init__(self, level: int):
+        self.log_level = level
+        if level is INFO:
             log_format = "[{asctime}] [{levelname:^8s}] {message}"
             super().__init__(fmt=log_format, datefmt="%Y-%m-%d %H:%M:%S", style="{")
         else:
             log_format = "[{asctime}] [{levelname:^8s}] [{filename:>26s}:{lineno:<4d} - {funcName:<24s} ] {message}"
             super().__init__(fmt=log_format, style="{")
 
-    def format(self, record: LogRecord):  # noqa: A003
+    @override
+    def format(self, record: LogRecord):
         if isinstance(record.msg, str) and record.levelname in COLORS:
             record.msg = COLORS[record.levelname] + record.msg + RESET
 
+        # noinspection StrFormat
         return super().format(record)
 
 
 class MinioManagerLogger(Logger):
-    def __init__(self, name: str, log_level: str):
+    def __init__(self, name: str, level: str):
         super().__init__(name)
-        if log_level == "INFO":
+        if level == "INFO":
             self.setLevel(INFO)
         else:
             self.setLevel(DEBUG)
