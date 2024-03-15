@@ -55,7 +55,7 @@ def get_mc_wrapper() -> McWrapper:
     return mc_wrapper
 
 
-def get_secret_manager(c: MinioConfig) -> SecretManager:
+def get_secret_manager() -> SecretManager:
     """Set up secret manager
 
     Args:
@@ -66,7 +66,7 @@ def get_secret_manager(c: MinioConfig) -> SecretManager:
     """
     global secrets
     if not secrets:
-        secrets = SecretManager(c)
+        secrets = SecretManager()
     return secrets
 
 

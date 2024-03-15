@@ -18,7 +18,7 @@ class Bucket:
     def __init__(
         self,
         name: str,
-        create_service_account: bool = True,
+        create_service_account: bool = settings.auto_create_service_account,
         versioning: VersioningConfig | None = None,
         lifecycle_config: LifecycleConfig | None = None,
     ):

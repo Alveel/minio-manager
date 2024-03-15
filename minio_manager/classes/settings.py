@@ -57,12 +57,12 @@ class Settings(BaseSettings):
     secret_backend_s3_secret_key: str
 
     keepass_filename: str = "secrets.kdbx"
-    keepass_password: str
+    keepass_password: str | None = None
 
     auto_create_service_account: bool = True
     allowed_bucket_prefixes: tuple[str, ...] = ()
     default_bucket_versioning: str = "Suspended"
-    default_lifecycle_policy_file: str
+    default_lifecycle_policy_file: str | None = None
     service_account_policy_base_file: str = ""
 
     @classmethod

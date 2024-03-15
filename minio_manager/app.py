@@ -17,7 +17,7 @@ def main():
     cluster_resources.parse_resources(config.cluster_resources)
 
     logger.info("Loading secret backend...")
-    secrets = get_secret_manager(config)
+    secrets = get_secret_manager()
     run_user_credentials = secrets.get_credentials(config.controller_user, required=True)
     config.access_key = run_user_credentials.access_key
     config.secret_key = run_user_credentials.secret_key

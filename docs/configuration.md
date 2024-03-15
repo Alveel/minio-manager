@@ -59,4 +59,4 @@ Required variables without a default value must be manually configured.
 
 [example-config-env]: https://github.com/Alveel/minio-manager/blob/main/examples/my_group/.env
 [example-resources-yaml]: https://github.com/Alveel/minio-manager/blob/main/examples/my_group/resources.yaml
-[service-account-policy-base]: https://github.com/Alveel/minio-manager/blob/main/minio_manager/resources/service-account-policy-base.json
+[service-account-policy-base]: https://github.com/Alveel/minio-manager/blob/main/minio_manager/resources/service-account-policy-base.py

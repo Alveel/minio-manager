@@ -10,20 +10,19 @@ from pykeepass.exceptions import CredentialsError
 
 from minio_manager.classes.logging_config import logger
 from minio_manager.classes.minio_resources import ServiceAccount
-from minio_manager.classes.resource_parser import MinioConfig
 from minio_manager.classes.settings import settings
 
 
 class SecretManager:
     """SecretManager is responsible for managing credentials"""
 
-    def __init__(self, config: MinioConfig):
+    def __init__(self):
         logger.debug("Initialising SecretManager")
-        self._cluster_name = config.name
+        self._cluster_name = settings.cluster_name
         self.backend_dirty = False
-        self.backend_type = config.secret_backend_type
-        self.backend_bucket = config.secret_s3_bucket
-        self.backend_secure = config.secure
+        self.backend_type = settings.secret_backend_type
+        self.backend_bucket = settings.secret_backend_s3_bucket
+        self.backend_secure = settings.s3_endpoint_secure
         self.backend_filename = None
         self.keepass_temp_file = None
         self.keepass_group = None
