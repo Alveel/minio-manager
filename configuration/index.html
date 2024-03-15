@@ -22,7 +22,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.9">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.13">
     
     
       
@@ -30,7 +30,7 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.f2e4d321.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.7e359304.min.css">
       
         
         <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
@@ -564,6 +564,12 @@
 <td></td>
 </tr>
 <tr>
+<td><code>MINIO_MANAGER_S3_ENDPOINT_SECURE</code></td>
+<td>Whether to use HTTPS for the endpoint</td>
+<td>Yes</td>
+<td><code>True</code></td>
+</tr>
+<tr>
 <td><code>MINIO_MANAGER_MINIO_CONTROLLER_USER</code></td>
 <td>The name of the entry in the secret backend for the controller user</td>
 <td>Yes</td>
@@ -574,6 +580,12 @@
 <td>What secret backend to use</td>
 <td>Yes</td>
 <td></td>
+</tr>
+<tr>
+<td><code>MINIO_MANAGER_SECRET_BACKEND_S3_BUCKET</code></td>
+<td>The name of the bucket where the secret backend is kept</td>
+<td>Yes</td>
+<td><code>minio-manager-secrets</code></td>
 </tr>
 <tr>
 <td><code>MINIO_MANAGER_SECRET_BACKEND_S3_ACCESS_KEY</code></td>
@@ -594,7 +606,7 @@
 <td></td>
 </tr>
 <tr>
-<td><code>MINIO_MANAGER_KEEPASS_FILE</code></td>
+<td><code>MINIO_MANAGER_KEEPASS_FILENAME</code></td>
 <td>he name of the database file in the S3 bucket</td>
 <td>Yes</td>
 <td><code>secrets.kdbx</code></td>
@@ -604,18 +616,6 @@
 <td>The YAML file with the MinIO resource configuration (buckets, policies, etc.)</td>
 <td>Yes</td>
 <td><code>resources.yaml</code></td>
-</tr>
-<tr>
-<td><code>MINIO_MANAGER_MINIO_ENDPOINT_SECURE</code></td>
-<td>Whether to use HTTPS for the endpoint</td>
-<td>Yes</td>
-<td><code>True</code></td>
-</tr>
-<tr>
-<td><code>MINIO_MANAGER_SECRET_BACKEND_S3_BUCKET</code></td>
-<td>The name of the bucket where the secret backend is kept</td>
-<td>Yes</td>
-<td><code>minio-manager-secrets</code></td>
 </tr>
 <tr>
 <td><code>MINIO_MANAGER_LOG_LEVEL</code>³</td>
@@ -630,14 +630,14 @@
 <td><code>Suspended</code></td>
 </tr>
 <tr>
-<td><code>MINIO_MANAGER_DEFAULT_LIFECYCLE_POLICY</code></td>
+<td><code>MINIO_MANAGER_DEFAULT_LIFECYCLE_POLICY_FILE</code></td>
 <td>What lifecycle policy (in <code>mc ilm export</code> format) to attach to all buckets by default</td>
 <td>No</td>
 <td></td>
 </tr>
 <tr>
 <td><code>MINIO_MANAGER_AUTO_CREATE_SERVICE_ACCOUNT</code></td>
-<td>Whether to automatically create service accounts for each bucket with access to just that bucket</td>
+<td>Whether to automatically create service accounts with a generated access policy</td>
 <td>No</td>
 <td><code>True</code></td>
 </tr>
@@ -659,7 +659,7 @@
 <li>Only specify the host and port as per the <a href="#configenv">example <code>.env</code></a>, without <code>https://</code> or trailing slashes</li>
 <li>Currently only Keepass is supported</li>
 <li>Possible values are <code>INFO</code> or <code>DEBUG</code></li>
-<li>Defaults to <a href="https://github.com/Alveel/minio-manager/blob/main/minio_manager/resources/service-account-policy-base.json"><code>service-account-policy-base.json</code></a>. MUST contain <code>BUCKET_NAME_REPLACE_ME</code> in the resources to work</li>
+<li>Defaults to <a href="https://github.com/Alveel/minio-manager/blob/main/minio_manager/resources/service-account-policy-base.py"><code>service-account-policy-base.json</code></a>. MUST contain <code>BUCKET_NAME_REPLACE_ME</code> in the resources to work</li>
 </ol>
 <h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
 <h3 id="configenv"><code>config.env</code><a class="headerlink" href="#configenv" title="Permanent link">&para;</a></h3>
@@ -736,7 +736,7 @@
 <span class="w">    </span><span class="p">]</span>
 <span class="p">}</span>
 </code></pre></div>
-<p><a href="https://github.com/Alveel/minio-manager/blob/main/minio_manager/resources/service-account-policy-base.json">Source</a></p>
+<p><a href="https://github.com/Alveel/minio-manager/blob/main/minio_manager/resources/service-account-policy-base.py">Source</a></p>
 <hr />
 
 
@@ -817,7 +817,7 @@
     <script id="__config" type="application/json">{"base": "..", "features": [], "search": "../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../assets/javascripts/bundle.8fd75fb4.min.js"></script>
+      <script src="../assets/javascripts/bundle.c8d2eff1.min.js"></script>
       
     
   </body>

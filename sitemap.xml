@@ -2,27 +2,27 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://alveel.github.io/minio-manager/</loc>
-         <lastmod>2024-03-07</lastmod>
+         <lastmod>2024-03-15</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://alveel.github.io/minio-manager/configuration/</loc>
-         <lastmod>2024-03-07</lastmod>
+         <lastmod>2024-03-15</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://alveel.github.io/minio-manager/modules/</loc>
-         <lastmod>2024-03-07</lastmod>
+         <lastmod>2024-03-15</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://alveel.github.io/minio-manager/resources/</loc>
-         <lastmod>2024-03-07</lastmod>
+         <lastmod>2024-03-15</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://alveel.github.io/minio-manager/setup/</loc>
-         <lastmod>2024-03-07</lastmod>
+         <lastmod>2024-03-15</lastmod>
          <changefreq>daily</changefreq>
     </url>
 </urlset>
