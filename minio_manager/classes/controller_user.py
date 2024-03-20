@@ -3,6 +3,14 @@ from minio_manager.classes.settings import settings
 
 
 class ControllerUser:
+    """
+    ControllerUser represents the controller user of our application.
+
+    name: The name of the controller user
+    access_key: The access key of the controller user
+    secret_key: The secret key of the controller user
+    """
+
     name: str
     access_key: str
     secret_key: str

@@ -12,6 +12,12 @@ from minio_manager.classes.settings import settings
 
 
 class McWrapper:
+    """
+    The McWrapper is responsible for executing mc commands.
+
+    To be replaced with the new functions in the updated MinioAdmin library.
+    """
+
     def __init__(self, timeout=60):
         logger.debug("Initialising McWrapper")
         self.timeout = timeout

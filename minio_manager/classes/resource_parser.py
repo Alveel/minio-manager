@@ -15,7 +15,8 @@ from minio_manager.utilities import read_yaml
 
 
 class ClusterResources:
-    """ClusterResources is the object containing all the cluster resources:
+    """
+    ClusterResources is the object containing all the cluster resources:
 
     - buckets
     - bucket_policies
@@ -30,9 +31,12 @@ class ClusterResources:
     iam_policies: list[IamPolicy]
     iam_policy_attachments: list[IamPolicyAttachment]
 
-    def parse_buckets(self, buckets: list[dict]) -> list[Bucket]:
-        """Parse the provided buckets with the following steps:
+    def parse_buckets(self, buckets: list) -> list[Bucket]:
+        """
+        Parse the provided buckets with the following steps:
+
         For each provided bucket
+
             1. check the provided versioning. If versioning is not provided, set the default.
             2. check if an object lifecycle JSON file is provided, use the default_bucket_lifecycle_policy, or skip OLM
             3. parse the file and create a LifecycleConfig object for the bucket
@@ -41,8 +45,7 @@ class ClusterResources:
         Args:
             buckets: list of buckets to parse
 
-        Returns:
-            [Bucket]: list of Bucket objects
+        Returns: [Bucket]: list of Bucket objects
         """
         if not buckets:
             logger.debug("No buckets configured, skipping.")
@@ -90,15 +93,16 @@ class ClusterResources:
         return bucket_objects
 
     def parse_bucket_lifecycle_file(self, lifecycle_file: str) -> LifecycleConfig | None:
-        """Parse a bucket lifecycle config file.
+        """
+        Parse a bucket lifecycle config file.
+
         The config files must be in JSON format and can be best obtained by running the following command:
             mc ilm rule export $cluster/$bucket > $policy_file.json
 
         Args:
             lifecycle_file: lifecycle config file
 
-        Returns:
-            LifecycleConfig object
+        Returns: LifecycleConfig object
         """
         if not lifecycle_file:
             return
@@ -136,15 +140,17 @@ class ClusterResources:
 
     @staticmethod
     def parse_bucket_lifecycle_rule(rule_data: dict) -> Rule:
-        """Parse a single bucket object lifecycle rule
-        TODO: implement date and days in Expiration, implement Transition, NoncurrentVersionTransition, Filter, and
+        """
+        Parse a single bucket object lifecycle rule.
+
+        TODO:
+          Implement date and days in Expiration, implement Transition, NoncurrentVersionTransition, Filter, and
           AbortIncompleteMultipartUpload
 
         Args:
             rule_data: dict with rule data
 
-        Returns:
-            Rule
+        Returns: Rule object
         """
         rule_dict = {"status": rule_data.get("Status"), "rule_id": rule_data.get("ID")}
 
@@ -165,7 +171,15 @@ class ClusterResources:
         return rule
 
     @staticmethod
-    def parse_bucket_policies(bucket_policies):
+    def parse_bucket_policies(bucket_policies: list):
+        """
+        Parse a list of bucket policy definitions into BucketPolicy objects.
+
+        Args:
+            bucket_policies: list of bucket policies
+
+        Returns: [BucketPolicy]
+        """
         if not bucket_policies:
             logger.debug("No bucket policies configured, skipping.")
             return []
@@ -182,7 +196,15 @@ class ClusterResources:
         return bucket_policy_objects
 
     @staticmethod
-    def parse_service_accounts(service_accounts):
+    def parse_service_accounts(service_accounts: list):
+        """
+        Parse a list of service account definitions into ServiceAccount objects.
+
+        Args:
+            service_accounts: dict of service accounts
+
+        Returns: [ServiceAccount]
+        """
         if not service_accounts:
             logger.debug("No service accounts configured, skipping.")
             return []
@@ -207,7 +229,15 @@ class ClusterResources:
         return service_account_objects
 
     @staticmethod
-    def parse_iam_attachments(iam_policy_attachments):
+    def parse_iam_attachments(iam_policy_attachments: list):
+        """
+        Parse a list of IAM policy attachment definitions into IamPolicyAttachment objects.
+
+        Args:
+            iam_policy_attachments: dict of IAM policy attachments
+
+        Returns: [IamPolicyAttachment]
+        """
         if not iam_policy_attachments:
             logger.debug("No IAM policy attachments configured, skipping.")
             return []
@@ -224,7 +254,16 @@ class ClusterResources:
         return iam_policy_attachment_objects
 
     @staticmethod
-    def parse_iam_policies(iam_policies):
+    def parse_iam_policies(iam_policies: dict):
+        """
+        Parse a list of IAM policy definitions into IamPolicy objects.
+
+        Args:
+            iam_policies: dict of IAM policies
+
+        Returns:
+            [IamPolicy]
+        """
         if not iam_policies:
             logger.debug("No IAM policies configured, skipping.")
             return []
@@ -246,6 +285,12 @@ class ClusterResources:
         return iam_policy_objects
 
     def parse_resources(self, resources_file: str):
+        """
+        Parse resources from a YAML file, ensuring they are valid before trying to use them.
+
+        Args:
+            resources_file: string path to the YAML file
+        """
         logger.info("Loading and parsing resources...")
 
         try:
