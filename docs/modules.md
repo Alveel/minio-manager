@@ -1,5 +1,4 @@
 ::: minio_manager.classes.resource_parser.ClusterResources
-::: minio_manager.classes.resource_parser.MinioConfig
 
 ::: minio_manager.classes.errors.MinioManagerBaseError
 
@@ -18,3 +17,5 @@
 ::: minio_manager.classes.secrets.SecretManager
 
 ::: minio_manager.classes.settings.Settings
+
+::: minio_manager.classes.controller_user.ControllerUser

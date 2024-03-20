@@ -11,22 +11,22 @@ def handle_resources(resources: ClusterResources):
     Args:
         resources: ClusterResources object with all resources
     """
-    logger.info("Handling buckets...")
+    logger.info(f"Handling {len(resources.buckets)} buckets...")
     for bucket in resources.buckets:
         handle_bucket(bucket)
 
-    logger.info("Handling bucket policies...")
+    logger.info(f"Handling {len(resources.bucket_policies)} bucket policies...")
     for bucket_policy in resources.bucket_policies:
         handle_bucket_policy(bucket_policy)
 
-    logger.info("Handling service accounts...")
+    logger.info(f"Handling {len(resources.service_accounts)} service accounts...")
     for service_account in resources.service_accounts:
         handle_service_account(service_account)
 
-    logger.info("Handling IAM policies...")
+    logger.info(f"Handling {len(resources.iam_policies)} IAM policies...")
     for iam_policy in resources.iam_policies:
         handle_iam_policy(iam_policy)
 
-    logger.info("Handling IAM policy attachments...")
+    logger.info(f"Handling {len(resources.iam_policy_attachments)} IAM policy attachments...")
     for iam_policy_attachment in resources.iam_policy_attachments:
         handle_iam_policy_attachments(iam_policy_attachment)

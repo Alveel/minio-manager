@@ -17,8 +17,7 @@ class SecretManager:
     """SecretManager is responsible for managing credentials"""
 
     def __init__(self):
-        logger.debug("Initialising SecretManager")
-        self._cluster_name = settings.cluster_name
+        logger.info("Loading secret backend...")
         self.backend_dirty = False
         self.backend_type = settings.secret_backend_type
         self.backend_bucket = settings.secret_backend_s3_bucket
@@ -123,7 +122,7 @@ class SecretManager:
             logger.critical("Invalid credentials for Keepass database.")
             sys.exit(13)
         # noinspection PyTypeChecker
-        self.keepass_group = kp.find_groups(path=["s3", self._cluster_name])
+        self.keepass_group = kp.find_groups(path=["s3", settings.cluster_name])
         if not self.keepass_group:
             logger.critical("Required group not found in Keepass! See documentation for requirements.")
             sys.exit(12)
@@ -195,3 +194,6 @@ class SecretManager:
             logger.debug(f"Cleaning up {self.keepass_temp_file.name}")
             self.keepass_temp_file.close()
             Path(self.keepass_temp_file.name).unlink(missing_ok=True)
+
+
+secrets = SecretManager()

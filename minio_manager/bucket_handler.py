@@ -2,7 +2,7 @@ from minio import S3Error
 
 from minio_manager.classes.logging_config import logger
 from minio_manager.classes.minio_resources import Bucket, ServiceAccount
-from minio_manager.clients import get_s3_client
+from minio_manager.clients import s3_client
 from minio_manager.service_account_handler import handle_service_account
 
 
@@ -43,11 +43,10 @@ def handle_bucket(bucket: Bucket):
     Args:
         bucket (Bucket): The bucket to handle.
     """
-    client = get_s3_client()
     try:
-        if not client.bucket_exists(bucket.name):
+        if not s3_client.bucket_exists(bucket.name):
             logger.info("Creating bucket %s" % bucket.name)
-            client.make_bucket(bucket.name)
+            s3_client.make_bucket(bucket.name)
         else:
             logger.debug(f"Bucket {bucket.name} already exists")
     except S3Error as s3e:
@@ -55,8 +54,8 @@ def handle_bucket(bucket: Bucket):
             logger.error(f"Controller user does not have permission to manage bucket {bucket.name}")
             return
 
-    configure_versioning(client, bucket)
-    configure_lifecycle(client, bucket)
+    configure_versioning(s3_client, bucket)
+    configure_lifecycle(s3_client, bucket)
 
     if bucket.create_sa:
         # TODO: is there a nicer way to go about this?
