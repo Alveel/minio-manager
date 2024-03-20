@@ -4,24 +4,28 @@ import subprocess
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+from minio_manager.classes.controller_user import controller_user
 from minio_manager.classes.errors import MinioManagerBaseError, raise_specific_error
 from minio_manager.classes.logging_config import logger
 from minio_manager.classes.minio_resources import ServiceAccount
-from minio_manager.classes.resource_parser import MinioConfig
+from minio_manager.classes.settings import settings
 
 
 class McWrapper:
-    def __init__(self, config: MinioConfig, timeout=60):
+    def __init__(self, timeout=60):
         logger.debug("Initialising McWrapper")
-        self.cluster_name = config.name
-        self.cluster_controller_user = config.controller_user
         self.timeout = timeout
         self.mc_config_path = TemporaryDirectory(prefix="mm.mc.")
         self.mc = self.find_mc_command()
-        self.configure(config.endpoint, config.access_key, config.secret_key, config.secure)
+        self.configure(
+            endpoint=settings.s3_endpoint,
+            access_key=controller_user.access_key,
+            secret_key=controller_user.secret_key,
+            secure=settings.s3_endpoint_secure,
+        )
         logger.debug("McWrapper initialised")
 
-    def _run(self, args, multiline=False) -> list[dict] | dict:
+    def _run(self, args: list, multiline=False) -> list[dict] | dict:
         """Execute mc command and return JSON output."""
         logger.debug(f"Running: {self.mc} --config-dir {self.mc_config_path.name} --json {' '.join(args)}")
         proc = subprocess.run(
@@ -44,11 +48,11 @@ class McWrapper:
             mc = shutil.which("mcli")
         return Path(mc)
 
-    def configure(self, endpoint, access_key, secret_key, secure: bool):
+    def configure(self, endpoint: str, access_key: str, secret_key: str, secure: bool):
         """Ensure the proper alias is configured for the cluster."""
         logger.info("Configuring 'mc'...")
         url = f"https://{endpoint}" if secure else f"http://{endpoint}"
-        alias_set_resp = self._run(["alias", "set", self.cluster_name, url, access_key, secret_key])
+        alias_set_resp = self._run(["alias", "set", settings.cluster_name, url, access_key, secret_key])
         if alias_set_resp.get("error"):
             error_details = alias_set_resp["error"]["cause"]["error"]
             try:
@@ -57,7 +61,7 @@ class McWrapper:
                 logger.exception("Unknown error!")
                 raise MinioManagerBaseError(alias_set_resp["error"]["cause"]["message"]) from ae
 
-        cluster_ready = self._run(["ready", self.cluster_name])
+        cluster_ready = self._run(["ready", settings.cluster_name])
         healthy = cluster_ready.get("healthy")
         if healthy:
             # Cluster is configured & available
@@ -67,7 +71,7 @@ class McWrapper:
             # A connection error occurred
             raise ConnectionError(cluster_ready["error"])
 
-    def _service_account_run(self, cmd, args) -> list[dict] | dict:
+    def _service_account_run(self, cmd: str, args: list) -> list[dict] | dict:
         """
         mc admin user svcacct helper function, no need to specify the cluster name
         Args:
@@ -78,7 +82,7 @@ class McWrapper:
 
         """
         multiline = cmd in ["list", "ls"]
-        resp = self._run(["admin", "user", "svcacct", cmd, self.cluster_name, *args], multiline=multiline)
+        resp = self._run(["admin", "user", "svcacct", cmd, settings.cluster_name, *args], multiline=multiline)
         resp_error = resp[0] if multiline else resp
         if "error" in resp_error:
             resp_error = resp_error["error"]
@@ -96,7 +100,7 @@ class McWrapper:
         Returns: ServiceAccount with the access and secret keys added to it
         """
         # Create the service account in MinIO
-        args = [self.cluster_controller_user, "--name", credentials.name]
+        args = [settings.minio_controller_user, "--name", credentials.name]
         if credentials.description:
             args.extend(["--description", credentials.description])
         if credentials.access_key:
@@ -108,11 +112,11 @@ class McWrapper:
         credentials.secret_key = resp["secretKey"]
         return credentials
 
-    def service_account_list(self, access_key) -> list[dict]:
+    def service_account_list(self, access_key: str) -> list[dict]:
         """mc admin user svcacct ls alias-name 'access_key'"""
         return self._service_account_run("ls", [access_key])
 
-    def service_account_info(self, access_key) -> dict:
+    def service_account_info(self, access_key: str) -> dict:
         """mc admin user svcacct info alias-name service-account-access-key"""
         return self._service_account_run("info", [access_key])
 
@@ -120,7 +124,7 @@ class McWrapper:
         """mc admin user svcacct rm alias-name service-account-access-key"""
         raise NotImplementedError
 
-    def service_account_get_policy(self, access_key) -> dict:
+    def service_account_get_policy(self, access_key: str) -> dict:
         info = self.service_account_info(access_key)
         return info["policy"]
 
@@ -137,3 +141,6 @@ class McWrapper:
             raise MinioManagerBaseError("CleanUpError", "Error during cleanup: temporary directory is not in /tmp")
         logger.debug(f"Deleting temporary mc config directory {self.mc_config_path.name}")
         self.mc_config_path.cleanup()
+
+
+mc_wrapper = McWrapper()
