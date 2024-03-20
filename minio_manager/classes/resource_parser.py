@@ -261,8 +261,7 @@ class ClusterResources:
         Args:
             iam_policies: dict of IAM policies
 
-        Returns:
-            [IamPolicy]
+        Returns: [IamPolicy]
         """
         if not iam_policies:
             logger.debug("No IAM policies configured, skipping.")
