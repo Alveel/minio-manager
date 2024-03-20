@@ -55,12 +55,12 @@ class ClusterResources:
 
         try:
             logger.debug(f"Parsing {len(buckets)} buckets...")
+            logger.info(f"Only allowing buckets with the following prefixes: {settings.allowed_bucket_prefixes}")
             for bucket in buckets:
                 name = bucket["name"]
                 if name in bucket_names:
                     logger.error(f"Bucket '{name}' defined multiple times. Stopping.")
                     sys.exit(1)
-                bucket_names.append(name)
                 logger.debug(f"Parsing bucket {name}")
                 allowed_prefixes = settings.allowed_bucket_prefixes
                 if allowed_prefixes and not name.startswith(allowed_prefixes):
@@ -69,6 +69,7 @@ class ClusterResources:
                     )
                     sys.exit(1)
 
+                bucket_names.append(name)
                 versioning = bucket.get("versioning")
                 try:
                     versioning_config = VeCo(versioning) if versioning else VeCo(settings.default_bucket_versioning)
@@ -245,6 +246,8 @@ class ClusterResources:
         return iam_policy_objects
 
     def parse_resources(self, resources_file: str):
+        logger.info("Loading and parsing resources...")
+
         try:
             resources = read_yaml(resources_file)
         except FileNotFoundError:
@@ -278,16 +281,5 @@ class ClusterResources:
             sys.exit(0)
 
 
-class MinioConfig:
-    """MinioConfig is the MinIO server configuration object containing the connection details."""
-
-    def __init__(self):
-        self.name = settings.cluster_name
-        self.endpoint = settings.s3_endpoint
-        self.secure = settings.s3_endpoint_secure
-        self.controller_user = settings.minio_controller_user
-        self.access_key = None
-        self.secret_key = None
-        self.cluster_resources = settings.cluster_resources_file
-        self.secret_backend_type = settings.secret_backend_type
-        self.secret_s3_bucket = settings.secret_backend_s3_bucket
+cluster_resources = ClusterResources()
+cluster_resources.parse_resources(settings.cluster_resources_file)

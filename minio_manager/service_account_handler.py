@@ -2,7 +2,9 @@ from minio_manager.classes.errors import MinioInvalidIamCredentialsError, MinioM
 from minio_manager.classes.logging_config import logger
 from minio_manager.classes.mc_wrapper import McWrapper
 from minio_manager.classes.minio_resources import ServiceAccount
-from minio_manager.clients import get_controller_user_policy, get_mc_wrapper, get_secret_manager
+from minio_manager.classes.secrets import secrets
+from minio_manager.classes.settings import settings
+from minio_manager.clients import controller_user_policy, mc_wrapper
 from minio_manager.utilities import compare_objects
 
 
@@ -16,7 +18,7 @@ def service_account_exists(client: McWrapper, account: ServiceAccount):
         logger.debug(f"Error for {account.access_key}: {e}")
 
     logger.debug(f"Access key for {account.name} not found in secret backend, trying to find it in MinIO.")
-    sa_list = client.service_account_list(client.cluster_controller_user)
+    sa_list = client.service_account_list(settings.minio_controller_user)
     for sa in sa_list:
         sa_info = client.service_account_info(sa["accessKey"])
         if "name" in sa_info and sa_info["name"] == account.name:
@@ -27,9 +29,8 @@ def service_account_exists(client: McWrapper, account: ServiceAccount):
 
 
 def apply_base_policy(account: ServiceAccount):
-    client = get_mc_wrapper()
     account.generate_service_account_policy()
-    client.service_account_set_policy(account.access_key, str(account.policy_file))
+    mc_wrapper.service_account_set_policy(account.access_key, str(account.policy_file))
 
 
 def handle_sa_policy(account: ServiceAccount):
@@ -43,10 +44,9 @@ def handle_sa_policy(account: ServiceAccount):
     Args:
         account (ServiceAccount)
     """
-    client = get_mc_wrapper()
     desired_policy = account.policy
 
-    current_policy = client.service_account_get_policy(account.access_key)
+    current_policy = mc_wrapper.service_account_get_policy(account.access_key)
 
     policies_diff_pre = compare_objects(current_policy, desired_policy)
     if not policies_diff_pre:
@@ -54,7 +54,7 @@ def handle_sa_policy(account: ServiceAccount):
 
     logger.debug(f"Updating service account policy for '{account.name}'.")
     try:
-        client.service_account_set_policy(account.access_key, str(account.policy_file))
+        mc_wrapper.service_account_set_policy(account.access_key, str(account.policy_file))
     except MinioMalformedIamPolicyError:
         logger.error(
             f"Policy for service account '{account.name}' is malformed, reverting to base policy for service account."
@@ -64,14 +64,13 @@ def handle_sa_policy(account: ServiceAccount):
 
     # TODO: so this works as intended, but MinIO somehow now seems to accept a policy with more permissions?
     #  it won't actually allow the actions, but the policy is still valid and now won't get updated..?
-    current_updated_policy = client.service_account_get_policy(account.access_key)
+    current_updated_policy = mc_wrapper.service_account_get_policy(account.access_key)
     policies_diff_post = compare_objects(current_updated_policy, desired_policy)
     if not policies_diff_post:
         return
 
     logger.warning(f"Applying policy for service account '{account.name}' failed.")
     logger.debug("Retrieving controller user credentials...")
-    controller_user_policy = get_controller_user_policy()
     logger.debug("Comparing controller user policy to currently applied policy...")
     policies_diff_fallback = compare_objects(controller_user_policy, current_updated_policy)
     if policies_diff_fallback:
@@ -99,13 +98,10 @@ def handle_service_account(account: ServiceAccount):
     Args:
         account (ServiceAccount)
     """
-    client = get_mc_wrapper()
-    secrets = get_secret_manager()
-
     # Determine if access key credentials exists in secret backend
     credentials = secrets.get_credentials(account.name)
     # Determine if access key exists in MinIO
-    sa_exists = service_account_exists(client, credentials)
+    sa_exists = service_account_exists(mc_wrapper, credentials)
 
     # Scenario 1: service account exists in MinIO but not in secret backend
     if sa_exists and not credentials.access_key:
@@ -123,7 +119,7 @@ def handle_service_account(account: ServiceAccount):
         logger.warning(
             f"Service account {account.name} exists in secret backend but not in MinIO. Using existing credentials."
         )
-        client.service_account_add(credentials)
+        mc_wrapper.service_account_add(credentials)
         sa_exists = True
         logger.info(f"Created service account '{credentials.name}', access key: {credentials.access_key}")
 
@@ -132,7 +128,7 @@ def handle_service_account(account: ServiceAccount):
         # TODO: catch scenario where an access key is deleted in MinIO, but MinIO does not accept the creation of a
         #  service account with the same access key, which sometimes happens.
         # Create the service account in MinIO
-        credentials = client.service_account_add(credentials)
+        credentials = mc_wrapper.service_account_add(credentials)
         # Create credentials in the secret backend
         secrets.set_password(credentials)
         logger.info(f"Created service account '{credentials.name}' with access key '{credentials.access_key}'")
