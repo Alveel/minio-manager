@@ -58,7 +58,8 @@ class ClusterResources:
 
         try:
             logger.debug(f"Parsing {len(buckets)} buckets...")
-            logger.info(f"Only allowing buckets with the following prefixes: {settings.allowed_bucket_prefixes}")
+            if settings.allowed_bucket_prefixes:
+                logger.info(f"Only allowing buckets with the following prefixes: {settings.allowed_bucket_prefixes}")
             for bucket in buckets:
                 name = bucket["name"]
                 if name in bucket_names:
