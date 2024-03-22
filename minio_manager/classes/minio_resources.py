@@ -98,7 +98,7 @@ class ServiceAccount:
                 self.policy = read_json(self.policy_file)
             except FileNotFoundError:
                 logger.critical(f"Policy file '{self.policy_file}' for service account '{name}' not found!")
-                sys.exit(1)
+                sys.exit(10)
 
     def generate_service_account_policy(self):
         """

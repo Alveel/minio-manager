@@ -5,7 +5,7 @@ from minio_manager.classes.minio_resources import ServiceAccount
 from minio_manager.classes.secrets import secrets
 from minio_manager.classes.settings import settings
 from minio_manager.clients import controller_user_policy, mc_wrapper
-from minio_manager.utilities import compare_objects
+from minio_manager.utilities import compare_objects, increment_error_count
 
 
 def service_account_exists(client: McWrapper, account: ServiceAccount):
@@ -78,6 +78,7 @@ def handle_sa_policy(account: ServiceAccount):
         logger.error("a) does not match what we tried to apply;")
         logger.error("b) also does not match to the controller user's policy, which it should fall back to if")
         logger.error("the policy we tried to apply has more permissions than the controller user's.")
+        increment_error_count()
 
     logger.warning(f"Reverting to base policy for service account '{account.name}'")
     apply_base_policy(account)
@@ -112,6 +113,7 @@ def handle_service_account(account: ServiceAccount):
             "Either find the credentials elsewhere and add them to the secret backend, or delete the service "
             "account from MinIO and try again."
         )
+        increment_error_count()
         return
 
     # Scenario 2: service account exists in secret backend but not in MinIO

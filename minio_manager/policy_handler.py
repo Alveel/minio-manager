@@ -6,7 +6,7 @@ from minio.error import MinioAdminException
 from minio_manager.classes.logging_config import logger
 from minio_manager.classes.minio_resources import BucketPolicy, IamPolicy, IamPolicyAttachment
 from minio_manager.clients import admin_client, s3_client
-from minio_manager.utilities import compare_objects, read_json
+from minio_manager.utilities import compare_objects, increment_error_count, read_json
 
 
 def handle_bucket_policy(bucket_policy: BucketPolicy):
@@ -35,6 +35,7 @@ def handle_bucket_policy(bucket_policy: BucketPolicy):
             except S3Error as sbe:
                 if sbe.code == "MalformedPolicy":
                     logger.exception("Do the resources in the policy file match the bucket name? Is it valid JSON?")
+                    increment_error_count()
                     return
 
     policies_diff = compare_objects(current_policy, desired_policy)
@@ -46,6 +47,7 @@ def handle_bucket_policy(bucket_policy: BucketPolicy):
         s3_client.set_bucket_policy(bucket_policy.bucket, desired_policy_json)
     except S3Error:
         logger.exception("Failed to update bucket policy")
+        increment_error_count()
 
 
 def handle_iam_policy(iam_policy: IamPolicy):
@@ -72,6 +74,7 @@ def handle_iam_policy(iam_policy: IamPolicy):
             current_policy = admin_client.policy_info(iam_policy.name)
         else:
             logger.exception("An unknown exception occurred")
+            increment_error_count()
 
     if not compare_objects(current_policy, desired_policy):
         return
