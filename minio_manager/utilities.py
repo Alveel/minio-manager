@@ -1,10 +1,12 @@
 import json
+import time
 from pathlib import Path
 
 import yaml
 from deepdiff import DeepDiff
 
 error_count = 0
+start_time = time.time()
 
 
 def read_yaml(file: str | Path) -> dict:
@@ -28,3 +30,7 @@ def compare_objects(a: dict, b: dict, ignore_order: bool = True) -> bool | dict:
 def increment_error_count():
     global error_count
     error_count += 1
+
+
+def get_error_count():
+    return error_count

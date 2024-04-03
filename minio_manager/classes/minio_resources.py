@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import sys
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import ClassVar
@@ -11,7 +10,7 @@ from minio.versioningconfig import VersioningConfig
 
 from minio_manager.classes.logging_config import logger
 from minio_manager.classes.settings import settings
-from minio_manager.utilities import read_json
+from minio_manager.utilities import increment_error_count, read_json
 
 
 class Bucket:
@@ -32,8 +31,9 @@ class Bucket:
         lifecycle_config: LifecycleConfig | None = None,
     ):
         if len(name) > 63 or len(name) < 3:
-            logger.error("Bucket name must be between 3 and 63 characters long.")
-            sys.exit(10)
+            logger.error(f"Bucket '{name}' is {len(name)} characters long;")
+            logger.error("Bucket names must be between 3 and 63 characters in length!")
+            increment_error_count()
 
         self.name = name
         self.create_sa = create_service_account
@@ -103,8 +103,8 @@ class ServiceAccount:
             try:
                 self.policy = read_json(self.policy_file)
             except FileNotFoundError:
-                logger.critical(f"Policy file '{self.policy_file}' for service account '{name}' not found!")
-                sys.exit(11)
+                logger.error(f"Policy file '{self.policy_file}' for service account '{name}' not found!")
+                increment_error_count()
 
     def generate_service_account_policy(self):
         """
