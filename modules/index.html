@@ -1406,7 +1406,17 @@
 <span class="normal">323</span>
 <span class="normal">324</span>
 <span class="normal">325</span>
-<span class="normal">326</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">ClusterResources</span><span class="p">:</span>
+<span class="normal">326</span>
+<span class="normal">327</span>
+<span class="normal">328</span>
+<span class="normal">329</span>
+<span class="normal">330</span>
+<span class="normal">331</span>
+<span class="normal">332</span>
+<span class="normal">333</span>
+<span class="normal">334</span>
+<span class="normal">335</span>
+<span class="normal">336</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">ClusterResources</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    ClusterResources is the object containing all the cluster resources:</span>
 
@@ -1455,15 +1465,15 @@
             <span class="k">for</span> <span class="n">bucket</span> <span class="ow">in</span> <span class="n">buckets</span><span class="p">:</span>
                 <span class="n">name</span> <span class="o">=</span> <span class="n">bucket</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span>
                 <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">bucket_names</span><span class="p">:</span>
-                    <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Bucket &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; defined multiple times. Stopping.&quot;</span><span class="p">)</span>
-                    <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Bucket &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; defined multiple times.&quot;</span><span class="p">)</span>
+                    <span class="n">increment_error_count</span><span class="p">()</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Parsing bucket </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
                 <span class="n">allowed_prefixes</span> <span class="o">=</span> <span class="n">settings</span><span class="o">.</span><span class="n">allowed_bucket_prefixes</span>
                 <span class="k">if</span> <span class="n">allowed_prefixes</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">allowed_prefixes</span><span class="p">):</span>
                     <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
                         <span class="sa">f</span><span class="s2">&quot;Bucket &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; does not start with one of the required prefixes </span><span class="si">{</span><span class="n">allowed_prefixes</span><span class="si">}</span><span class="s2">!&quot;</span>
                     <span class="p">)</span>
-                    <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+                    <span class="n">increment_error_count</span><span class="p">()</span>
 
                 <span class="n">bucket_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
                 <span class="n">versioning</span> <span class="o">=</span> <span class="n">bucket</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;versioning&quot;</span><span class="p">)</span>
@@ -1471,7 +1481,8 @@
                     <span class="n">versioning_config</span> <span class="o">=</span> <span class="n">VeCo</span><span class="p">(</span><span class="n">versioning</span><span class="p">)</span> <span class="k">if</span> <span class="n">versioning</span> <span class="k">else</span> <span class="n">VeCo</span><span class="p">(</span><span class="n">settings</span><span class="o">.</span><span class="n">default_bucket_versioning</span><span class="p">)</span>
                 <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">ve</span><span class="p">:</span>
                     <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error parsing versioning setting: </span><span class="si">{</span><span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">ve</span><span class="o">.</span><span class="n">args</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-                    <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+                    <span class="n">versioning_config</span> <span class="o">=</span> <span class="n">VeCo</span><span class="p">(</span><span class="n">settings</span><span class="o">.</span><span class="n">default_bucket_versioning</span><span class="p">)</span>  <span class="c1"># workaround to use error count</span>
+                    <span class="n">increment_error_count</span><span class="p">()</span>
                 <span class="n">create_sa</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">bucket</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;create_service_account&quot;</span><span class="p">,</span> <span class="n">settings</span><span class="o">.</span><span class="n">default_bucket_versioning</span><span class="p">))</span>
                 <span class="n">lifecycle_file</span> <span class="o">=</span> <span class="n">bucket</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;object_lifecycle_file&quot;</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">lifecycle_file</span><span class="p">:</span>
@@ -1481,7 +1492,7 @@
                 <span class="n">bucket_objects</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Bucket</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">create_sa</span><span class="p">,</span> <span class="n">versioning_config</span><span class="p">,</span> <span class="n">lifecycle_config</span><span class="p">))</span>
         <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Buckets must be defined as a list of YAML dictionaries!&quot;</span><span class="p">)</span>
-            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">increment_error_count</span><span class="p">()</span>
 
         <span class="k">return</span> <span class="n">bucket_objects</span>
 
@@ -1507,16 +1518,19 @@
                 <span class="n">config_data</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">FileNotFoundError</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Lifecycle file </span><span class="si">{</span><span class="n">lifecycle_file</span><span class="si">}</span><span class="s2"> not found, skipping configuration.&quot;</span><span class="p">)</span>
-            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">increment_error_count</span><span class="p">()</span>
+            <span class="k">return</span>
         <span class="k">except</span> <span class="ne">PermissionError</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Incorrect file permissions on </span><span class="si">{</span><span class="n">lifecycle_file</span><span class="si">}</span><span class="s2">, skipping configuration.&quot;</span><span class="p">)</span>
-            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">increment_error_count</span><span class="p">()</span>
+            <span class="k">return</span>
 
         <span class="k">try</span><span class="p">:</span>
             <span class="n">rules_dict</span> <span class="o">=</span> <span class="n">config_data</span><span class="p">[</span><span class="s2">&quot;Rules&quot;</span><span class="p">]</span>
         <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Lifecycle file </span><span class="si">{</span><span class="n">lifecycle_file</span><span class="si">}</span><span class="s2"> is missing the required &#39;Rules&#39; key.&quot;</span><span class="p">)</span>
-            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">increment_error_count</span><span class="p">()</span>
+            <span class="k">return</span>
 
         <span class="k">try</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">rule_data</span> <span class="ow">in</span> <span class="n">rules_dict</span><span class="p">:</span>
@@ -1524,7 +1538,7 @@
                 <span class="n">rules</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">parsed_rule</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error parsing lifecycle file </span><span class="si">{</span><span class="n">lifecycle_file</span><span class="si">}</span><span class="s2">. Is the format correct?&quot;</span><span class="p">)</span>
-            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">increment_error_count</span><span class="p">()</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="n">rules</span><span class="p">:</span>
             <span class="k">return</span>
@@ -1584,7 +1598,7 @@
                 <span class="n">bucket_policy_objects</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">BucketPolicy</span><span class="p">(</span><span class="n">bucket_policy</span><span class="p">[</span><span class="s2">&quot;bucket&quot;</span><span class="p">],</span> <span class="n">bucket_policy</span><span class="p">[</span><span class="s2">&quot;policy_file&quot;</span><span class="p">]))</span>
         <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Bucket policies must be defined as a list of YAML dictionaries!&quot;</span><span class="p">)</span>
-            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">increment_error_count</span><span class="p">()</span>
 
         <span class="k">return</span> <span class="n">bucket_policy_objects</span>
 
@@ -1609,15 +1623,15 @@
             <span class="k">for</span> <span class="n">service_account</span> <span class="ow">in</span> <span class="n">service_accounts</span><span class="p">:</span>
                 <span class="n">name</span> <span class="o">=</span> <span class="n">service_account</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span>
                 <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">service_account_names</span><span class="p">:</span>
-                    <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Service account &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; defined multiple times. Stopping.&quot;</span><span class="p">)</span>
-                    <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Service account &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; defined multiple times.&quot;</span><span class="p">)</span>
+                    <span class="n">increment_error_count</span><span class="p">()</span>
                 <span class="n">service_account_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
                 <span class="n">policy_file</span> <span class="o">=</span> <span class="n">service_account</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;policy_file&quot;</span><span class="p">)</span>
                 <span class="n">sa_obj</span> <span class="o">=</span> <span class="n">ServiceAccount</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">policy_file</span><span class="o">=</span><span class="n">policy_file</span><span class="p">)</span>
                 <span class="n">service_account_objects</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sa_obj</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Service accounts must be defined as a list of YAML dictionaries!&quot;</span><span class="p">)</span>
-            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">141</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">service_account_objects</span>
 
@@ -1642,7 +1656,7 @@
                 <span class="n">iam_policy_attachments</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">IamPolicyAttachment</span><span class="p">(</span><span class="n">user</span><span class="p">[</span><span class="s2">&quot;username&quot;</span><span class="p">],</span> <span class="n">user</span><span class="p">[</span><span class="s2">&quot;policies&quot;</span><span class="p">]))</span>
         <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;IAM policy attachments must be defined as a list of YAML dictionaries!&quot;</span><span class="p">)</span>
-            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">150</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">iam_policy_attachment_objects</span>
 
@@ -1666,13 +1680,13 @@
             <span class="k">for</span> <span class="n">iam_policy</span> <span class="ow">in</span> <span class="n">iam_policies</span><span class="p">:</span>
                 <span class="n">name</span> <span class="o">=</span> <span class="n">iam_policy</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span>
                 <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">iam_policy_names</span><span class="p">:</span>
-                    <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;IAM policy &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; defined multiple times. Stopping.&quot;</span><span class="p">)</span>
-                    <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;IAM policy &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; defined multiple times.&quot;</span><span class="p">)</span>
+                    <span class="n">increment_error_count</span><span class="p">()</span>
                 <span class="n">iam_policy_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
                 <span class="n">iam_policy_objects</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">IamPolicy</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">iam_policy</span><span class="p">[</span><span class="s2">&quot;policy_file&quot;</span><span class="p">]))</span>
         <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;IAM policies must be defined as a list of YAML dictionaries!&quot;</span><span class="p">)</span>
-            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">increment_error_count</span><span class="p">()</span>
 
         <span class="k">return</span> <span class="n">iam_policy_objects</span>
 
@@ -1688,15 +1702,15 @@
         <span class="k">try</span><span class="p">:</span>
             <span class="n">resources</span> <span class="o">=</span> <span class="n">read_yaml</span><span class="p">(</span><span class="n">resources_file</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">FileNotFoundError</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Resources file </span><span class="si">{</span><span class="n">resources_file</span><span class="si">}</span><span class="s2"> not found. Stopping.&quot;</span><span class="p">)</span>
-            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Resources file </span><span class="si">{</span><span class="n">resources_file</span><span class="si">}</span><span class="s2"> not found.&quot;</span><span class="p">)</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">170</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">PermissionError</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Incorrect file permissions on </span><span class="si">{</span><span class="n">resources_file</span><span class="si">}</span><span class="s2">. Stopping.&quot;</span><span class="p">)</span>
-            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Incorrect file permissions on </span><span class="si">{</span><span class="n">resources_file</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">171</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="n">resources</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Is the resources file empty?&quot;</span><span class="p">)</span>
-            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">172</span><span class="p">)</span>
 
         <span class="n">buckets</span> <span class="o">=</span> <span class="n">resources</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;buckets&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">buckets</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parse_buckets</span><span class="p">(</span><span class="n">buckets</span><span class="p">)</span>
@@ -1712,6 +1726,12 @@
 
         <span class="n">iam_policy_attachments</span> <span class="o">=</span> <span class="n">resources</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;iam_policy_attachments&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">iam_policy_attachments</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parse_iam_attachments</span><span class="p">(</span><span class="n">iam_policy_attachments</span><span class="p">)</span>
+
+        <span class="n">error_count</span> <span class="o">=</span> <span class="n">get_error_count</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">error_count</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">noun</span> <span class="o">=</span> <span class="s2">&quot;error&quot;</span> <span class="k">if</span> <span class="n">error_count</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">else</span> <span class="s2">&quot;errors&quot;</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">error_count</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">noun</span><span class="si">}</span><span class="s2"> found while parsing resources, you must resolve them first.&quot;</span><span class="p">)</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">173</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">any</span><span class="p">([</span><span class="n">buckets</span><span class="p">,</span> <span class="n">bucket_policies</span><span class="p">,</span> <span class="n">service_accounts</span><span class="p">,</span> <span class="n">iam_policies</span><span class="p">,</span> <span class="n">iam_policy_attachments</span><span class="p">]):</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;No resources configured.&quot;</span><span class="p">)</span>
@@ -1784,8 +1804,7 @@
 
           <details class="quote">
             <summary>Source code in <code>minio_manager/classes/resource_parser.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 96</span>
-<span class="normal"> 97</span>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 97</span>
 <span class="normal"> 98</span>
 <span class="normal"> 99</span>
 <span class="normal">100</span>
@@ -1828,7 +1847,11 @@
 <span class="normal">137</span>
 <span class="normal">138</span>
 <span class="normal">139</span>
-<span class="normal">140</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">parse_bucket_lifecycle_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lifecycle_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">LifecycleConfig</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">140</span>
+<span class="normal">141</span>
+<span class="normal">142</span>
+<span class="normal">143</span>
+<span class="normal">144</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">parse_bucket_lifecycle_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lifecycle_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">LifecycleConfig</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Parse a bucket lifecycle config file.</span>
 
@@ -1850,16 +1873,19 @@
             <span class="n">config_data</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">FileNotFoundError</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Lifecycle file </span><span class="si">{</span><span class="n">lifecycle_file</span><span class="si">}</span><span class="s2"> not found, skipping configuration.&quot;</span><span class="p">)</span>
-        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">increment_error_count</span><span class="p">()</span>
+        <span class="k">return</span>
     <span class="k">except</span> <span class="ne">PermissionError</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Incorrect file permissions on </span><span class="si">{</span><span class="n">lifecycle_file</span><span class="si">}</span><span class="s2">, skipping configuration.&quot;</span><span class="p">)</span>
-        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">increment_error_count</span><span class="p">()</span>
+        <span class="k">return</span>
 
     <span class="k">try</span><span class="p">:</span>
         <span class="n">rules_dict</span> <span class="o">=</span> <span class="n">config_data</span><span class="p">[</span><span class="s2">&quot;Rules&quot;</span><span class="p">]</span>
     <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Lifecycle file </span><span class="si">{</span><span class="n">lifecycle_file</span><span class="si">}</span><span class="s2"> is missing the required &#39;Rules&#39; key.&quot;</span><span class="p">)</span>
-        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">increment_error_count</span><span class="p">()</span>
+        <span class="k">return</span>
 
     <span class="k">try</span><span class="p">:</span>
         <span class="k">for</span> <span class="n">rule_data</span> <span class="ow">in</span> <span class="n">rules_dict</span><span class="p">:</span>
@@ -1867,7 +1893,7 @@
             <span class="n">rules</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">parsed_rule</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error parsing lifecycle file </span><span class="si">{</span><span class="n">lifecycle_file</span><span class="si">}</span><span class="s2">. Is the format correct?&quot;</span><span class="p">)</span>
-        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">increment_error_count</span><span class="p">()</span>
 
     <span class="k">if</span> <span class="ow">not</span> <span class="n">rules</span><span class="p">:</span>
         <span class="k">return</span>
@@ -1937,11 +1963,7 @@ AbortIncompleteMultipartUpload</p>
 
           <details class="quote">
             <summary>Source code in <code>minio_manager/classes/resource_parser.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">142</span>
-<span class="normal">143</span>
-<span class="normal">144</span>
-<span class="normal">145</span>
-<span class="normal">146</span>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">146</span>
 <span class="normal">147</span>
 <span class="normal">148</span>
 <span class="normal">149</span>
@@ -1967,7 +1989,11 @@ AbortIncompleteMultipartUpload</p>
 <span class="normal">169</span>
 <span class="normal">170</span>
 <span class="normal">171</span>
-<span class="normal">172</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@staticmethod</span>
+<span class="normal">172</span>
+<span class="normal">173</span>
+<span class="normal">174</span>
+<span class="normal">175</span>
+<span class="normal">176</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="k">def</span> <span class="nf">parse_bucket_lifecycle_rule</span><span class="p">(</span><span class="n">rule_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Rule</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Parse a single bucket object lifecycle rule.</span>
@@ -2057,11 +2083,7 @@ AbortIncompleteMultipartUpload</p>
 
           <details class="quote">
             <summary>Source code in <code>minio_manager/classes/resource_parser.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">174</span>
-<span class="normal">175</span>
-<span class="normal">176</span>
-<span class="normal">177</span>
-<span class="normal">178</span>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">178</span>
 <span class="normal">179</span>
 <span class="normal">180</span>
 <span class="normal">181</span>
@@ -2080,7 +2102,11 @@ AbortIncompleteMultipartUpload</p>
 <span class="normal">194</span>
 <span class="normal">195</span>
 <span class="normal">196</span>
-<span class="normal">197</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@staticmethod</span>
+<span class="normal">197</span>
+<span class="normal">198</span>
+<span class="normal">199</span>
+<span class="normal">200</span>
+<span class="normal">201</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="k">def</span> <span class="nf">parse_bucket_policies</span><span class="p">(</span><span class="n">bucket_policies</span><span class="p">:</span> <span class="nb">list</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Parse a list of bucket policy definitions into BucketPolicy objects.</span>
@@ -2101,7 +2127,7 @@ AbortIncompleteMultipartUpload</p>
             <span class="n">bucket_policy_objects</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">BucketPolicy</span><span class="p">(</span><span class="n">bucket_policy</span><span class="p">[</span><span class="s2">&quot;bucket&quot;</span><span class="p">],</span> <span class="n">bucket_policy</span><span class="p">[</span><span class="s2">&quot;policy_file&quot;</span><span class="p">]))</span>
     <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Bucket policies must be defined as a list of YAML dictionaries!&quot;</span><span class="p">)</span>
-        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">increment_error_count</span><span class="p">()</span>
 
     <span class="k">return</span> <span class="n">bucket_policy_objects</span>
 </code></pre></div></td></tr></table></div>
@@ -2225,7 +2251,8 @@ AbortIncompleteMultipartUpload</p>
 <span class="normal">91</span>
 <span class="normal">92</span>
 <span class="normal">93</span>
-<span class="normal">94</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">parse_buckets</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">buckets</span><span class="p">:</span> <span class="nb">list</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Bucket</span><span class="p">]:</span>
+<span class="normal">94</span>
+<span class="normal">95</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">parse_buckets</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">buckets</span><span class="p">:</span> <span class="nb">list</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Bucket</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Parse the provided buckets with the following steps:</span>
 
@@ -2257,15 +2284,15 @@ AbortIncompleteMultipartUpload</p>
         <span class="k">for</span> <span class="n">bucket</span> <span class="ow">in</span> <span class="n">buckets</span><span class="p">:</span>
             <span class="n">name</span> <span class="o">=</span> <span class="n">bucket</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span>
             <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">bucket_names</span><span class="p">:</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Bucket &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; defined multiple times. Stopping.&quot;</span><span class="p">)</span>
-                <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Bucket &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; defined multiple times.&quot;</span><span class="p">)</span>
+                <span class="n">increment_error_count</span><span class="p">()</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Parsing bucket </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
             <span class="n">allowed_prefixes</span> <span class="o">=</span> <span class="n">settings</span><span class="o">.</span><span class="n">allowed_bucket_prefixes</span>
             <span class="k">if</span> <span class="n">allowed_prefixes</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">allowed_prefixes</span><span class="p">):</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
                     <span class="sa">f</span><span class="s2">&quot;Bucket &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; does not start with one of the required prefixes </span><span class="si">{</span><span class="n">allowed_prefixes</span><span class="si">}</span><span class="s2">!&quot;</span>
                 <span class="p">)</span>
-                <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+                <span class="n">increment_error_count</span><span class="p">()</span>
 
             <span class="n">bucket_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
             <span class="n">versioning</span> <span class="o">=</span> <span class="n">bucket</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;versioning&quot;</span><span class="p">)</span>
@@ -2273,7 +2300,8 @@ AbortIncompleteMultipartUpload</p>
                 <span class="n">versioning_config</span> <span class="o">=</span> <span class="n">VeCo</span><span class="p">(</span><span class="n">versioning</span><span class="p">)</span> <span class="k">if</span> <span class="n">versioning</span> <span class="k">else</span> <span class="n">VeCo</span><span class="p">(</span><span class="n">settings</span><span class="o">.</span><span class="n">default_bucket_versioning</span><span class="p">)</span>
             <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">ve</span><span class="p">:</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error parsing versioning setting: </span><span class="si">{</span><span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">ve</span><span class="o">.</span><span class="n">args</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-                <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+                <span class="n">versioning_config</span> <span class="o">=</span> <span class="n">VeCo</span><span class="p">(</span><span class="n">settings</span><span class="o">.</span><span class="n">default_bucket_versioning</span><span class="p">)</span>  <span class="c1"># workaround to use error count</span>
+                <span class="n">increment_error_count</span><span class="p">()</span>
             <span class="n">create_sa</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">bucket</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;create_service_account&quot;</span><span class="p">,</span> <span class="n">settings</span><span class="o">.</span><span class="n">default_bucket_versioning</span><span class="p">))</span>
             <span class="n">lifecycle_file</span> <span class="o">=</span> <span class="n">bucket</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;object_lifecycle_file&quot;</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">lifecycle_file</span><span class="p">:</span>
@@ -2283,7 +2311,7 @@ AbortIncompleteMultipartUpload</p>
             <span class="n">bucket_objects</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Bucket</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">create_sa</span><span class="p">,</span> <span class="n">versioning_config</span><span class="p">,</span> <span class="n">lifecycle_config</span><span class="p">))</span>
     <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Buckets must be defined as a list of YAML dictionaries!&quot;</span><span class="p">)</span>
-        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">increment_error_count</span><span class="p">()</span>
 
     <span class="k">return</span> <span class="n">bucket_objects</span>
 </code></pre></div></td></tr></table></div>
@@ -2345,11 +2373,7 @@ AbortIncompleteMultipartUpload</p>
 
           <details class="quote">
             <summary>Source code in <code>minio_manager/classes/resource_parser.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">232</span>
-<span class="normal">233</span>
-<span class="normal">234</span>
-<span class="normal">235</span>
-<span class="normal">236</span>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">236</span>
 <span class="normal">237</span>
 <span class="normal">238</span>
 <span class="normal">239</span>
@@ -2368,7 +2392,11 @@ AbortIncompleteMultipartUpload</p>
 <span class="normal">252</span>
 <span class="normal">253</span>
 <span class="normal">254</span>
-<span class="normal">255</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@staticmethod</span>
+<span class="normal">255</span>
+<span class="normal">256</span>
+<span class="normal">257</span>
+<span class="normal">258</span>
+<span class="normal">259</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="k">def</span> <span class="nf">parse_iam_attachments</span><span class="p">(</span><span class="n">iam_policy_attachments</span><span class="p">:</span> <span class="nb">list</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Parse a list of IAM policy attachment definitions into IamPolicyAttachment objects.</span>
@@ -2389,7 +2417,7 @@ AbortIncompleteMultipartUpload</p>
             <span class="n">iam_policy_attachments</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">IamPolicyAttachment</span><span class="p">(</span><span class="n">user</span><span class="p">[</span><span class="s2">&quot;username&quot;</span><span class="p">],</span> <span class="n">user</span><span class="p">[</span><span class="s2">&quot;policies&quot;</span><span class="p">]))</span>
     <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;IAM policy attachments must be defined as a list of YAML dictionaries!&quot;</span><span class="p">)</span>
-        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">150</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">iam_policy_attachment_objects</span>
 </code></pre></div></td></tr></table></div>
@@ -2451,11 +2479,7 @@ AbortIncompleteMultipartUpload</p>
 
           <details class="quote">
             <summary>Source code in <code>minio_manager/classes/resource_parser.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">257</span>
-<span class="normal">258</span>
-<span class="normal">259</span>
-<span class="normal">260</span>
-<span class="normal">261</span>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">261</span>
 <span class="normal">262</span>
 <span class="normal">263</span>
 <span class="normal">264</span>
@@ -2479,7 +2503,11 @@ AbortIncompleteMultipartUpload</p>
 <span class="normal">282</span>
 <span class="normal">283</span>
 <span class="normal">284</span>
-<span class="normal">285</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@staticmethod</span>
+<span class="normal">285</span>
+<span class="normal">286</span>
+<span class="normal">287</span>
+<span class="normal">288</span>
+<span class="normal">289</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="k">def</span> <span class="nf">parse_iam_policies</span><span class="p">(</span><span class="n">iam_policies</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Parse a list of IAM policy definitions into IamPolicy objects.</span>
@@ -2499,13 +2527,13 @@ AbortIncompleteMultipartUpload</p>
         <span class="k">for</span> <span class="n">iam_policy</span> <span class="ow">in</span> <span class="n">iam_policies</span><span class="p">:</span>
             <span class="n">name</span> <span class="o">=</span> <span class="n">iam_policy</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span>
             <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">iam_policy_names</span><span class="p">:</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;IAM policy &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; defined multiple times. Stopping.&quot;</span><span class="p">)</span>
-                <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;IAM policy &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; defined multiple times.&quot;</span><span class="p">)</span>
+                <span class="n">increment_error_count</span><span class="p">()</span>
             <span class="n">iam_policy_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
             <span class="n">iam_policy_objects</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">IamPolicy</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">iam_policy</span><span class="p">[</span><span class="s2">&quot;policy_file&quot;</span><span class="p">]))</span>
     <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;IAM policies must be defined as a list of YAML dictionaries!&quot;</span><span class="p">)</span>
-        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">increment_error_count</span><span class="p">()</span>
 
     <span class="k">return</span> <span class="n">iam_policy_objects</span>
 </code></pre></div></td></tr></table></div>
@@ -2562,11 +2590,7 @@ AbortIncompleteMultipartUpload</p>
 
           <details class="quote">
             <summary>Source code in <code>minio_manager/classes/resource_parser.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">287</span>
-<span class="normal">288</span>
-<span class="normal">289</span>
-<span class="normal">290</span>
-<span class="normal">291</span>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">291</span>
 <span class="normal">292</span>
 <span class="normal">293</span>
 <span class="normal">294</span>
@@ -2601,7 +2625,17 @@ AbortIncompleteMultipartUpload</p>
 <span class="normal">323</span>
 <span class="normal">324</span>
 <span class="normal">325</span>
-<span class="normal">326</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">parse_resources</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">resources_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="normal">326</span>
+<span class="normal">327</span>
+<span class="normal">328</span>
+<span class="normal">329</span>
+<span class="normal">330</span>
+<span class="normal">331</span>
+<span class="normal">332</span>
+<span class="normal">333</span>
+<span class="normal">334</span>
+<span class="normal">335</span>
+<span class="normal">336</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">parse_resources</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">resources_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Parse resources from a YAML file, ensuring they are valid before trying to use them.</span>
 
@@ -2613,15 +2647,15 @@ AbortIncompleteMultipartUpload</p>
     <span class="k">try</span><span class="p">:</span>
         <span class="n">resources</span> <span class="o">=</span> <span class="n">read_yaml</span><span class="p">(</span><span class="n">resources_file</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">FileNotFoundError</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Resources file </span><span class="si">{</span><span class="n">resources_file</span><span class="si">}</span><span class="s2"> not found. Stopping.&quot;</span><span class="p">)</span>
-        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Resources file </span><span class="si">{</span><span class="n">resources_file</span><span class="si">}</span><span class="s2"> not found.&quot;</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">170</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">PermissionError</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Incorrect file permissions on </span><span class="si">{</span><span class="n">resources_file</span><span class="si">}</span><span class="s2">. Stopping.&quot;</span><span class="p">)</span>
-        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Incorrect file permissions on </span><span class="si">{</span><span class="n">resources_file</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">171</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="ow">not</span> <span class="n">resources</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Is the resources file empty?&quot;</span><span class="p">)</span>
-        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">172</span><span class="p">)</span>
 
     <span class="n">buckets</span> <span class="o">=</span> <span class="n">resources</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;buckets&quot;</span><span class="p">)</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">buckets</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parse_buckets</span><span class="p">(</span><span class="n">buckets</span><span class="p">)</span>
@@ -2637,6 +2671,12 @@ AbortIncompleteMultipartUpload</p>
 
     <span class="n">iam_policy_attachments</span> <span class="o">=</span> <span class="n">resources</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;iam_policy_attachments&quot;</span><span class="p">)</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">iam_policy_attachments</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parse_iam_attachments</span><span class="p">(</span><span class="n">iam_policy_attachments</span><span class="p">)</span>
+
+    <span class="n">error_count</span> <span class="o">=</span> <span class="n">get_error_count</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">error_count</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">noun</span> <span class="o">=</span> <span class="s2">&quot;error&quot;</span> <span class="k">if</span> <span class="n">error_count</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">else</span> <span class="s2">&quot;errors&quot;</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">error_count</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">noun</span><span class="si">}</span><span class="s2"> found while parsing resources, you must resolve them first.&quot;</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">173</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="ow">not</span> <span class="nb">any</span><span class="p">([</span><span class="n">buckets</span><span class="p">,</span> <span class="n">bucket_policies</span><span class="p">,</span> <span class="n">service_accounts</span><span class="p">,</span> <span class="n">iam_policies</span><span class="p">,</span> <span class="n">iam_policy_attachments</span><span class="p">]):</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;No resources configured.&quot;</span><span class="p">)</span>
@@ -2700,11 +2740,7 @@ AbortIncompleteMultipartUpload</p>
 
           <details class="quote">
             <summary>Source code in <code>minio_manager/classes/resource_parser.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">199</span>
-<span class="normal">200</span>
-<span class="normal">201</span>
-<span class="normal">202</span>
-<span class="normal">203</span>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">203</span>
 <span class="normal">204</span>
 <span class="normal">205</span>
 <span class="normal">206</span>
@@ -2731,7 +2767,11 @@ AbortIncompleteMultipartUpload</p>
 <span class="normal">227</span>
 <span class="normal">228</span>
 <span class="normal">229</span>
-<span class="normal">230</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@staticmethod</span>
+<span class="normal">230</span>
+<span class="normal">231</span>
+<span class="normal">232</span>
+<span class="normal">233</span>
+<span class="normal">234</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="k">def</span> <span class="nf">parse_service_accounts</span><span class="p">(</span><span class="n">service_accounts</span><span class="p">:</span> <span class="nb">list</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Parse a list of service account definitions into ServiceAccount objects.</span>
@@ -2752,15 +2792,15 @@ AbortIncompleteMultipartUpload</p>
         <span class="k">for</span> <span class="n">service_account</span> <span class="ow">in</span> <span class="n">service_accounts</span><span class="p">:</span>
             <span class="n">name</span> <span class="o">=</span> <span class="n">service_account</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span>
             <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">service_account_names</span><span class="p">:</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Service account &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; defined multiple times. Stopping.&quot;</span><span class="p">)</span>
-                <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Service account &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; defined multiple times.&quot;</span><span class="p">)</span>
+                <span class="n">increment_error_count</span><span class="p">()</span>
             <span class="n">service_account_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
             <span class="n">policy_file</span> <span class="o">=</span> <span class="n">service_account</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;policy_file&quot;</span><span class="p">)</span>
             <span class="n">sa_obj</span> <span class="o">=</span> <span class="n">ServiceAccount</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">policy_file</span><span class="o">=</span><span class="n">policy_file</span><span class="p">)</span>
             <span class="n">service_account_objects</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sa_obj</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Service accounts must be defined as a list of YAML dictionaries!&quot;</span><span class="p">)</span>
-        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">141</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">service_account_objects</span>
 </code></pre></div></td></tr></table></div>
@@ -3754,7 +3794,8 @@ lifecycle_config: The path to a lifecycle configuration JSON file for the bucket
 
             <details class="quote">
               <summary>Source code in <code>minio_manager/classes/minio_resources.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">17</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">16</span>
+<span class="normal">17</span>
 <span class="normal">18</span>
 <span class="normal">19</span>
 <span class="normal">20</span>
@@ -3774,7 +3815,11 @@ lifecycle_config: The path to a lifecycle configuration JSON file for the bucket
 <span class="normal">34</span>
 <span class="normal">35</span>
 <span class="normal">36</span>
-<span class="normal">37</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">Bucket</span><span class="p">:</span>
+<span class="normal">37</span>
+<span class="normal">38</span>
+<span class="normal">39</span>
+<span class="normal">40</span>
+<span class="normal">41</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">Bucket</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Bucket represents an S3 bucket.</span>
 
@@ -3791,6 +3836,11 @@ lifecycle_config: The path to a lifecycle configuration JSON file for the bucket
         <span class="n">versioning</span><span class="p">:</span> <span class="n">VersioningConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">lifecycle_config</span><span class="p">:</span> <span class="n">LifecycleConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">63</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Bucket &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; is </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">name</span><span class="p">)</span><span class="si">}</span><span class="s2"> characters long;&quot;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Bucket names must be between 3 and 63 characters in length!&quot;</span><span class="p">)</span>
+            <span class="n">increment_error_count</span><span class="p">()</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">create_sa</span> <span class="o">=</span> <span class="n">create_service_account</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">versioning</span> <span class="o">=</span> <span class="n">versioning</span>
@@ -3832,18 +3882,18 @@ policy_file: The path to a JSON policy file</p>
 
             <details class="quote">
               <summary>Source code in <code>minio_manager/classes/minio_resources.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">40</span>
-<span class="normal">41</span>
-<span class="normal">42</span>
-<span class="normal">43</span>
-<span class="normal">44</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">44</span>
 <span class="normal">45</span>
 <span class="normal">46</span>
 <span class="normal">47</span>
 <span class="normal">48</span>
 <span class="normal">49</span>
 <span class="normal">50</span>
-<span class="normal">51</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">BucketPolicy</span><span class="p">:</span>
+<span class="normal">51</span>
+<span class="normal">52</span>
+<span class="normal">53</span>
+<span class="normal">54</span>
+<span class="normal">55</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">BucketPolicy</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    BucketPolicy represents an S3 bucket policy.</span>
 
@@ -3896,11 +3946,7 @@ policy_file: The path to a JSON policy file</p>
 
             <details class="quote">
               <summary>Source code in <code>minio_manager/classes/minio_resources.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 54</span>
-<span class="normal"> 55</span>
-<span class="normal"> 56</span>
-<span class="normal"> 57</span>
-<span class="normal"> 58</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 58</span>
 <span class="normal"> 59</span>
 <span class="normal"> 60</span>
 <span class="normal"> 61</span>
@@ -3964,7 +4010,13 @@ policy_file: The path to a JSON policy file</p>
 <span class="normal">119</span>
 <span class="normal">120</span>
 <span class="normal">121</span>
-<span class="normal">122</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">ServiceAccount</span><span class="p">:</span>
+<span class="normal">122</span>
+<span class="normal">123</span>
+<span class="normal">124</span>
+<span class="normal">125</span>
+<span class="normal">126</span>
+<span class="normal">127</span>
+<span class="normal">128</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">ServiceAccount</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    ServiceAccount represents a MinIO service account (or S3 access key).</span>
 
@@ -3995,6 +4047,8 @@ policy_file: The path to a JSON policy file</p>
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">description</span> <span class="o">=</span> <span class="n">description</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">full_name</span> <span class="o">=</span> <span class="n">name</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">access_key</span> <span class="o">=</span> <span class="n">access_key</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">secret_key</span> <span class="o">=</span> <span class="n">secret_key</span>
         <span class="k">if</span> <span class="n">policy_file</span><span class="p">:</span>
@@ -4010,8 +4064,8 @@ policy_file: The path to a JSON policy file</p>
             <span class="k">try</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">policy</span> <span class="o">=</span> <span class="n">read_json</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">policy_file</span><span class="p">)</span>
             <span class="k">except</span> <span class="ne">FileNotFoundError</span><span class="p">:</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Policy file &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">policy_file</span><span class="si">}</span><span class="s2">&#39; for service account &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; not found!&quot;</span><span class="p">)</span>
-                <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Policy file &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">policy_file</span><span class="si">}</span><span class="s2">&#39; for service account &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; not found!&quot;</span><span class="p">)</span>
+                <span class="n">increment_error_count</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">generate_service_account_policy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
@@ -4025,9 +4079,9 @@ policy_file: The path to a JSON policy file</p>
 
             <span class="n">base_policy</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">service_account_policy_base</span><span class="p">)</span>
 
-        <span class="n">temp_file</span> <span class="o">=</span> <span class="n">NamedTemporaryFile</span><span class="p">(</span><span class="n">prefix</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="s2">&quot;.json&quot;</span><span class="p">,</span> <span class="n">delete</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">temp_file</span> <span class="o">=</span> <span class="n">NamedTemporaryFile</span><span class="p">(</span><span class="n">prefix</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">full_name</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="s2">&quot;.json&quot;</span><span class="p">,</span> <span class="n">delete</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
         <span class="k">with</span> <span class="n">temp_file</span> <span class="k">as</span> <span class="n">out</span><span class="p">:</span>
-            <span class="n">new_content</span> <span class="o">=</span> <span class="n">base_policy</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;BUCKET_NAME_REPLACE_ME&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+            <span class="n">new_content</span> <span class="o">=</span> <span class="n">base_policy</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;BUCKET_NAME_REPLACE_ME&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">full_name</span><span class="p">)</span>
             <span class="n">out</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">new_content</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">))</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">policy</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">new_content</span><span class="p">)</span>
@@ -4066,13 +4120,7 @@ policy_file: The path to a JSON policy file</p>
 
           <details class="quote">
             <summary>Source code in <code>minio_manager/classes/minio_resources.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">103</span>
-<span class="normal">104</span>
-<span class="normal">105</span>
-<span class="normal">106</span>
-<span class="normal">107</span>
-<span class="normal">108</span>
-<span class="normal">109</span>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">109</span>
 <span class="normal">110</span>
 <span class="normal">111</span>
 <span class="normal">112</span>
@@ -4085,7 +4133,13 @@ policy_file: The path to a JSON policy file</p>
 <span class="normal">119</span>
 <span class="normal">120</span>
 <span class="normal">121</span>
-<span class="normal">122</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">generate_service_account_policy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="normal">122</span>
+<span class="normal">123</span>
+<span class="normal">124</span>
+<span class="normal">125</span>
+<span class="normal">126</span>
+<span class="normal">127</span>
+<span class="normal">128</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">generate_service_account_policy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Generate a policy for a service account that gives access to a bucket with the same name as the service account.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -4097,9 +4151,9 @@ policy_file: The path to a JSON policy file</p>
 
         <span class="n">base_policy</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">service_account_policy_base</span><span class="p">)</span>
 
-    <span class="n">temp_file</span> <span class="o">=</span> <span class="n">NamedTemporaryFile</span><span class="p">(</span><span class="n">prefix</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="s2">&quot;.json&quot;</span><span class="p">,</span> <span class="n">delete</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">temp_file</span> <span class="o">=</span> <span class="n">NamedTemporaryFile</span><span class="p">(</span><span class="n">prefix</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">full_name</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="s2">&quot;.json&quot;</span><span class="p">,</span> <span class="n">delete</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
     <span class="k">with</span> <span class="n">temp_file</span> <span class="k">as</span> <span class="n">out</span><span class="p">:</span>
-        <span class="n">new_content</span> <span class="o">=</span> <span class="n">base_policy</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;BUCKET_NAME_REPLACE_ME&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="n">new_content</span> <span class="o">=</span> <span class="n">base_policy</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;BUCKET_NAME_REPLACE_ME&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">full_name</span><span class="p">)</span>
         <span class="n">out</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">new_content</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">))</span>
 
     <span class="bp">self</span><span class="o">.</span><span class="n">policy</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">new_content</span><span class="p">)</span>
@@ -4133,17 +4187,17 @@ policy_file: The path to a JSON policy file</p>
 
             <details class="quote">
               <summary>Source code in <code>minio_manager/classes/minio_resources.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">125</span>
-<span class="normal">126</span>
-<span class="normal">127</span>
-<span class="normal">128</span>
-<span class="normal">129</span>
-<span class="normal">130</span>
-<span class="normal">131</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">131</span>
 <span class="normal">132</span>
 <span class="normal">133</span>
 <span class="normal">134</span>
-<span class="normal">135</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">IamPolicy</span><span class="p">:</span>
+<span class="normal">135</span>
+<span class="normal">136</span>
+<span class="normal">137</span>
+<span class="normal">138</span>
+<span class="normal">139</span>
+<span class="normal">140</span>
+<span class="normal">141</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">IamPolicy</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    IamPolicy represents an S3 IAM policy.</span>
 
@@ -4191,17 +4245,17 @@ policies: A list of policies to attach to the user</p>
 
             <details class="quote">
               <summary>Source code in <code>minio_manager/classes/minio_resources.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">138</span>
-<span class="normal">139</span>
-<span class="normal">140</span>
-<span class="normal">141</span>
-<span class="normal">142</span>
-<span class="normal">143</span>
-<span class="normal">144</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">144</span>
 <span class="normal">145</span>
 <span class="normal">146</span>
 <span class="normal">147</span>
-<span class="normal">148</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">IamPolicyAttachment</span><span class="p">:</span>
+<span class="normal">148</span>
+<span class="normal">149</span>
+<span class="normal">150</span>
+<span class="normal">151</span>
+<span class="normal">152</span>
+<span class="normal">153</span>
+<span class="normal">154</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">IamPolicyAttachment</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    IamPolicyAttachment represents an S3 IAM policy attachment.</span>
 
@@ -4461,7 +4515,7 @@ policies: A list of policies to attach to the user</p>
                     <span class="s2">&quot;Access denied for the secret backend bucket user. Does the bucket exist, and does the &quot;</span>
                     <span class="s2">&quot;user have the correct permissions to the bucket?&quot;</span>
                 <span class="p">)</span>
-            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">s3</span>
 
     <span class="k">def</span> <span class="nf">setup_backend</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -4523,7 +4577,7 @@ policies: A list of policies to attach to the user</p>
                 <span class="s2">&quot;Do the required bucket and kdbx file exist, and does the user have the correct &quot;</span>
                 <span class="s2">&quot;policies assigned?&quot;</span>
             <span class="p">)</span>
-            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">11</span><span class="p">)</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">21</span><span class="p">)</span>
         <span class="k">finally</span><span class="p">:</span>
             <span class="n">response</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
             <span class="n">response</span><span class="o">.</span><span class="n">release_conn</span><span class="p">()</span>
@@ -4534,12 +4588,12 @@ policies: A list of policies to attach to the user</p>
             <span class="n">kp</span> <span class="o">=</span> <span class="n">PyKeePass</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">keepass_temp_file</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="n">kp_pass</span><span class="p">)</span>
         <span class="k">except</span> <span class="n">CredentialsError</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;Invalid credentials for Keepass database.&quot;</span><span class="p">)</span>
-            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">13</span><span class="p">)</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">22</span><span class="p">)</span>
         <span class="c1"># noinspection PyTypeChecker</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">keepass_group</span> <span class="o">=</span> <span class="n">kp</span><span class="o">.</span><span class="n">find_groups</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;s3&quot;</span><span class="p">,</span> <span class="n">settings</span><span class="o">.</span><span class="n">cluster_name</span><span class="p">])</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">keepass_group</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;Required group not found in Keepass! See documentation for requirements.&quot;</span><span class="p">)</span>
-            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">12</span><span class="p">)</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">23</span><span class="p">)</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Keepass configured as secret backend&quot;</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">kp</span>
 
@@ -4563,7 +4617,7 @@ policies: A list of policies to attach to the user</p>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">ae</span><span class="o">.</span><span class="n">obj</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">required</span><span class="p">:</span>
                     <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Required entry for </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> not found!&quot;</span><span class="p">)</span>
-                    <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">14</span><span class="p">)</span>
+                    <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">24</span><span class="p">)</span>
                 <span class="k">return</span> <span class="n">ServiceAccount</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unhandled exception: </span><span class="si">{</span><span class="n">ae</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
@@ -4845,7 +4899,7 @@ policies: A list of policies to attach to the user</p>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">ae</span><span class="o">.</span><span class="n">obj</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">required</span><span class="p">:</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Required entry for </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> not found!&quot;</span><span class="p">)</span>
-                <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">14</span><span class="p">)</span>
+                <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">24</span><span class="p">)</span>
             <span class="k">return</span> <span class="n">ServiceAccount</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unhandled exception: </span><span class="si">{</span><span class="n">ae</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
@@ -5023,7 +5077,7 @@ Two-step process:
             <span class="s2">&quot;Do the required bucket and kdbx file exist, and does the user have the correct &quot;</span>
             <span class="s2">&quot;policies assigned?&quot;</span>
         <span class="p">)</span>
-        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">11</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">21</span><span class="p">)</span>
     <span class="k">finally</span><span class="p">:</span>
         <span class="n">response</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
         <span class="n">response</span><span class="o">.</span><span class="n">release_conn</span><span class="p">()</span>
@@ -5034,12 +5088,12 @@ Two-step process:
         <span class="n">kp</span> <span class="o">=</span> <span class="n">PyKeePass</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">keepass_temp_file</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="n">kp_pass</span><span class="p">)</span>
     <span class="k">except</span> <span class="n">CredentialsError</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;Invalid credentials for Keepass database.&quot;</span><span class="p">)</span>
-        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">13</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">22</span><span class="p">)</span>
     <span class="c1"># noinspection PyTypeChecker</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">keepass_group</span> <span class="o">=</span> <span class="n">kp</span><span class="o">.</span><span class="n">find_groups</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;s3&quot;</span><span class="p">,</span> <span class="n">settings</span><span class="o">.</span><span class="n">cluster_name</span><span class="p">])</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">keepass_group</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;Required group not found in Keepass! See documentation for requirements.&quot;</span><span class="p">)</span>
-        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">12</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">23</span><span class="p">)</span>
     <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Keepass configured as secret backend&quot;</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">kp</span>
 </code></pre></div></td></tr></table></div>
