@@ -30,3 +30,7 @@ def compare_objects(a: dict, b: dict, ignore_order: bool = True) -> bool | dict:
 def increment_error_count():
     global error_count
     error_count += 1
+
+
+def get_error_count():
+    return error_count

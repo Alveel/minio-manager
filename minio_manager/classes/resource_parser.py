@@ -11,7 +11,7 @@ from minio.versioningconfig import VersioningConfig as VeCo
 from minio_manager.classes.logging_config import logger
 from minio_manager.classes.minio_resources import Bucket, BucketPolicy, IamPolicy, IamPolicyAttachment, ServiceAccount
 from minio_manager.classes.settings import settings
-from minio_manager.utilities import read_yaml
+from minio_manager.utilities import get_error_count, increment_error_count, read_yaml
 
 
 class ClusterResources:
@@ -63,15 +63,15 @@ class ClusterResources:
             for bucket in buckets:
                 name = bucket["name"]
                 if name in bucket_names:
-                    logger.error(f"Bucket '{name}' defined multiple times. Stopping.")
-                    sys.exit(110)
+                    logger.error(f"Bucket '{name}' defined multiple times.")
+                    increment_error_count()
                 logger.debug(f"Parsing bucket {name}")
                 allowed_prefixes = settings.allowed_bucket_prefixes
                 if allowed_prefixes and not name.startswith(allowed_prefixes):
                     logger.error(
                         f"Bucket '{name}' does not start with one of the required prefixes {allowed_prefixes}!"
                     )
-                    sys.exit(111)
+                    increment_error_count()
 
                 bucket_names.append(name)
                 versioning = bucket.get("versioning")
@@ -79,7 +79,8 @@ class ClusterResources:
                     versioning_config = VeCo(versioning) if versioning else VeCo(settings.default_bucket_versioning)
                 except ValueError as ve:
                     logger.error(f"Error parsing versioning setting: {' '.join(ve.args)}")
-                    sys.exit(112)
+                    versioning_config = VeCo(settings.default_bucket_versioning)  # workaround to use error count
+                    increment_error_count()
                 create_sa = bool(bucket.get("create_service_account", settings.default_bucket_versioning))
                 lifecycle_file = bucket.get("object_lifecycle_file")
                 if lifecycle_file:
@@ -89,7 +90,7 @@ class ClusterResources:
                 bucket_objects.append(Bucket(name, create_sa, versioning_config, lifecycle_config))
         except TypeError:
             logger.error("Buckets must be defined as a list of YAML dictionaries!")
-            sys.exit(113)
+            increment_error_count()
 
         return bucket_objects
 
@@ -115,16 +116,19 @@ class ClusterResources:
                 config_data = json.load(f)
         except FileNotFoundError:
             logger.error(f"Lifecycle file {lifecycle_file} not found, skipping configuration.")
-            sys.exit(120)
+            increment_error_count()
+            return
         except PermissionError:
             logger.error(f"Incorrect file permissions on {lifecycle_file}, skipping configuration.")
-            sys.exit(121)
+            increment_error_count()
+            return
 
         try:
             rules_dict = config_data["Rules"]
         except KeyError:
             logger.error(f"Lifecycle file {lifecycle_file} is missing the required 'Rules' key.")
-            sys.exit(122)
+            increment_error_count()
+            return
 
         try:
             for rule_data in rules_dict:
@@ -132,7 +136,7 @@ class ClusterResources:
                 rules.append(parsed_rule)
         except AttributeError:
             logger.error(f"Error parsing lifecycle file {lifecycle_file}. Is the format correct?")
-            sys.exit(123)
+            increment_error_count()
 
         if not rules:
             return
@@ -192,7 +196,7 @@ class ClusterResources:
                 bucket_policy_objects.append(BucketPolicy(bucket_policy["bucket"], bucket_policy["policy_file"]))
         except TypeError:
             logger.error("Bucket policies must be defined as a list of YAML dictionaries!")
-            sys.exit(130)
+            increment_error_count()
 
         return bucket_policy_objects
 
@@ -217,8 +221,8 @@ class ClusterResources:
             for service_account in service_accounts:
                 name = service_account["name"]
                 if name in service_account_names:
-                    logger.error(f"Service account '{name}' defined multiple times. Stopping.")
-                    sys.exit(140)
+                    logger.error(f"Service account '{name}' defined multiple times.")
+                    increment_error_count()
                 service_account_names.append(name)
                 policy_file = service_account.get("policy_file")
                 sa_obj = ServiceAccount(name=name, policy_file=policy_file)
@@ -274,13 +278,13 @@ class ClusterResources:
             for iam_policy in iam_policies:
                 name = iam_policy["name"]
                 if name in iam_policy_names:
-                    logger.error(f"IAM policy '{name}' defined multiple times. Stopping.")
-                    sys.exit(160)
+                    logger.error(f"IAM policy '{name}' defined multiple times.")
+                    increment_error_count()
                 iam_policy_names.append(name)
                 iam_policy_objects.append(IamPolicy(name, iam_policy["policy_file"]))
         except TypeError:
             logger.error("IAM policies must be defined as a list of YAML dictionaries!")
-            sys.exit(161)
+            increment_error_count()
 
         return iam_policy_objects
 
@@ -296,10 +300,10 @@ class ClusterResources:
         try:
             resources = read_yaml(resources_file)
         except FileNotFoundError:
-            logger.error(f"Resources file {resources_file} not found. Stopping.")
+            logger.error(f"Resources file {resources_file} not found.")
             sys.exit(170)
         except PermissionError:
-            logger.error(f"Incorrect file permissions on {resources_file}. Stopping.")
+            logger.error(f"Incorrect file permissions on {resources_file}.")
             sys.exit(171)
 
         if not resources:
@@ -320,6 +324,12 @@ class ClusterResources:
 
         iam_policy_attachments = resources.get("iam_policy_attachments")
         self.iam_policy_attachments = self.parse_iam_attachments(iam_policy_attachments)
+
+        error_count = get_error_count()
+        if error_count > 0:
+            noun = "error" if error_count == 1 else "errors"
+            logger.error(f"{error_count} {noun} found while parsing resources, you must resolve them first.")
+            sys.exit(173)
 
         if not any([buckets, bucket_policies, service_accounts, iam_policies, iam_policy_attachments]):
             logger.warning("No resources configured.")
