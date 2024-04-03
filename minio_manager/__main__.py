@@ -3,9 +3,7 @@ import time
 
 from minio_manager.app import main
 from minio_manager.classes.logging_config import logger
-from minio_manager.utilities import error_count
-
-start_time = time.time()
+from minio_manager.utilities import error_count, start_time
 
 try:
     main()

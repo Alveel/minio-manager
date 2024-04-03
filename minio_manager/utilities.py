@@ -1,10 +1,12 @@
 import json
+import time
 from pathlib import Path
 
 import yaml
 from deepdiff import DeepDiff
 
 error_count = 0
+start_time = time.time()
 
 
 def read_yaml(file: str | Path) -> dict:
