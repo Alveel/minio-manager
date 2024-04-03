@@ -4,6 +4,8 @@ from pathlib import Path
 import yaml
 from deepdiff import DeepDiff
 
+error_count = 0
+
 
 def read_yaml(file: str | Path) -> dict:
     with open(file) as f:
@@ -21,3 +23,8 @@ def compare_objects(a: dict, b: dict, ignore_order: bool = True) -> bool | dict:
     if result:
         return result
     return False
+
+
+def increment_error_count():
+    global error_count
+    error_count += 1

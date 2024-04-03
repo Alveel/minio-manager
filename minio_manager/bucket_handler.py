@@ -4,6 +4,7 @@ from minio_manager.classes.logging_config import logger
 from minio_manager.classes.minio_resources import Bucket, ServiceAccount
 from minio_manager.clients import s3_client
 from minio_manager.service_account_handler import handle_service_account
+from minio_manager.utilities import increment_error_count
 
 
 def configure_versioning(client, bucket):
@@ -17,6 +18,7 @@ def configure_versioning(client, bucket):
         except S3Error as s3e:
             if s3e.code == "InvalidBucketState":
                 logger.error(f"Error setting versioning for bucket {bucket.name}: {s3e.message}")
+                increment_error_count()
                 return
         if bucket.versioning.status == "Suspended":
             logger.warning(f"Versioning on bucket {bucket.name} is suspended!")
@@ -52,6 +54,8 @@ def handle_bucket(bucket: Bucket):
     except S3Error as s3e:
         if s3e.code == "AccessDenied":
             logger.error(f"Controller user does not have permission to manage bucket {bucket.name}")
+            logger.debug(s3e.message)
+            increment_error_count()
             return
 
     configure_versioning(s3_client, bucket)

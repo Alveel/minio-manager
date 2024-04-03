@@ -47,7 +47,7 @@ class SecretManager:
                     "Access denied for the secret backend bucket user. Does the bucket exist, and does the "
                     "user have the correct permissions to the bucket?"
                 )
-            sys.exit(10)
+            sys.exit(20)
         return s3
 
     def setup_backend(self):
@@ -109,7 +109,7 @@ class SecretManager:
                 "Do the required bucket and kdbx file exist, and does the user have the correct "
                 "policies assigned?"
             )
-            sys.exit(11)
+            sys.exit(21)
         finally:
             response.close()
             response.release_conn()
@@ -120,12 +120,12 @@ class SecretManager:
             kp = PyKeePass(self.keepass_temp_file.name, password=kp_pass)
         except CredentialsError:
             logger.critical("Invalid credentials for Keepass database.")
-            sys.exit(13)
+            sys.exit(22)
         # noinspection PyTypeChecker
         self.keepass_group = kp.find_groups(path=["s3", settings.cluster_name])
         if not self.keepass_group:
             logger.critical("Required group not found in Keepass! See documentation for requirements.")
-            sys.exit(12)
+            sys.exit(23)
         logger.debug("Keepass configured as secret backend")
         return kp
 
@@ -149,7 +149,7 @@ class SecretManager:
             if not ae.obj:
                 if required:
                     logger.critical(f"Required entry for {name} not found!")
-                    sys.exit(14)
+                    sys.exit(24)
                 return ServiceAccount(name=name)
             logger.critical(f"Unhandled exception: {ae}")
         else:
