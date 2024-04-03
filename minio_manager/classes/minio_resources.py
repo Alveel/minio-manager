@@ -31,6 +31,10 @@ class Bucket:
         versioning: VersioningConfig | None = None,
         lifecycle_config: LifecycleConfig | None = None,
     ):
+        if len(name) > 63 or len(name) < 3:
+            logger.error("Bucket name must be between 3 and 63 characters long.")
+            sys.exit(10)
+
         self.name = name
         self.create_sa = create_service_account
         self.versioning = versioning
@@ -82,6 +86,8 @@ class ServiceAccount:
         else:
             self.name = name
             self.description = description
+
+        self.full_name = name
         self.access_key = access_key
         self.secret_key = secret_key
         if policy_file:
@@ -98,7 +104,7 @@ class ServiceAccount:
                 self.policy = read_json(self.policy_file)
             except FileNotFoundError:
                 logger.critical(f"Policy file '{self.policy_file}' for service account '{name}' not found!")
-                sys.exit(10)
+                sys.exit(11)
 
     def generate_service_account_policy(self):
         """
@@ -112,9 +118,9 @@ class ServiceAccount:
 
             base_policy = json.dumps(service_account_policy_base)
 
-        temp_file = NamedTemporaryFile(prefix=self.name, suffix=".json", delete=False)
+        temp_file = NamedTemporaryFile(prefix=self.full_name, suffix=".json", delete=False)
         with temp_file as out:
-            new_content = base_policy.replace("BUCKET_NAME_REPLACE_ME", self.name)
+            new_content = base_policy.replace("BUCKET_NAME_REPLACE_ME", self.full_name)
             out.write(new_content.encode("utf-8"))
 
         self.policy = json.loads(new_content)
