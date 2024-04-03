@@ -32,7 +32,8 @@ class Bucket:
         lifecycle_config: LifecycleConfig | None = None,
     ):
         if len(name) > 63 or len(name) < 3:
-            logger.error("Bucket name must be between 3 and 63 characters long.")
+            logger.error(f"Bucket '{name}' is {len(name)} characters long;")
+            logger.error("Bucket names must be between 3 and 63 characters in length!")
             sys.exit(10)
 
         self.name = name
