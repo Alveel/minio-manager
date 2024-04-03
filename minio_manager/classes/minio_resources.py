@@ -31,6 +31,9 @@ class Bucket:
         versioning: VersioningConfig | None = None,
         lifecycle_config: LifecycleConfig | None = None,
     ):
+        if len(name) > 63 or len(name) < 3:
+            raise ValueError("Bucket name must be between 3 and 63 characters long.")
+
         self.name = name
         self.create_sa = create_service_account
         self.versioning = versioning
