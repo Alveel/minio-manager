@@ -82,6 +82,8 @@ class ServiceAccount:
         else:
             self.name = name
             self.description = description
+
+        self.full_name = name
         self.access_key = access_key
         self.secret_key = secret_key
         if policy_file:
@@ -112,9 +114,9 @@ class ServiceAccount:
 
             base_policy = json.dumps(service_account_policy_base)
 
-        temp_file = NamedTemporaryFile(prefix=self.name, suffix=".json", delete=False)
+        temp_file = NamedTemporaryFile(prefix=self.full_name, suffix=".json", delete=False)
         with temp_file as out:
-            new_content = base_policy.replace("BUCKET_NAME_REPLACE_ME", self.name)
+            new_content = base_policy.replace("BUCKET_NAME_REPLACE_ME", self.full_name)
             out.write(new_content.encode("utf-8"))
 
         self.policy = json.loads(new_content)
