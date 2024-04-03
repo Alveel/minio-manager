@@ -32,7 +32,8 @@ class Bucket:
         lifecycle_config: LifecycleConfig | None = None,
     ):
         if len(name) > 63 or len(name) < 3:
-            raise ValueError("Bucket name must be between 3 and 63 characters long.")
+            logger.error("Bucket name must be between 3 and 63 characters long.")
+            sys.exit(10)
 
         self.name = name
         self.create_sa = create_service_account
@@ -103,7 +104,7 @@ class ServiceAccount:
                 self.policy = read_json(self.policy_file)
             except FileNotFoundError:
                 logger.critical(f"Policy file '{self.policy_file}' for service account '{name}' not found!")
-                sys.exit(10)
+                sys.exit(11)
 
     def generate_service_account_policy(self):
         """
