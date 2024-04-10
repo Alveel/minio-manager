@@ -15,10 +15,10 @@
         <link rel="canonical" href="https://alveel.github.io/minio-manager/setup/">
       
       
-        <link rel="prev" href="../resources/">
+        <link rel="prev" href="../usage/">
       
       
-        <link rel="next" href="../configuration/">
+        <link rel="next" href="../modules/">
       
       
       <link rel="icon" href="../assets/images/favicon.png">
@@ -283,7 +283,47 @@
         
   
   <span class="md-ellipsis">
-    MinIO Resources
+    Resources
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Configuration
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../usage/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Usage
   </span>
   
 
@@ -384,7 +424,7 @@
           <li class="md-nav__item">
   <a href="#service-accounts" class="md-nav__link">
     <span class="md-ellipsis">
-      Service accounts
+      Service Accounts
     </span>
   </a>
   
@@ -417,26 +457,6 @@
   
 </nav>
       
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../configuration/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Configuration
-  </span>
-  
-
-      </a>
     </li>
   
 
@@ -527,7 +547,7 @@
           <li class="md-nav__item">
   <a href="#service-accounts" class="md-nav__link">
     <span class="md-ellipsis">
-      Service accounts
+      Service Accounts
     </span>
   </a>
   
@@ -641,31 +661,12 @@ users are to be used as "bucket group" managers. For each bucket created under t
 The credentials for this bucket
 In addition, you have to specify the password of this database with <code>MINIO_MANAGER_SECRET_BACKEND_S3_SECRET_KEY</code>, so that the controller user specified in <code>MINIO_MANAGER_SECRET_BACKEND_S3_ACCESS_KEY</code> can access it.</p>
 <p>We strongly suggest to pass these variables via masked and/or protected variables.</p>
-<h3 id="service-accounts">Service accounts<a class="headerlink" href="#service-accounts" title="Permanent link">&para;</a></h3>
-<p>Service accounts are used in order to create buckets, they are also the owner of these buckets. By default, we have a one-on-one relationship between service accounts and buckets.</p>
-<p>However, there is an option to give ownership of multiple bucket to one service account. By specifying <code>create_service_account: False</code> for a bucket in the environment's <code>resource.yaml</code>.
-You must then specify the ownership through a <code>policy_file</code>:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">buckets</span><span class="p">:</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infra-test-without-sa</span>
-<span class="w">    </span><span class="nt">create_service_account</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">False</span>
-
-<span class="nt">service_accounts</span><span class="p">:</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">infra-test-for-multiple-sa</span>
-<span class="w">    </span><span class="nt">policy_file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">service_account_policies/infra-test-two-buckets.json</span>
-</code></pre></div>
-<p>The Resource section of this json will specify which bucket this service account has ownership of, in this example <code>infra-test-two-buckets.json</code>.
-The service account will get ownership over 2 buckets and all of its objects:</p>
-<div class="highlight"><pre><span></span><code><span class="w">            </span><span class="nt">&quot;Resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">                </span><span class="s2">&quot;arn:aws:s3:::infra-test-without-sa&quot;</span><span class="p">,</span>
-<span class="w">                </span><span class="s2">&quot;arn:aws:s3:::infra-test-without-sa/*&quot;</span><span class="p">,</span>
-<span class="w">                </span><span class="s2">&quot;arn:aws:s3:::infra-test-multiple-access&quot;</span><span class="p">,</span>
-<span class="w">                </span><span class="s2">&quot;arn:aws:s3:::infra-test-multiple-access/*&quot;</span>
-<span class="w">            </span><span class="p">]</span>
-</code></pre></div>
+<h3 id="service-accounts">Service Accounts<a class="headerlink" href="#service-accounts" title="Permanent link">&para;</a></h3>
+<p>Also see <a class="autorefs autorefs-internal" href="../usage/#service-account-details">Service Account Details</a>.</p>
 <h2 id="keepass">Keepass<a class="headerlink" href="#keepass" title="Permanent link">&para;</a></h2>
 <ul>
 <li>The Keepass database's root group must be named "Passwords".</li>
-<li>You must have a group called "s3" and subgroups with the name of each MinIO cluster.</li>
+<li>You must have a group called "s3" and subgroups with the name of the MinIO cluster to be managed.</li>
 <li>Entry names must be unique.</li>
 <li>Entries are found by way of the title of the entry, the username is not considered when searching.</li>
 </ul>
