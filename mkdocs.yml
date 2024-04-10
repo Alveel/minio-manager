@@ -10,9 +10,10 @@ copyright: Maintained by <a href="https://github.com/alveel">Alwyn Kik</a>.
 
 nav:
   - Home: index.md
-  - MinIO Resources: resources.md
-  - Setup: setup.md
+  - Resources: resources.md
   - Configuration: configuration.md
+  - Usage: usage.md
+  - Setup: setup.md
   - Modules: modules.md
 plugins:
   - search

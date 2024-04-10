@@ -60,39 +60,16 @@ In addition, you have to specify the password of this database with `MINIO_MANAG
 
 We strongly suggest to pass these variables via masked and/or protected variables.
 
-### Service accounts
+### Service Accounts
 
-Service accounts are used in order to create buckets, they are also the owner of these buckets. By default, we have a one-on-one relationship between service accounts and buckets.
 
-However, there is an option to give ownership of multiple bucket to one service account. By specifying `create_service_account: False` for a bucket in the environment's `resource.yaml`.
-You must then specify the ownership through a `policy_file`:
 
-``` yaml
-buckets:
-  - name: infra-test-without-sa
-    create_service_account: False
-
-service_accounts:
-  - name: infra-test-for-multiple-sa
-    policy_file: service_account_policies/infra-test-two-buckets.json
-```
-
-The Resource section of this json will specify which bucket this service account has ownership of, in this example `infra-test-two-buckets.json`.
-The service account will get ownership over 2 buckets and all of its objects:
-
-``` json
-            "Resource": [
-                "arn:aws:s3:::infra-test-without-sa",
-                "arn:aws:s3:::infra-test-without-sa/*",
-                "arn:aws:s3:::infra-test-multiple-access",
-                "arn:aws:s3:::infra-test-multiple-access/*"
-            ]
-```
+Also see [Service Account Details][service-account-details].
 
 ## Keepass
 
 - The Keepass database's root group must be named "Passwords".
-- You must have a group called "s3" and subgroups with the name of each MinIO cluster.
+- You must have a group called "s3" and subgroups with the name of the MinIO cluster to be managed.
 - Entry names must be unique.
 - Entries are found by way of the title of the entry, the username is not considered when searching.
 
