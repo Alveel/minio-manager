@@ -1,9 +1,11 @@
+# ruff: noqa: A005
 from __future__ import annotations
 
 import sys
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
+import yaml
 from minio import Minio, S3Error
 from pykeepass import PyKeePass
 from pykeepass.exceptions import CredentialsError
@@ -76,14 +78,36 @@ class SecretManager:
         self.backend_dirty = True
         return method(credentials)
 
-    def retrieve_dummy_backend(self, config):
-        raise NotImplementedError
+    def retrieve_yaml_backend(self) -> dict:
+        logger.warning("The YAML backend is insecure and should only be used for testing and development.")
+        self.backend_filename = settings.yaml_filename
+        data_file = Path(self.backend_filename)
+        try:
+            with data_file.open("r") as f:
+                return yaml.safe_load(f)
+        except FileNotFoundError:
+            data_file.touch(mode=0o600)
+            return {}
+        except yaml.YAMLError as ye:
+            logger.critical(f"Error parsing {self.backend_filename}: {ye}")
+            sys.exit(26)
 
-    def dummy_get_credentials(self, name):
-        raise NotImplementedError
+    def yaml_get_credentials(self, name: str, required: bool) -> ServiceAccount:
+        backend = self.backend  # type: dict
+        try:
+            access_key = backend[name]["access_key"]
+            secret_key = backend[name]["secret_key"]
+            return ServiceAccount(name=name, access_key=access_key, secret_key=secret_key)
+        except KeyError:
+            if required:
+                logger.critical(f"Required entry for {name} not found or missing access_key/secret_key!")
+                sys.exit(27)
+            return ServiceAccount(name=name)
 
-    def dummy_set_password(self, credentials: ServiceAccount):
-        raise NotImplementedError
+    def yaml_set_password(self, credentials: ServiceAccount):
+        backend = self.backend  # type: dict
+        backend[credentials.name] = {"access_key": credentials.access_key, "secret_key": credentials.secret_key}
+        self.backend_dirty = True
 
     def retrieve_keepass_backend(self) -> PyKeePass:
         """Back-end implementation for the keepass backend.
@@ -95,12 +119,12 @@ class SecretManager:
 
         """
         self.backend_filename = settings.keepass_filename
-        tmp_file = NamedTemporaryFile(prefix=f"mm.{self.backend_filename}.", delete=False)
+        tmp_file = NamedTemporaryFile(prefix=f"mm.{self.backend_filename}.", delete=False)  # noqa: SIM115
         self.keepass_temp_file = tmp_file
         try:
             response = self.backend_s3.get_object(self.backend_bucket, self.backend_filename)
             with tmp_file as f:
-                logger.debug(f"Writing kdbx file to temp file {tmp_file.name}")
+                logger.debug(f"Downloading kdbx file to temp file {tmp_file.name}")
                 f.write(response.data)
         except S3Error as s3e:
             logger.debug(s3e)
@@ -177,6 +201,12 @@ class SecretManager:
             return
 
         # If we have dirty back-ends, we want to ensure they are saved before exiting.
+        if self.backend_type == "yaml":
+            logger.info(f"Saving modified {self.backend_filename}.")
+            with Path(self.backend_filename).open("w") as f:
+                yaml.safe_dump(self.backend, f, allow_unicode=True, default_flow_style=False, sort_keys=False)
+            logger.info(f"Successfully saved modified {self.backend_filename}.")
+
         if self.backend_type == "keepass":
             # The PyKeePass save() function can take some time. So we want to run it once when the application is
             # exiting, not every time after creating or updating an entry.
