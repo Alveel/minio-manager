@@ -3,6 +3,7 @@ config.yaml
 !tests/resources/config.yaml
 environments/*
 docs/source
+secrets*
 *.kdbx
 
 # From https://raw.githubusercontent.com/github/gitignore/main/Python.gitignore
