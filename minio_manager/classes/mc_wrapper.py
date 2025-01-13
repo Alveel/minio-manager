@@ -89,7 +89,12 @@ class McWrapper:
         """
         multiline = cmd in ["list", "ls"]
         resp = self._run(["admin", "user", "svcacct", cmd, settings.cluster_name, *args], multiline=multiline)
-        resp_error = resp[0] if multiline else resp
+        try:
+            resp_error = resp[0] if multiline else resp
+        except IndexError:
+            if multiline:
+                logger.warning("No service accounts found")
+            return resp
         if "error" in resp_error:
             resp_error = resp_error["error"]
             error_details = resp_error["cause"]["error"]
