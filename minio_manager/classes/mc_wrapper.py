@@ -34,8 +34,8 @@ class McWrapper:
     def _run(self, args: list, multiline=False) -> list[dict] | dict:
         """Execute mc command and return JSON output."""
         logger.debug(f"Running: {self.mc} --config-dir {self.mc_config_path.name} --json {' '.join(args)}")
-        proc = subprocess.run(
-            [self.mc, "--config-dir", self.mc_config_path.name, "--json", *args],  # noqa: S603
+        proc = subprocess.run(  # noqa: S603; there is effectively no dynamic input here
+            [self.mc, "--config-dir", self.mc_config_path.name, "--json", *args],
             capture_output=True,
             timeout=self.timeout,
             text=True,

@@ -47,7 +47,7 @@ def handle_bucket(bucket: Bucket):
     """
     try:
         if not s3_client.bucket_exists(bucket.name):
-            logger.info("Creating bucket %s" % bucket.name)
+            logger.info(f"Creating bucket {bucket.name}")
             s3_client.make_bucket(bucket.name)
         else:
             logger.debug(f"Bucket {bucket.name} already exists")

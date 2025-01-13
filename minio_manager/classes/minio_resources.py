@@ -118,14 +118,12 @@ class ServiceAccount:
 
             base_policy = json.dumps(service_account_policy_base)
 
-        temp_file = NamedTemporaryFile(prefix=self.full_name, suffix=".json", delete=False)
-        with temp_file as out:
+        with NamedTemporaryFile(prefix=self.full_name, suffix=".json", delete=False) as out:
             new_content = base_policy.replace("BUCKET_NAME_REPLACE_ME", self.full_name)
             out.write(new_content.encode("utf-8"))
-
-        self.policy = json.loads(new_content)
-        self.policy_file = Path(temp_file.name)
-        self.policy_generated = True
+            self.policy = json.loads(new_content)
+            self.policy_file = Path(out.name)
+            self.policy_generated = True
 
 
 class IamPolicy:
