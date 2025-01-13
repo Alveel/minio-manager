@@ -9,7 +9,7 @@ readme = "README.md"
 packages = [
   {include = "minio_manager"}
 ]
-requires-python = ">=3.9"
+requires-python = ">=3.11"
 dependencies = [
     "minio>=7.2.0",
     "pykeepass>=4.0.6",
@@ -35,7 +35,7 @@ build-backend = "pdm.backend"
 
 [tool.black]
 line-length = 120
-target-version = ['py39', 'py310', 'py311']
+target-version = ['py311', 'py312', 'py313']
 preview = true
 
 [tool.mypy]
@@ -49,7 +49,6 @@ warn_unused_ignores = "True"
 show_error_codes = "True"
 
 [tool.ruff]
-target-version = "py39"
 line-length = 120
 fix = true
 

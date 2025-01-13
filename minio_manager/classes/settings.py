@@ -57,9 +57,11 @@ class Settings(BaseSettings):
     cluster_resources_file: str = "resources.yaml"
 
     secret_backend_type: str
-    secret_backend_s3_bucket: str = "minio-manager-secrets"
+    secret_backend_s3_bucket: str = "minio-manager-secrets"  # noqa: S105
     secret_backend_s3_access_key: str
     secret_backend_s3_secret_key: str
+
+    yaml_filename: str = "secrets-insecure.yaml"
 
     keepass_filename: str = "secrets.kdbx"
     keepass_password: str | None = None
