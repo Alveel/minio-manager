@@ -17,7 +17,7 @@ class ControllerUser:
 
     def __init__(self, name: str):
         self.name = name
-        credentials = secrets.get_credentials(name)
+        credentials = secrets.get_credentials(name, required=True)
         self.access_key = credentials.access_key
         self.secret_key = credentials.secret_key
 
