@@ -66,6 +66,8 @@ class McWrapper:
             except AttributeError as ae:
                 logger.exception("Unknown error!")
                 raise MinioManagerBaseError(alias_set_resp["error"]["cause"]["message"]) from ae
+            except KeyError:
+                raise ConnectionError(f"Could not connect to configured MinIO cluster at {endpoint}.") from None
 
         cluster_ready = self._run(["ready", settings.cluster_name])
         healthy = cluster_ready.get("healthy")
