@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import json
+import sys
 from typing import Any
 
+from pydantic import ValidationError
 from pydantic.fields import FieldInfo
 from pydantic_settings import (
     BaseSettings,
@@ -88,4 +90,8 @@ class Settings(BaseSettings):
         )
 
 
-settings = Settings()
+try:
+    settings = Settings()
+except ValidationError as e:
+    print(f"Error loading settings: {e}")
+    sys.exit(1)
