@@ -23,6 +23,11 @@ run-test-environment:
 	@echo "🚀 Running local test environment"
 	@podman run --detach --name minio-local-test --rm -p 9000:9000 -p 9001:9001 \
 		quay.io/minio/minio server /data --console-address ":9001"
+	@echo "Waiting for MinIO to start..."
+	@sleep 5
+	@mc alias set local-test http://localhost:9000 minioadmin minioadmin
+	@mc admin user add local-test infra-test-controller insecure-password-for-testing
+	@cp --update=none examples/my_group/secrets-insecure.yaml . # copy but don't overwrite
 
 .PHONY: stop-test-environment
 stop-test-environment:
