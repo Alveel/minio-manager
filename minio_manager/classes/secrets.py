@@ -18,16 +18,20 @@ from minio_manager.classes.settings import settings
 class SecretManager:
     """SecretManager is responsible for managing credentials"""
 
+    backends_using_s3: tuple[str, ...] = "keepass"
+
     def __init__(self):
         logger.info("Loading secret backend...")
         self.backend_dirty = False
         self.backend_type = settings.secret_backend_type
         self.backend_bucket = settings.secret_backend_s3_bucket
         self.backend_secure = settings.s3_endpoint_secure
-        self.backend_filename = None
+        self.backend_path = None
         self.keepass_temp_file = None
         self.keepass_group = None
-        self.backend_s3 = self.setup_backend_s3()
+        if self.backend_type in self.backends_using_s3:
+            # We only need to set up the S3 backend if the backend type requires it.
+            self.backend_s3 = self.setup_backend_s3()
         self.backend = self.setup_backend()
         logger.debug(f"Secret backend initialised with {self.backend_type}")
 
@@ -80,16 +84,17 @@ class SecretManager:
 
     def retrieve_yaml_backend(self) -> dict:
         logger.warning("The YAML backend is insecure and should only be used for testing and development.")
-        self.backend_filename = settings.yaml_filename
-        data_file = Path(self.backend_filename)
+        self.backend_path = settings.secret_backend_path
+        data_file = Path(self.backend_path)
         try:
             with data_file.open("r") as f:
                 return yaml.safe_load(f)
         except FileNotFoundError:
-            data_file.touch(mode=0o600)
-            return {}
+            logger.critical(f"Existing YAML backend file '{self.backend_path}' not found;.")
+            logger.critical("Configure it yourself or copy the example from examples/my_group/secrets-insecure.yaml")
+            sys.exit(28)
         except yaml.YAMLError as ye:
-            logger.critical(f"Error parsing {self.backend_filename}: {ye}")
+            logger.critical(f"Error parsing {self.backend_path}: {ye}")
             sys.exit(26)
 
     def yaml_get_credentials(self, name: str, required: bool) -> ServiceAccount:
@@ -118,18 +123,18 @@ class SecretManager:
         Returns: PyKeePass object, with the kdbx file loaded
 
         """
-        self.backend_filename = settings.keepass_filename
-        tmp_file = NamedTemporaryFile(prefix=f"mm.{self.backend_filename}.", delete=False)  # noqa: SIM115
+        self.backend_path = settings.secret_backend_path
+        tmp_file = NamedTemporaryFile(prefix=f"mm.{self.backend_path}.", delete=False)  # noqa: SIM115
         self.keepass_temp_file = tmp_file
         try:
-            response = self.backend_s3.get_object(self.backend_bucket, self.backend_filename)
+            response = self.backend_s3.get_object(self.backend_bucket, self.backend_path)
             with tmp_file as f:
                 logger.debug(f"Downloading kdbx file to temp file {tmp_file.name}")
                 f.write(response.data)
         except S3Error as s3e:
             logger.debug(s3e)
             logger.critical(
-                f"Unable to retrieve {self.backend_filename} from {self.backend_bucket}!\n"
+                f"Unable to retrieve {self.backend_path} from {self.backend_bucket}!\n"
                 "Do the required bucket and kdbx file exist, and does the user have the correct "
                 "policies assigned?"
             )
@@ -202,10 +207,10 @@ class SecretManager:
 
         # If we have dirty back-ends, we want to ensure they are saved before exiting.
         if self.backend_type == "yaml":
-            logger.info(f"Saving modified {self.backend_filename}.")
-            with Path(self.backend_filename).open("w") as f:
+            logger.info(f"Saving modified {self.backend_path}.")
+            with Path(self.backend_path).open("w") as f:
                 yaml.safe_dump(self.backend, f, allow_unicode=True, default_flow_style=False, sort_keys=False)
-            logger.info(f"Successfully saved modified {self.backend_filename}.")
+            logger.info(f"Successfully saved modified {self.backend_path}.")
 
         if self.backend_type == "keepass":
             # The PyKeePass save() function can take some time. So we want to run it once when the application is
@@ -214,7 +219,7 @@ class SecretManager:
             if isinstance(self.backend, PyKeePass):
                 t_filename = self.keepass_temp_file.name  # temp file name
                 s_bucket_name = self.backend_bucket  # bucket name
-                s_filename = self.backend_filename  # file name in bucket
+                s_filename = self.backend_path  # file name in bucket
                 logger.info(f"Saving modified {s_filename} and uploading back to bucket {s_bucket_name}.")
                 logger.debug(f"Saving temp file {t_filename}")
                 self.backend.save()
