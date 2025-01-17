@@ -17,7 +17,7 @@ Required variables without a default value must be manually configured.
 | `MINIO_MANAGER_SECRET_BACKEND_S3_ACCESS_KEY`      | The access key to the S3 bucket where the secret database is stored                        | Yes          |                                    |
 | `MINIO_MANAGER_SECRET_BACKEND_S3_SECRET_KEY`      | The secret key to the S3 bucket where the secret database is stored                        | Yes          |                                    |
 | `MINIO_MANAGER_KEEPASS_PASSWORD`                  | Keepass database password                                                                  | With Keepass |                                    |
-| `MINIO_MANAGER_KEEPASS_FILENAME`                  | The name of the database file in the S3 bucket                                             | Yes          | `secrets.kdbx`                     |
+| `MINIO_MANAGER_SECRET_BACKEND_PATH`               | Path to the KeePass database in S3, or the local YAML secret backend for testing           | Yes          | `secrets.kdbx`                     |
 | `MINIO_MANAGER_CLUSTER_RESOURCES_FILE`            | The YAML file with the MinIO resource configuration (buckets, policies, etc.)              | Yes          | `resources.yaml`                   |
 | `MINIO_MANAGER_LOG_LEVEL`³                        | The log level of the application.                                                          | No           | `INFO`                             |
 | `MINIO_MANAGER_DEFAULT_BUCKET_VERSIONING`         | Whether to globally enable (`Enabled`) or suspend (`Suspended`) bucket versioning          | Yes          | `Suspended`                        |

@@ -37,6 +37,22 @@ You are now ready to start development on your project! The CI/CD
 pipeline will be triggered when you open a pull request, merge to main,
 or when you create a new release.
 
+To quickly configure a local development MinIO, you can run
+
+```shell
+make setup-test-environment
+```
+
+**Note**: requires [Podman](https://podman.io/)!
+
+When you are finished, run
+
+```shell
+make stop-test-environment
+```
+
+**Note** that the created `secrets-insecure.yaml` will not be removed automatically or overwritten with the setup command.
+
 To finalize the set-up for publishing to PyPi or Artifactory, see
 [here](https://fpgmaas.github.io/cookiecutter-pdm/features/publishing/#set-up-for-pypi).
 For activating the automatic documentation with MkDocs, see

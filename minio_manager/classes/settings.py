@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import json
+import sys
 from typing import Any
 
+from pydantic import ValidationError
 from pydantic.fields import FieldInfo
 from pydantic_settings import (
     BaseSettings,
@@ -57,13 +59,13 @@ class Settings(BaseSettings):
     cluster_resources_file: str = "resources.yaml"
 
     secret_backend_type: str
-    secret_backend_s3_bucket: str = "minio-manager-secrets"  # noqa: S105
+    secret_backend_s3_bucket: str = "minio-manager-secrets"  # noqa: S105, not a secret
     secret_backend_s3_access_key: str
     secret_backend_s3_secret_key: str
 
-    yaml_filename: str = "secrets-insecure.yaml"
-
-    keepass_filename: str = "secrets.kdbx"
+    # Required for KeePass and YAML secret backends
+    secret_backend_path: str = "secrets.yaml"  # noqa: S105, not a secret
+    # Required for KeePass secret backend
     keepass_password: str | None = None
 
     auto_create_service_account: bool = True
@@ -88,4 +90,8 @@ class Settings(BaseSettings):
         )
 
 
-settings = Settings()
+try:
+    settings = Settings()
+except ValidationError as e:
+    print(f"Error loading settings: {e}")
+    sys.exit(1)
