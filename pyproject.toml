@@ -38,6 +38,9 @@ line-length = 120
 target-version = ['py311', 'py312', 'py313']
 preview = true
 
+[tool.deptry.per_rule_ignores]
+DEP002 = ["pykeepass"]
+
 [tool.mypy]
 files = ["minio_manager"]
 disallow_untyped_defs = "True"
