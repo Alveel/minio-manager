@@ -11,7 +11,7 @@
                 "s3:GetBucketTagging"
             ],
             "Resource": [
-                "arn:aws:s3:::my-test-bucket"
+                "arn:aws:s3:::local-test-my-test-bucket"
             ]
         }
     ]

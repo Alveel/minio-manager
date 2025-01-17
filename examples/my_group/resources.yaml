@@ -1,13 +1,13 @@
 ---
 
 buckets:
-  - name: my-test-bucket
+  - name: local-test-my-test-bucket
     create_service_account: True
-    object_lifecycle_file: lifecycle_policies/my_lifecycle.json
+    object_lifecycle_file: examples/lifecycle_policies/my_lifecycle.json
     versioning: Enabled
-  - name: second-test-bucket
+  - name: local-test-second-test-bucket
     create_service_account: False
 
 service_accounts:
   - name: sa-for-second-test-bucket
-    policy_file: user_policies/my_user.json
+    policy_file: examples/user_policies/my_user.json
