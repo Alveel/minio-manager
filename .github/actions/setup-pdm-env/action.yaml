@@ -7,7 +7,7 @@ inputs:
   python-version:
     required: false
     description: "The python version to use"
-    default: "3.11"
+    default: "3.13"
 
 runs:
   using: "composite"
@@ -20,7 +20,7 @@ runs:
     - name: Install PDM
       uses: pdm-project/setup-pdm@v4
       with:
-        python-version: 3.9
+        python-version: ${{ inputs.python-version }}
         cache: true
 
     - name: Install dependencies
