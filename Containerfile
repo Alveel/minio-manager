@@ -1,11 +1,11 @@
 # syntax=docker/dockerfile:1
 
 # build stage
-FROM docker.io/python:3.12-alpine AS builder
+FROM docker.io/python:3.13-alpine AS builder
 
 # install PDM
-RUN pip install -U pip setuptools wheel
-RUN pip install pdm
+RUN pip install --root-user-action ignore -U pip setuptools wheel
+RUN pip install --root-user-action ignore pdm
 
 # copy files
 COPY README.md pyproject.toml pdm.lock /project/
@@ -18,7 +18,7 @@ ENV PDM_BUILD_SCM_VERSION=$GIT_TAG
 RUN mkdir __pypackages__ && pdm sync --prod --no-editable
 
 # run stage
-FROM docker.io/python:3.12-alpine
+FROM docker.io/python:3.13-alpine
 
 # install bash
 RUN apk add --no-cache bash
@@ -30,10 +30,10 @@ RUN chmod +x /usr/local/bin/mc && mkdir .mc && chown 1001 .mc
 # retrieve packages from build stage
 ENV PYTHONPATH=/project/pkgs
 COPY --from=builder /project/README.md /project/pyproject.toml /project/pdm.lock /project/
-COPY --from=builder /project/__pypackages__/3.12/lib /project/pkgs
+COPY --from=builder /project/__pypackages__/3.13/lib /project/pkgs
 
 # retrieve executables
-COPY --from=builder /project/__pypackages__/3.12/bin/* /usr/local/bin/
+COPY --from=builder /project/__pypackages__/3.13/bin/* /usr/local/bin/
 
 USER 1001
 
