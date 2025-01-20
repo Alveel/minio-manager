@@ -7,8 +7,8 @@
                 "s3:*"
             ],
             "Resource": [
-                "arn:aws:s3:::infra-test-*",
-                "arn:aws:s3:::infra-test-*/*"
+                "arn:aws:s3:::local-test-*",
+                "arn:aws:s3:::local-test-*/*"
             ]
         },
         {
