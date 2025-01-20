@@ -339,4 +339,3 @@ class ClusterResources:
 
 
 cluster_resources = ClusterResources()
-cluster_resources.parse_resources(settings.cluster_resources_file)

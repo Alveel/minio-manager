@@ -50,6 +50,7 @@ class Settings(BaseSettings):
     )
 
     log_level: str = "INFO"
+    dry_run: bool = False
 
     cluster_name: str
     s3_endpoint: str
