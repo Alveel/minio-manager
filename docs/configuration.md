@@ -34,10 +34,12 @@ Required variables without a default value must be manually configured.
 
 ## Command line parameters
 
-You may also supply settings through command line parameters, however this is discouraged.
+You may also supply settings through command line parameters, however using environment variables is recommended.
 
-This was only implemented to easily toggle dry run mode with `--dry_run`,
+This was only implemented to easily toggle dry run mode with `--dry-run`,
 but the wonderful Pydantic library automatically enables it for all options, so use it if you must!
+
+You can easily view all options with `minio-manager --help`
 
 ## Examples
 
