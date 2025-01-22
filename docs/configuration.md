@@ -32,6 +32,13 @@ Required variables without a default value must be manually configured.
 3. Possible values are `INFO` or `DEBUG`
 4. Defaults to [`service-account-policy-base.json`][service-account-policy-base]. MUST contain `BUCKET_NAME_REPLACE_ME` in the resources to work
 
+## Command line parameters
+
+You may also supply settings through command line parameters, however this is discouraged.
+
+This was only implemented to easily toggle dry run mode with `--dry_run`,
+but the wonderful Pydantic library automatically enables it for all options, so use it if you must!
+
 ## Examples
 
 ### `config.env`
