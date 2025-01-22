@@ -5,9 +5,10 @@ import sys
 from typing import Any
 
 from pydantic import ValidationError
-from pydantic.fields import FieldInfo
+from pydantic.fields import Field, FieldInfo
 from pydantic_settings import (
     BaseSettings,
+    CliImplicitFlag,
     DotEnvSettingsSource,
     EnvSettingsSource,
     PydanticBaseSettingsSource,
@@ -46,19 +47,25 @@ class Settings(BaseSettings):
     """
 
     model_config = SettingsConfigDict(
-        env_prefix="MINIO_MANAGER_", env_file="config.env", env_file_encoding="utf-8", extra="ignore"
+        cli_parse_args=True,
+        cli_kebab_case=True,
+        env_prefix="MINIO_MANAGER_",
+        env_file="config.env",
+        env_file_encoding="utf-8",
+        extra="ignore",
     )
 
-    log_level: str = "INFO"
+    log_level: str = Field(default="INFO", description="The log level to use. Only INFO and DEBUG supported")
+    dry_run: CliImplicitFlag[bool] = Field(description="Run in dry-run mode, making no changes")
 
-    cluster_name: str
-    s3_endpoint: str
-    s3_endpoint_secure: bool = True
+    cluster_name: str = Field(description="The name of the cluster, determines path to credentials in secret backends")
+    s3_endpoint: str = Field(description="The endpoint for the S3-compatible storage")
+    s3_endpoint_secure: bool = Field(default=True, description="Whether to use HTTPS for the S3 endpoint")
 
-    minio_controller_user: str
-    cluster_resources_file: str = "resources.yaml"
+    minio_controller_user: str = Field(description="The username for the MinIO controller")
+    cluster_resources_file: str = Field(default="resources.yaml", description="The path to the cluster resources file")
 
-    secret_backend_type: str
+    secret_backend_type: str = Field(description="The type of secret backend to use, [keepass|yaml]")
     secret_backend_s3_bucket: str = "minio-manager-secrets"  # noqa: S105, not a secret
     secret_backend_s3_access_key: str
     secret_backend_s3_secret_key: str
@@ -68,11 +75,17 @@ class Settings(BaseSettings):
     # Required for KeePass secret backend
     keepass_password: str | None = None
 
-    auto_create_service_account: bool = True
-    allowed_bucket_prefixes: tuple[str, ...] = ()
-    default_bucket_versioning: str = "Suspended"
-    default_lifecycle_policy_file: str | None = None
-    service_account_policy_base_file: str = ""
+    auto_create_service_account: bool = Field(
+        default=True, description="Automatically create service accounts for managed buckets"
+    )
+    allowed_bucket_prefixes: tuple[str, ...] = Field(default=(), description="Comma-separated allowed bucket prefixes")
+    default_bucket_versioning: str = Field(
+        default="Suspended", description="The default bucket versioning state [Enabled|Suspended]"
+    )
+    default_lifecycle_policy_file: str | None = Field(default=None, description="The default lifecycle policy file")
+    service_account_policy_base_file: str = Field(
+        default="", description="The service account policy file to use as a template"
+    )
 
     @classmethod
     def settings_customise_sources(

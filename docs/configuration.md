@@ -20,6 +20,7 @@ Required variables without a default value must be manually configured.
 | `MINIO_MANAGER_SECRET_BACKEND_PATH`               | Path to the KeePass database in S3, or the local YAML secret backend for testing           | Yes          | `secrets.kdbx`                     |
 | `MINIO_MANAGER_CLUSTER_RESOURCES_FILE`            | The YAML file with the MinIO resource configuration (buckets, policies, etc.)              | Yes          | `resources.yaml`                   |
 | `MINIO_MANAGER_LOG_LEVEL`³                        | The log level of the application.                                                          | No           | `INFO`                             |
+| `MINIO_MANAGER_DRY_RUN`                           | Only parse provided resources, do not try to apply them.                                   | No           | `False`                            |
 | `MINIO_MANAGER_DEFAULT_BUCKET_VERSIONING`         | Whether to globally enable (`Enabled`) or suspend (`Suspended`) bucket versioning          | Yes          | `Suspended`                        |
 | `MINIO_MANAGER_DEFAULT_LIFECYCLE_POLICY_FILE`     | What lifecycle policy (in `mc ilm export` format) to attach to all buckets by default      | No           |                                    |
 | `MINIO_MANAGER_AUTO_CREATE_SERVICE_ACCOUNT`       | Whether to automatically create service accounts with a generated access policy            | No           | `True`                             |
@@ -30,6 +31,15 @@ Required variables without a default value must be manually configured.
 2. Currently only Keepass is supported
 3. Possible values are `INFO` or `DEBUG`
 4. Defaults to [`service-account-policy-base.json`][service-account-policy-base]. MUST contain `BUCKET_NAME_REPLACE_ME` in the resources to work
+
+## Command line parameters
+
+You may also supply settings through command line parameters, however using environment variables is recommended.
+
+This was only implemented to easily toggle dry run mode with `--dry-run`,
+but the wonderful Pydantic library automatically enables it for all options, so use it if you must!
+
+You can easily view all options with `minio-manager --help`
 
 ## Examples
 
