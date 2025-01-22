@@ -56,7 +56,7 @@ class Settings(BaseSettings):
     )
 
     log_level: str = Field(default="INFO", description="The log level to use. Only INFO and DEBUG supported")
-    dry_run: CliImplicitFlag[bool] = Field(description="Run in dry-run mode, making no changes")
+    dry_run: CliImplicitFlag[bool] = Field(default=False, description="Run in dry-run mode, making no changes")
 
     cluster_name: str = Field(description="The name of the cluster, determines path to credentials in secret backends")
     s3_endpoint: str = Field(description="The endpoint for the S3-compatible storage")
