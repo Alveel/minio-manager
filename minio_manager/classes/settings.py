@@ -60,7 +60,9 @@ class Settings(BaseSettings):
 
     cluster_name: str = Field(description="The name of the cluster, determines path to credentials in secret backends")
     s3_endpoint: str = Field(description="The endpoint for the S3-compatible storage")
-    s3_endpoint_secure: bool = Field(default=True, description="Whether to use HTTPS for the S3 endpoint")
+    s3_endpoint_secure: CliImplicitFlag[bool] = Field(
+        default=True, description="Whether to use HTTPS for the S3 endpoint"
+    )
 
     minio_controller_user: str = Field(description="The username for the MinIO controller")
     cluster_resources_file: str = Field(default="resources.yaml", description="The path to the cluster resources file")

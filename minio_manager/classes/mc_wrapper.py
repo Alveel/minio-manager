@@ -65,9 +65,9 @@ class McWrapper:
                 raise_specific_error(error_details["Code"], error_details["Message"])
             except AttributeError as ae:
                 logger.exception("Unknown error!")
-                raise MinioManagerBaseError(alias_set_resp["error"]["cause"]["message"]) from ae
+                raise_specific_error("BaseError", alias_set_resp["error"]["cause"]["message"], caused_by=ae)
             except KeyError:
-                raise ConnectionError(f"Could not connect to configured MinIO cluster at {endpoint}.") from None
+                raise_specific_error("ConnectionError", f"Could not connect to configured MinIO cluster at {endpoint}.")
 
         cluster_ready = self._run(["ready", settings.cluster_name])
         healthy = cluster_ready.get("healthy")
@@ -77,7 +77,7 @@ class McWrapper:
 
         if cluster_ready.get("error"):
             # A connection error occurred
-            raise ConnectionError(cluster_ready["error"])
+            raise_specific_error("ConnectionError", cluster_ready["error"])
 
     def _service_account_run(self, cmd: str, args: list) -> list[dict] | dict:
         """
@@ -87,7 +87,6 @@ class McWrapper:
             args: list of arguments to the command
 
         Returns: list | dict
-
         """
         multiline = cmd in ["list", "ls"]
         resp = self._run(["admin", "user", "svcacct", cmd, settings.cluster_name, *args], multiline=multiline)

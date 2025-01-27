@@ -1,4 +1,5 @@
 import re
+import sys
 from logging import DEBUG, INFO, Filter, Formatter, Logger, LogRecord, StreamHandler
 
 from minio_manager.classes.settings import settings
@@ -93,6 +94,10 @@ class MinioManagerLogger(Logger):
         handler.setFormatter(formatter)
         handler.addFilter(this_filter)
         self.addHandler(handler)
+
+    def critical(self, msg, *args, **kwargs):
+        super().critical(msg, *args, **kwargs)
+        sys.exit(1)
 
 
 log_level = settings.log_level
