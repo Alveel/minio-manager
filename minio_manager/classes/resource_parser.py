@@ -203,7 +203,7 @@ class ClusterResources:
         return bucket_policy_objects
 
     @staticmethod
-    def parse_service_accounts(service_accounts: list):
+    def parse_service_accounts(service_accounts: list) -> list[ServiceAccount]:
         """
         Parse a list of service account definitions into ServiceAccount objects.
 

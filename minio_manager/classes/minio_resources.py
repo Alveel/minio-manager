@@ -80,13 +80,8 @@ class ServiceAccount:
         policy: dict | None = None,
         policy_file: Path | str | None = None,
     ):
-        if len(name) > 32:
-            self.name = name[:32]
-            self.description = name + " " + description
-        else:
-            self.name = name
-            self.description = description
-
+        self.name = name[:32]
+        self.description = name + " " + description
         self.full_name = name
         self.access_key = access_key
         self.secret_key = secret_key
