@@ -9,9 +9,10 @@ class ControllerUser(ServiceAccount):
     """
 
     def __init__(self, name: str):
-        basic_account = ServiceAccount(name=name)
-        account = secrets.get_credentials(basic_account, required=True)
-        super().__init__(account.full_name, access_key=account.access_key, secret_key=account.secret_key)
+        super().__init__(name=name)
+        account = secrets.get_credentials(self, required=True)
+        self.access_key = account.access_key
+        self.secret_key = account.secret_key
 
 
 controller_user = ControllerUser(name=settings.minio_controller_user)
