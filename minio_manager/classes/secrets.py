@@ -63,18 +63,18 @@ class SecretManager:
         method = getattr(self, method_name)
         return method()
 
-    def get_credentials(self, name: str, required: bool = False) -> ServiceAccount:
+    def get_credentials(self, account: ServiceAccount, required: bool = False) -> ServiceAccount:
         """Get a password from the configured secret backend.
 
         Args:
-            name (str): the name of the password entry
+            account (ServiceAccount): the details of the password entry
             required (bool): whether the credentials must exist
 
-        Returns: MinioCredentials
+        Returns: ServiceAccount
         """
         method_name = f"{self.backend_type}_get_credentials"
         method = getattr(self, method_name)
-        return method(name, required)
+        return method(account, required)
 
     def set_password(self, credentials: ServiceAccount):
         method_name = f"{self.backend_type}_set_password"
@@ -97,21 +97,22 @@ class SecretManager:
             logger.critical(f"Error parsing {self.backend_path}: {ye}")
             sys.exit(26)
 
-    def yaml_get_credentials(self, name: str, required: bool) -> ServiceAccount:
+    def yaml_get_credentials(self, account: ServiceAccount, required: bool) -> ServiceAccount:
         backend = self.backend  # type: dict
         try:
-            access_key = backend[name]["access_key"]
-            secret_key = backend[name]["secret_key"]
-            return ServiceAccount(name=name, access_key=access_key, secret_key=secret_key)
+            account.access_key = backend[account.full_name]["access_key"]
+            account.secret_key = backend[account.full_name]["secret_key"]
         except KeyError:
             if required:
-                logger.critical(f"Required entry for {name} not found or missing access_key/secret_key!")
+                logger.critical(f"Required entry for {account.full_name} not found or missing access_key/secret_key!")
                 sys.exit(27)
-            return ServiceAccount(name=name)
+            return account
+        else:
+            return account
 
     def yaml_set_password(self, credentials: ServiceAccount):
         backend = self.backend  # type: dict
-        backend[credentials.name] = {"access_key": credentials.access_key, "secret_key": credentials.secret_key}
+        backend[credentials.full_name] = {"access_key": credentials.access_key, "secret_key": credentials.secret_key}
         self.backend_dirty = True
 
     def retrieve_keepass_backend(self) -> PyKeePass:
@@ -158,44 +159,45 @@ class SecretManager:
         logger.debug("Keepass configured as secret backend")
         return kp
 
-    def keepass_get_credentials(self, name: str, required: bool) -> ServiceAccount:
+    def keepass_get_credentials(self, account: ServiceAccount, required: bool) -> ServiceAccount:
         """Get a password from the configured Keepass database.
 
         Args:
-            name (str): the name of the password entry
+            account (ServiceAccount): the name of the password entry
             required (bool): if the entry must exist
 
         Returns:
             ServiceAccount
         """
-        logger.debug(f"Finding Keepass entry for {name}")
-        entry = self.backend.find_entries(title=name, group=self.keepass_group, first=True)
+        logger.debug(f"Finding Keepass entry for {account.full_name}")
+        entry = self.backend.find_entries(title=account.full_name, group=self.keepass_group, first=True)  # type: Entry
 
         try:
-            credentials = ServiceAccount(name=name, access_key=entry.username, secret_key=entry.password)
-            logger.debug(f"Found access key {credentials.access_key}")
+            account.access_key = entry.username
+            account.secret_key = entry.password
+            logger.debug(f"Found access key {account.access_key}")
         except AttributeError as ae:
             if not ae.obj:
                 if required:
-                    logger.critical(f"Required entry for {name} not found!")
+                    logger.critical(f"Required entry for {account.full_name} not found!")
                     sys.exit(24)
-                return ServiceAccount(name=name)
+                return account
             logger.critical(f"Unhandled exception: {ae}")
         else:
-            return credentials
+            return account
 
-    def keepass_set_password(self, credentials: ServiceAccount):
+    def keepass_set_password(self, account: ServiceAccount):
         """Set the password for the given credentials.
 
         Args:
-            credentials (ServiceAccount): the credentials to set
+            account (ServiceAccount): the credentials to set
         """
-        logger.debug(f"Creating Keepass entry '{credentials.name}' with access key '{credentials.access_key}'")
+        logger.debug(f"Creating Keepass entry '{account.full_name}' with access key '{account.access_key}'")
         self.backend.add_entry(
             destination_group=self.keepass_group,
-            title=credentials.name,
-            username=credentials.access_key,
-            password=credentials.secret_key,
+            title=account.full_name,
+            username=account.access_key,
+            password=account.secret_key,
         )
 
     def cleanup(self):
