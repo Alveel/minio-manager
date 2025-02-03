@@ -67,7 +67,7 @@ class ServiceAccount:
     policy_file: The path to a JSON policy file
     """
 
-    policy = ClassVar[dict]
+    policy: ClassVar[dict] | None
     policy_file: Path | None
     policy_generated = False
 
