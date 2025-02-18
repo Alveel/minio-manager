@@ -92,9 +92,8 @@ class ServiceAccount:
                 self.policy_file = Path(policy_file)
         else:
             self.policy_file = None
-        if policy:
-            self.policy = policy
-        elif self.policy_file:
+        self.policy = policy
+        if self.policy_file:
             try:
                 self.policy = read_json(self.policy_file)
             except FileNotFoundError:
@@ -119,6 +118,25 @@ class ServiceAccount:
             self.policy = json.loads(new_content)
             self.policy_file = Path(out.name)
             self.policy_generated = True
+
+    @property
+    def as_dict(self) -> dict:
+        """
+        Convert the ServiceAccount object to a dictionary for use with MinioAdmin.
+        """
+        return_dict = {
+            "access_key": self.access_key,
+            "name": self.name,
+            "description": self.description,
+        }
+        if self.secret_key:
+            return_dict["secret_key"] = self.secret_key
+        # Only pass policy OR policy_file, not both
+        if self.policy:
+            return_dict["policy"] = self.policy
+        elif self.policy_file:
+            return_dict["policy_file"] = self.policy_file
+        return return_dict
 
 
 class IamPolicy:
