@@ -81,7 +81,7 @@ class ServiceAccount:
         policy_file: Path | str | None = None,
     ):
         self.name = name[:32]
-        self.description = name + " " + description
+        self.description = name + " - " + description
         self.full_name = name
         self.access_key = access_key
         self.secret_key = secret_key

@@ -11,7 +11,7 @@ packages = [
 ]
 requires-python = ">=3.11"
 dependencies = [
-    "minio>=7.2.0",
+    "minio @ git+https://github.com/Alveel/minio-py#use-minioadmin-library-instead-of-mcli",
     "pykeepass>=4.0.6",
     "pyyaml>=6.0.1",
     "deepdiff[optimize]>=6.7.1",
