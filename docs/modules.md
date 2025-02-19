@@ -6,8 +6,6 @@
 ::: minio_manager.classes.logging_config.MinioManagerFormatter
 ::: minio_manager.classes.logging_config.MinioManagerLogger
 
-::: minio_manager.classes.mc_wrapper.McWrapper
-
 ::: minio_manager.classes.minio_resources.Bucket
 ::: minio_manager.classes.minio_resources.BucketPolicy
 ::: minio_manager.classes.minio_resources.ServiceAccount
