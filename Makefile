@@ -48,7 +48,7 @@ configure-controller:
 		--access-key static-for-testing \
 		--secret-key static-secret-key-for-testing
 
-setup-test-environment: start-local-test configure-admin configure-controller ## Run the test environment
+run-test-environment: start-local-test configure-admin configure-controller ## Run the test environment
 	cp --update=none examples/my_group/secrets-insecure.yaml . # copy but don't overwrite
 
 stop-test-environment:

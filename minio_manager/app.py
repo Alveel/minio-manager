@@ -14,9 +14,7 @@ def main():
         logger.info("Handling cluster resources...")
         handle_resources(cluster_resources)
     finally:
-        from minio_manager.classes.mc_wrapper import mc_wrapper
         from minio_manager.classes.secrets import secrets
 
         # Cleanup functions must be idempotent.
         secrets.cleanup()
-        mc_wrapper.cleanup()
