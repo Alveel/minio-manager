@@ -37,7 +37,7 @@ def service_account_exists(account: ServiceAccount):
         sa_name = sa_info.get("name")
         # Easy check for service accounts that are 32 characters or fewer long
         if account.full_name == sa_name:
-            logger.debug(f"Found access key '{access_key}' for '{account.full_name}' in MinIO: {sa_info}")
+            logger.debug(f"Found access key '{access_key}' for '{account.full_name}' in MinIO.")
             return True
 
         sa_description = sa_info.get("description")
