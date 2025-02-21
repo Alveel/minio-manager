@@ -49,12 +49,12 @@ def service_account_exists(account: ServiceAccount):
         # the full name is longer than 32 characters.
         # This program provides a description formatted as "{full_name} - {description}"
         if sa_description.startswith(f"{account.full_name} - "):
-            logger.debug(f"Found access key '{access_key}' for '{account.full_name}' in MinIO: {sa_info}")
+            logger.debug(f"Found access key '{access_key}' for '{account.full_name}' in MinIO.")
             return True
 
         # This is a fallback for when the description does not match the full name exactly
         if sa_name == account.name:
-            logger.warning(f"Found possible access key '{access_key}' for '{account.name}' in MinIO: {sa_info}")
+            logger.warning(f"Found possible access key '{access_key}' for '{account.name}' in MinIO.")
             logger.warning("Please verify and modify the description accordingly.")
             increment_error_count()
             return False
