@@ -11,7 +11,7 @@ from pykeepass import PyKeePass
 from pykeepass.exceptions import CredentialsError
 
 from minio_manager.classes.logging_config import logger
-from minio_manager.classes.minio_resources import ServiceAccount
+from minio_manager.classes.resources.service_account import ServiceAccount
 from minio_manager.classes.settings import settings
 
 
