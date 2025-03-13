@@ -6,8 +6,10 @@ from minio import S3Error
 from minio.lifecycleconfig import LifecycleConfig
 from minio.versioningconfig import VersioningConfig
 from pydantic import BaseModel, Field
+from service_account_handler import handle_service_account
 
 from minio_manager import logger, settings
+from minio_manager.classes.resources.service_account import ServiceAccount
 from minio_manager.clients import s3_client
 from minio_manager.utilities import compare_objects, increment_error_count
 
@@ -121,11 +123,14 @@ class Bucket(BaseModel):
         logger.info(f"Bucket {self.name}: lifecycle management policies updated")
 
     def configure_service_account(self):
-        # TODO
-        pass
+        # TODO: properly implement
+        service_account = ServiceAccount(name=self.name)
+        service_account.generate_service_account_policy()
+        handle_service_account(service_account)
 
     def ensure(self):
         self.create()
         self.configure_versioning()
         self.configure_lifecycle()
-        self.configure_service_account()
+        if self.create_sa:
+            self.configure_service_account()
