@@ -6,17 +6,19 @@ from minio import S3Error
 from minio.lifecycleconfig import LifecycleConfig
 from minio.versioningconfig import VersioningConfig
 from pydantic import BaseModel, Field
+from service_account_handler import handle_service_account
 
 from minio_manager import logger, settings
-from minio_manager.clients import s3_client
-from minio_manager.utilities import compare_objects, increment_error_count
+from minio_manager.classes.resources.service_account import ServiceAccount
+from minio_manager.classes.client_manager import client_manager
+from minio_manager.utilities import compare_objects
 
 
 def validate_bucket_name(name: str):
     if len(name) > 63 or len(name) < 3:
-        logger.error(f"Bucket '{name}' is {len(name)} characters long;")
-        logger.error("Bucket names must be between 3 and 63 characters in length!")
-        increment_error_count()
+        logger.error(
+            f"Bucket '{name}' is {len(name)} characters long; Bucket names must be between 3 and 63 characters in length!"
+        )
 
     allowed_prefixes = settings.allowed_bucket_prefixes
     if allowed_prefixes:
@@ -26,7 +28,6 @@ def validate_bucket_name(name: str):
 
     if allowed_prefixes and not name.startswith(allowed_prefixes):
         logger.error(f"Bucket '{name}' does not start with one of the required prefixes {allowed_prefixes}!")
-        increment_error_count()
         return False
 
 
@@ -56,7 +57,7 @@ class Bucket(BaseModel):
         SUSPENDED = "Suspended"
 
     name: str = Field(..., min_length=3, max_length=63)
-    create_sa: bool = Field(default=settings.auto_create_service_account)
+    create_service_account: bool = Field(default=settings.auto_create_service_account)
     versioning: VersioningConfig | None = Field(default=None)
     lifecycle_config: LifecycleConfig | None = Field(default=None)
     state: BucketState = Field(default=BucketState.UNKNOWN)
@@ -67,10 +68,10 @@ class Bucket(BaseModel):
             return
 
         try:
-            if not s3_client.bucket_exists(self.name):
+            if not client_manager.s3.bucket_exists(self.name):
                 self.state = self.BucketState.DOES_NOT_EXIST
                 logger.info(f"Creating bucket {self.name}")
-                s3_client.make_bucket(self.name)
+                client_manager.s3.make_bucket(self.name)
             else:
                 logger.debug(f"Bucket {self.name} already exists")
                 self.state = self.BucketState.EXISTS
@@ -78,24 +79,21 @@ class Bucket(BaseModel):
             if s3e.code == "AccessDenied":
                 logger.error(f"Controller user does not have permission to manage bucket {self.name}")
                 logger.debug(s3e.message)
-                increment_error_count()
                 return
             else:
                 logger.error(f"Unknown error creating bucket {self.name}: {s3e.message}")
-                increment_error_count()
                 return
         self.state = self.BucketState.EXISTS
 
     def configure_versioning(self):
-        versioning = s3_client.get_bucket_versioning(self.name)
+        versioning = client_manager.s3.get_bucket_versioning(self.name)
         if self.versioning.status == versioning.status:
             return
         try:
             logger.debug(f"Bucket {self.name}: setting versioning to {self.versioning.status.lower()}")
-            s3_client.set_bucket_versioning(self.name, self.versioning)
+            client_manager.s3.set_bucket_versioning(self.name, self.versioning)
         except S3Error as s3e:
             logger.error(f"Bucket {self.name}: error setting versioning: {s3e.message}")
-            increment_error_count()
             return
         if self.versioning.status == "Suspended":
             logger.warning(f"Bucket {self.name}: versioning is suspended!")
@@ -106,7 +104,7 @@ class Bucket(BaseModel):
         logger.debug(
             f"Bucket {self.name}: comparing existing lifecycle management policy with desired state for bucket"
         )
-        lifecycle_status: LifecycleConfig = s3_client.get_bucket_lifecycle(self.name)
+        lifecycle_status: LifecycleConfig = client_manager.s3.get_bucket_lifecycle(self.name)
         lifecycle_diff = compare_objects(lifecycle_status, self.lifecycle_config)
         if not lifecycle_diff:
             # If there is no difference, there is no need to update the lifecycle configuration
@@ -115,17 +113,20 @@ class Bucket(BaseModel):
 
         logger.debug(f"Bucket {self.name}: current lifecycle management policy does not match desired state")
         # First clean up the existing lifecycle configuration
-        s3_client.delete_bucket_lifecycle(self.name)
+        client_manager.s3.delete_bucket_lifecycle(self.name)
         logger.debug(f"Bucket {self.name}: removed existing lifecycle management policy")
-        s3_client.set_bucket_lifecycle(self.name, self.lifecycle_config)
+        client_manager.s3.set_bucket_lifecycle(self.name, self.lifecycle_config)
         logger.info(f"Bucket {self.name}: lifecycle management policies updated")
 
     def configure_service_account(self):
-        # TODO
-        pass
+        # TODO: properly implement
+        service_account = ServiceAccount(name=self.name)
+        service_account.generate_service_account_policy()
+        handle_service_account(service_account)
 
     def ensure(self):
         self.create()
         self.configure_versioning()
         self.configure_lifecycle()
-        self.configure_service_account()
+        if self.create_service_account:
+            self.configure_service_account()

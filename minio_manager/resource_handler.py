@@ -1,4 +1,3 @@
-from minio_manager.bucket_handler import handle_bucket
 from minio_manager.classes.logging_config import logger
 from minio_manager.classes.resource_parser import ClusterResources
 from minio_manager.policy_handler import handle_bucket_policy, handle_iam_policy, handle_iam_policy_attachments
@@ -13,7 +12,7 @@ def handle_resources(resources: ClusterResources):
     """
     logger.info(f"Handling {len(resources.buckets)} buckets...")
     for bucket in resources.buckets:
-        handle_bucket(bucket)
+        bucket.ensure()
 
     if resources.bucket_policies:
         logger.info(f"Handling {len(resources.bucket_policies)} bucket policies...")
