@@ -5,7 +5,7 @@
 groups = ["default", "dev", "docs", "test"]
 strategy = []
 lock_version = "4.5.0"
-content_hash = "sha256:c0ffe5bc7e282685af62a0fa93a41bb20acd6798a9a359deb27f24d9da909328"
+content_hash = "sha256:582552eaf2e7f4c5844a4a55f73c8c4445f1a9a910d3a9e707d9683fcc4c0228"
 
 [[metadata.targets]]
 requires_python = ">=3.11"
@@ -948,8 +948,10 @@ files = [
 
 [[package]]
 name = "minio"
-version = "7.2.14"
+version = "7.2.16"
 requires_python = ">=3.9"
+git = "https://github.com/Alveel/minio-py"
+revision = "88f4244fe89fb9f23de4f183bdf79524c712deaa"
 summary = "MinIO Python SDK for Amazon S3 Compatible Cloud Storage"
 dependencies = [
     "argon2-cffi",
@@ -957,10 +959,6 @@ dependencies = [
     "pycryptodome",
     "typing-extensions",
     "urllib3",
-]
-files = [
-    {file = "minio-7.2.14-py3-none-any.whl", hash = "sha256:868dfe907e1702ce4bec86df1f3ced577a73ca85f344ef898d94fe2b5237f8c1"},
-    {file = "minio-7.2.14.tar.gz", hash = "sha256:f5c24bf236fefd2edc567cd4455dc49a11ad8ff7ac984bb031b849d82f01222a"},
 ]
 
 [[package]]

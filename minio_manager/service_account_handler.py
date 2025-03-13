@@ -1,36 +1,69 @@
-from minio_manager.classes.errors import MinioInvalidIamCredentialsError, MinioMalformedIamPolicyError
+import json
+
+from minio.error import MinioAdminException
+
+from minio_manager.classes.errors import MinioMalformedIamPolicyError, raise_specific_error
 from minio_manager.classes.logging_config import logger
-from minio_manager.classes.mc_wrapper import McWrapper, mc_wrapper
 from minio_manager.classes.minio_resources import ServiceAccount
 from minio_manager.classes.secrets import secrets
 from minio_manager.classes.settings import settings
-from minio_manager.clients import controller_user_policy
+from minio_manager.clients import admin_client, controller_user_policy
 from minio_manager.utilities import compare_objects, increment_error_count
 
 
-def service_account_exists(client: McWrapper, account: ServiceAccount):
+def service_account_exists(account: ServiceAccount):
     try:
         if account.access_key:
-            client.service_account_info(account.access_key)
+            admin_client.get_service_account(account.access_key)
             return True
-    except MinioInvalidIamCredentialsError as e:
-        # account does not exist in MinIO
-        logger.debug(f"Error for {account.access_key}: {e}")
+    except MinioAdminException as mae:
+        decoded_error = json.loads(mae._body)
+        if decoded_error["Code"] == "XMinioInvalidIAMCredentials":
+            # account does not exist in MinIO
+            logger.debug(
+                f"Error for {account.access_key}: {decoded_error['Code']}, trying to find it in other service accounts."
+            )
+        else:
+            # another error occurred, raise it
+            raise_specific_error(decoded_error["Code"], decoded_error["Message"], caused_by=mae)
 
     logger.debug(f"Access key for {account.full_name} not found in secret backend, trying to find it in MinIO.")
-    sa_list = client.service_account_list(settings.minio_controller_user)
-    for sa in sa_list:
-        sa_info = client.service_account_info(sa["accessKey"])
-        if "name" in sa_info and sa_info["name"] == account.name:
-            logger.debug(f"Found access key '{sa_info['accessKey']}' for '{account.full_name}' in MinIO: {sa_info}")
+    sa_list = json.loads(admin_client.list_service_account(settings.minio_controller_user))  # type: dict
+    for sa in sa_list["accounts"]:
+        access_key = sa["accessKey"]
+        sa_info = json.loads(admin_client.get_service_account(access_key))  # type: dict
+        if "name" not in sa_info:
+            continue
+        sa_name = sa_info.get("name")
+        # Easy check for service accounts that are 32 characters or fewer long
+        if account.full_name == sa_name:
+            logger.debug(f"Found access key '{access_key}' for '{account.full_name}' in MinIO.")
             return True
 
+        sa_description = sa_info.get("description")
+        if not sa_description:
+            logger.debug(f"Service account '{sa_name}' has no description, skipping.")
+            continue
+
+        # This ensures that the start of the description matches the full name of the account exactly in cases where
+        # the full name is longer than 32 characters.
+        # This program provides a description formatted as "{full_name} - {description}"
+        if sa_description.startswith(f"{account.full_name} - "):
+            logger.debug(f"Found access key '{access_key}' for '{account.full_name}' in MinIO.")
+            return True
+
+        # This is a fallback for when the description does not match the full name exactly
+        if sa_name == account.name:
+            logger.warning(f"Found possible access key '{access_key}' for '{account.name}' in MinIO.")
+            logger.warning("Please verify and modify the description accordingly.")
+            increment_error_count()
+            return False
     return False
 
 
 def apply_base_policy(account: ServiceAccount):
     account.generate_service_account_policy()
-    mc_wrapper.service_account_set_policy(account.access_key, str(account.policy_file))
+    admin_client.update_service_account(**account.as_dict)
 
 
 def handle_sa_policy(account: ServiceAccount):
@@ -46,7 +79,8 @@ def handle_sa_policy(account: ServiceAccount):
     """
     desired_policy = account.policy
 
-    current_policy = mc_wrapper.service_account_get_policy(account.access_key)
+    current_service_account = json.loads(admin_client.get_service_account(account.access_key))  # type: dict
+    current_policy = json.loads(current_service_account.get("policy"))  # type: dict
 
     policies_diff_pre = compare_objects(current_policy, desired_policy)
     if not policies_diff_pre:
@@ -54,7 +88,7 @@ def handle_sa_policy(account: ServiceAccount):
 
     logger.debug(f"Updating service account policy for '{account.full_name}'.")
     try:
-        mc_wrapper.service_account_set_policy(account.access_key, str(account.policy_file))
+        admin_client.update_service_account(**account.as_dict)
     except MinioMalformedIamPolicyError:
         logger.error(
             f"Policy for service account '{account.full_name}' is malformed, reverting to base policy for service account."
@@ -62,17 +96,16 @@ def handle_sa_policy(account: ServiceAccount):
         apply_base_policy(account)
         return
 
-    # TODO: so this works as intended, but MinIO somehow now seems to accept a policy with more permissions?
-    #  it won't actually allow the actions, but the policy is still valid and now won't get updated..?
-    current_updated_policy = mc_wrapper.service_account_get_policy(account.access_key)
-    policies_diff_post = compare_objects(current_updated_policy, desired_policy)
+    updated_service_account = json.loads(admin_client.get_service_account(account.access_key))  # type: dict
+    updated_policy = json.loads(updated_service_account.get("policy"))  # type: dict
+    policies_diff_post = compare_objects(updated_policy, desired_policy)
     if not policies_diff_post:
+        logger.debug(f"Policy for service account '{account.full_name}' successfully updated.")
         return
 
     logger.warning(f"Applying policy for service account '{account.full_name}' failed.")
-    logger.debug("Retrieving controller user credentials...")
     logger.debug("Comparing controller user policy to currently applied policy...")
-    policies_diff_fallback = compare_objects(controller_user_policy, current_updated_policy)
+    policies_diff_fallback = compare_objects(controller_user_policy, updated_policy)
     if policies_diff_fallback:
         logger.error("Unknown situation where the live service account policy")
         logger.error("a) does not match what we tried to apply;")
@@ -102,12 +135,12 @@ def handle_service_account(bare_account: ServiceAccount):
     # Determine if access key credentials exists in secret backend
     credentials = secrets.get_credentials(bare_account)
     # Determine if access key exists in MinIO
-    sa_exists = service_account_exists(mc_wrapper, credentials)
+    sa_exists = service_account_exists(credentials)
 
     # Scenario 1: service account exists in MinIO but not in secret backend
     if sa_exists and not credentials.access_key:
         logger.error(
-            f"Service account {bare_account.full_name} exists in MinIO but not in secret backend! Manual intervention required."
+            f"Service account {credentials.full_name} exists in MinIO but not in secret backend! Manual intervention required."
         )
         logger.error(
             "Either find the credentials elsewhere and add them to the secret backend, or delete the service "
@@ -119,26 +152,36 @@ def handle_service_account(bare_account: ServiceAccount):
     # Scenario 2: service account exists in secret backend but not in MinIO
     if credentials.secret_key and not sa_exists:
         logger.warning(
-            f"Service account {bare_account.full_name} exists in secret backend but not in MinIO. Using existing credentials."
+            f"Service account {credentials.full_name} exists in secret backend but not in MinIO. Using existing credentials."
         )
-        mc_wrapper.service_account_add(credentials)
+        try:
+            admin_client.add_service_account(**credentials.as_dict)
+            logger.info(f"Created service account '{credentials.full_name}' with access key '{credentials.access_key}'")
+        except MinioAdminException as mae:
+            decoded_error = json.loads(mae._body)
+            if decoded_error["Code"] == "XMinioMalformedIAMPolicy":
+                logger.error(f"Malformed IAM policy for service account '{credentials.full_name}'")
+                increment_error_count()
+                return
+            raise_specific_error(decoded_error["Code"], decoded_error["Message"], caused_by=mae)
         sa_exists = True
         logger.info(f"Created service account '{credentials.full_name}', access key: {credentials.access_key}")
 
     # Scenario 3: service account does not exist in neither MinIO nor the secret backend
     if not sa_exists and not credentials.access_key:
+        logger.debug(f"Creating service account '{credentials.full_name}'")
         # TODO: catch scenario where an access key is deleted in MinIO, but MinIO does not accept the creation of a
         #  service account with the same access key, which sometimes happens.
         # Create the service account in MinIO
-        credentials = mc_wrapper.service_account_add(credentials)
+        new_service_account_raw = admin_client.add_service_account(**credentials.as_dict)
+        new_service_account_dict = json.loads(new_service_account_raw)["credentials"]  # type: dict
+        credentials.access_key = new_service_account_dict["accessKey"]
+        credentials.secret_key = new_service_account_dict["secretKey"]
         # Create credentials in the secret backend
         secrets.set_password(credentials)
         logger.info(f"Created service account '{credentials.full_name}' with access key '{credentials.access_key}'")
 
-    bare_account.access_key = credentials.access_key
-    bare_account.secret_key = credentials.secret_key
-
-    if bare_account.policy_file:
-        handle_sa_policy(bare_account)
-        if bare_account.policy_generated:
-            bare_account.policy_file.unlink(missing_ok=True)
+    if credentials.policy_file:
+        handle_sa_policy(credentials)
+        if credentials.policy_generated:
+            credentials.policy_file.unlink(missing_ok=True)

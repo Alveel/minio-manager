@@ -23,7 +23,6 @@ delete any resources anywhere.
 
 - [Python](https://www.python.org/) (3.9 or newer)
 - [PDM](https://pdm-project.org/)
-- [MinIO Client](https://min.io/docs/minio/linux/reference/minio-mc.html)
 
 ## Getting started with your project
 
@@ -40,7 +39,7 @@ or when you create a new release.
 To quickly configure a local development MinIO, you can run
 
 ```shell
-make setup-test-environment
+make run-test-environment
 ```
 
 **Note**: requires [Podman](https://podman.io/)!
