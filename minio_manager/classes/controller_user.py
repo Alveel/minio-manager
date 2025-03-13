@@ -1,4 +1,4 @@
-from minio_manager.classes.minio_resources import ServiceAccount
+from minio_manager.classes.resources.service_account import ServiceAccount
 from minio_manager.classes.secrets import secrets
 from minio_manager.classes.settings import settings
 

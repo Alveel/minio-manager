@@ -36,7 +36,7 @@ class Bucket(BaseModel):
     Bucket represents an S3 bucket.
 
     name: The name of the bucket
-    create_service_account: Whether to create a service account for the bucket (True or False)
+    create_service_account: Whether to create and manage a service account for the bucket (True or False)
     versioning: The versioning configuration for the bucket (Enabled or Suspended)
     lifecycle_config: The path to a lifecycle configuration JSON file for the bucket
     """
