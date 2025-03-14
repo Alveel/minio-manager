@@ -6,7 +6,7 @@ class MinioManagerBaseError(Exception):
     """Base class for Minio Manager errors."""
 
     def __init__(self, message: str, cause=None, caused_by=None):
-        if caused_by:
+        if caused_by is not None:
             self.__cause__ = caused_by
         super().__init__(f"{message}: {cause}" if cause else message)
 
@@ -86,10 +86,7 @@ def raise_specific_error(error_code: str, error_message: str, caused_by: Excepti
         raise MinioManagerBaseError(error_code, error_message, caused_by)
 
     if settings.log_level == "DEBUG":
-        # Is this really necessary? I keep seeing None at the end of the stack trace without it.
-        if caused_by:
-            raise error_map[error_code](error_message, caused_by)
-        raise error_map[error_code](error_message)
+        raise error_map[error_code](error_message, caused_by)
 
     err_str = f"Exception occurred with code {error_code}: {error_message}"
     if caused_by:

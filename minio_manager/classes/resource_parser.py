@@ -9,7 +9,9 @@ from minio.lifecycleconfig import Expiration, LifecycleConfig, NoncurrentVersion
 from minio.versioningconfig import VersioningConfig as VeCo
 
 from minio_manager.classes.logging_config import logger
-from minio_manager.classes.minio_resources import Bucket, BucketPolicy, IamPolicy, IamPolicyAttachment, ServiceAccount
+from minio_manager.classes.minio_resources import BucketPolicy, IamPolicy, IamPolicyAttachment
+from minio_manager.classes.resources.bucket import Bucket
+from minio_manager.classes.resources.service_account import ServiceAccount
 from minio_manager.classes.settings import settings
 from minio_manager.utilities import get_error_count, increment_error_count, read_yaml
 
@@ -74,6 +76,7 @@ class ClusterResources:
                         f"Bucket '{name}' does not start with one of the required prefixes {allowed_prefixes}!"
                     )
                     increment_error_count()
+                    continue
 
                 bucket_names.append(name)
                 versioning = bucket.get("versioning")
@@ -89,7 +92,13 @@ class ClusterResources:
                     bucket_lifecycle = self.parse_bucket_lifecycle_file(lifecycle_file)
                     if isinstance(bucket_lifecycle, LifecycleConfig):
                         lifecycle_config = bucket_lifecycle
-                bucket_objects.append(Bucket(name, create_sa, versioning_config, lifecycle_config))
+                this_bucket = Bucket(
+                    name=name,
+                    create_sa=create_sa,
+                    versioning=versioning_config,
+                    lifecycle_config=lifecycle_config,
+                )
+                bucket_objects.append(this_bucket)
         except TypeError:
             logger.error("Buckets must be defined as a list of YAML dictionaries!")
             increment_error_count()
@@ -109,9 +118,9 @@ class ClusterResources:
         Returns: LifecycleConfig object
         """
         if not lifecycle_file:
-            return
+            return None
 
-        rules: list = []
+        rules: list[Rule] = []
 
         try:
             with Path(lifecycle_file).open() as f:
@@ -119,18 +128,18 @@ class ClusterResources:
         except FileNotFoundError:
             logger.error(f"Lifecycle file {lifecycle_file} not found, skipping configuration.")
             increment_error_count()
-            return
+            return None
         except PermissionError:
             logger.error(f"Incorrect file permissions on {lifecycle_file}, skipping configuration.")
             increment_error_count()
-            return
+            return None
 
         try:
             rules_dict = config_data["Rules"]
         except KeyError:
             logger.error(f"Lifecycle file {lifecycle_file} is missing the required 'Rules' key.")
             increment_error_count()
-            return
+            return None
 
         try:
             for rule_data in rules_dict:
@@ -141,7 +150,7 @@ class ClusterResources:
             increment_error_count()
 
         if not rules:
-            return
+            return None
 
         return LifecycleConfig(rules)
 
