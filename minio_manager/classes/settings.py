@@ -77,6 +77,11 @@ class Settings(BaseSettings):
     # Required for KeePass secret backend
     keepass_password: str | None = None
 
+    nextcloud_url: str = Field(default=None, description="The URL of the Nextcloud instance")
+    nextcloud_user: str = Field(default=None, description="The username for the Nextcloud instance")
+    nextcloud_pass: str = Field(default=None, description="The password for the Nextcloud instance")
+    nextcloud_path: str = Field(default=None, description="The path to the Nextcloud directory")
+
     auto_create_service_account: bool = Field(
         default=True, description="Automatically create service accounts for managed buckets"
     )
