@@ -136,6 +136,7 @@ class ServiceAccount:
             return_dict["policy"] = self.policy
         elif self.policy_file:
             return_dict["policy_file"] = self.policy_file
+        logger.debug(f"Returning service account as dict: {return_dict}")
         return return_dict
 
 
