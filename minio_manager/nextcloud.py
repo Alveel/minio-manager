@@ -6,18 +6,22 @@ from minio_manager.classes.logging_config import logger
 from minio_manager.classes.settings import settings
 
 target_path: FsNode | None = None
+nextcloud_enabled: bool = False
 
 if settings.nextcloud_url and settings.nextcloud_user and settings.nextcloud_pass:
     logger.debug(f"Logging in to Nextcloud instance at {settings.nextcloud_url}")
     try:
         nextcloud = Nextcloud(
-            endpoint=settings.nextcloud_url, nc_auth_user=settings.nextcloud_user, nc_auth_pass=settings.nextcloud_pass
+            nextcloud_url=settings.nextcloud_url,
+            nc_auth_user=settings.nextcloud_user,
+            nc_auth_pass=settings.nextcloud_pass,
         )
         target_path = nextcloud.files.by_path(settings.nextcloud_path)
         if not isinstance(target_path, FsNode):
             logger.critical("Provided Nextcloud path not found")
     except NextcloudException as e:
         logger.critical(f"Error connecting to Nextcloud: {e}")
+    nextcloud_enabled = True
 
 
 def nextcloud_upload(file: Path):
