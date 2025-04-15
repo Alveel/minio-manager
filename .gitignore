@@ -173,6 +173,3 @@ out/
 
 # JIRA plugin
 atlassian-ide-plugin.xml
-
-# VSCode
-.vscode/
