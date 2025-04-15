@@ -49,7 +49,7 @@ configure-controller:
 		--secret-key static-secret-key-for-testing
 
 run-test-environment: start-local-test configure-admin configure-controller ## Run the test environment
-	cp --update=none examples/my_group/secrets-insecure.yaml . # copy but don't overwrite
+	cp examples/my_group/secrets-insecure.yaml .
 
 stop-test-environment:
 	@podman stop minio-local-test
