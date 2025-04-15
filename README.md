@@ -44,6 +44,12 @@ make run-test-environment
 
 **Note**: requires [Podman](https://podman.io/)!
 
+Now you can use debug tools in your IDE to run the python code.
+Configure your debugger to run `minio_manager/__main__.py` with the environment variables from `.env.example`.
+Sample debugger for Visual Studio Code is configured in .vscode/launch.json and should be directly available from "Run and Debug".
+
+Find local MinIO installation on http://localhost:9000.
+
 When you are finished, run
 
 ```shell
