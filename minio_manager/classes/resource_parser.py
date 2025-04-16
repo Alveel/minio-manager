@@ -53,7 +53,7 @@ class ClusterResources:
 
         bucket_objects = []
 
-        lifecycle_config = self.parse_bucket_lifecycle_file(settings.default_lifecycle_policy_file)
+        default_lifecycle_config = self.parse_bucket_lifecycle_file(settings.default_lifecycle_policy_file)
         bucket_names = []
 
         try:
@@ -63,6 +63,7 @@ class ClusterResources:
                 prefixes_str = ", ".join(settings.allowed_bucket_prefixes)
                 logger.info(f"Only allowing buckets with the following {noun}: {prefixes_str}")
             for bucket in buckets:
+                effective_lifecycle_config = default_lifecycle_config
                 name = bucket["name"]
                 if name in bucket_names:
                     logger.error(f"Bucket '{name}' defined multiple times.")
@@ -86,10 +87,15 @@ class ClusterResources:
                 create_sa = bool(bucket.get("create_service_account", settings.default_bucket_versioning))
                 lifecycle_file = bucket.get("object_lifecycle_file")
                 if lifecycle_file:
+                    logger.debug(f"Parsing bucket specific lifecycle file {lifecycle_file} for bucket {name}")
                     bucket_lifecycle = self.parse_bucket_lifecycle_file(lifecycle_file)
                     if isinstance(bucket_lifecycle, LifecycleConfig):
-                        lifecycle_config = bucket_lifecycle
-                bucket_objects.append(Bucket(name, create_sa, versioning_config, lifecycle_config))
+                        effective_lifecycle_config = bucket_lifecycle
+                else:
+                    logger.debug(
+                        f"No bucket specific lifecycle file provided for bucket {name}, using default lifecycle policy."
+                    )
+                bucket_objects.append(Bucket(name, create_sa, versioning_config, effective_lifecycle_config))
         except TypeError:
             logger.error("Buckets must be defined as a list of YAML dictionaries!")
             increment_error_count()

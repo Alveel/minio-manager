@@ -3,9 +3,11 @@
 buckets:
   - name: local-test-my-test-bucket
     create_service_account: True
-    object_lifecycle_file: examples/lifecycle_policies/my_lifecycle.json
     versioning: Enabled
   - name: local-test-second-test-bucket
+    create_service_account: False
+    object_lifecycle_file: examples/lifecycle_policies/alternative_lifecycle.json
+  - name: local-test-second-test-bucket2
     create_service_account: False
 
 service_accounts:
