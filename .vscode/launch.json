@@ -1,17 +1,16 @@
 {
-  // Use IntelliSense to learn about possible attributes.
-  // Hover to view descriptions of existing attributes.
-  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
-  "version": "0.2.0",
-  "configurations": [
-
-    {
-      "name": "Minio Manager with sample data",
-      "type": "debugpy",
-      "request": "launch",
-      "program": "${workspaceFolder}/minio_manager/__main__.py",
-      "console": "integratedTerminal",
-      "envFile": "${workspaceFolder}/.env.example"
-    }
-  ]
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python Debugger: MinIO Manager Module",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "minio_manager",
+            "envFile": "${workspaceFolder}/.env",
+            "cwd": "${workspaceFolder}",
+        }
+    ]
 }

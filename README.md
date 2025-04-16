@@ -41,12 +41,13 @@ To quickly configure a local development MinIO, you can run
 ```shell
 make run-test-environment
 ```
-
 **Note**: requires [Podman](https://podman.io/)!
 
-Now you can use debug tools in your IDE to run the python code.
-Configure your debugger to run `minio_manager/__main__.py` with the environment variables from `.env.example`.
-Sample debugger for Visual Studio Code is configured in .vscode/launch.json and should be directly available from "Run and Debug".
+Copy `.env.example` to `.env` and optionally modify to your liking.
+
+Now you can use debug tools in your IDE to run the Python code.
+Configure your debugger to run the Python module `minio_manager` with the environment variables from `.env`.
+A sample debugger configuration for Visual Studio Code is configured in `.vscode/launch.json` and should be directly available from "Run and Debug".
 
 Find local MinIO installation on http://localhost:9000.
 
@@ -56,7 +57,7 @@ When you are finished, run
 make stop-test-environment
 ```
 
-**Note** that the created `secrets-insecure.yaml` will not be removed automatically or overwritten with the setup command.
+**Note** that the created `secrets-insecure.yaml` will not be removed automatically and will get overwritten by the setup command.
 
 To finalize the set-up for publishing to PyPi or Artifactory, see
 [here](https://fpgmaas.github.io/cookiecutter-pdm/features/publishing/#set-up-for-pypi).
