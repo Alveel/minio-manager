@@ -51,7 +51,7 @@ configure-controller:
 run-test-environment: start-local-test configure-admin configure-controller ## Run the test environment
 	cp examples/my_group/secrets-insecure.yaml .
 
-stop-test-environment:
+stop-test-environment: ## Stop the running test environment
 	@podman stop minio-local-test
 
 .PHONY: build
@@ -59,11 +59,11 @@ build: clean-build ## Build wheel file
 	@echo "🚀 Creating wheel file"
 	@pdm build
 
-clean-build: ## clean build artifacts
+clean-build: ## Clean build artifacts
 	@rm -rf dist
 
 .PHONY: publish
-publish: ## publish a release to pypi.
+publish: ## Publish a release to PyPi
 	@echo "🚀 Publishing."
 	@pdm publish --username __token__ --password $PYPI_TOKEN
 
@@ -76,7 +76,7 @@ docs-test: ## Test if documentation can be built without warnings or errors
 docs: ## Build and serve the documentation
 	@pdm run mkdocs serve
 
-build-image:
+build-image: ## Build the container image using the latest git tag
 	@podman build -t minio-manager:$(GIT_TAG) --build-arg GIT_TAG=$(GIT_TAG) .
 
 .PHONY: help

@@ -43,7 +43,9 @@ make run-test-environment
 ```
 **Note**: requires [Podman](https://podman.io/)!
 
-Copy `.env.example` to `.env` and optionally modify to your liking.
+Copy `.env.example` to `config.env` and modify to your liking.
+
+By default, MinIO Manager automatically loads a .env file from `config.env`. Of course, you can configure your IDE to load `.env` or any other `env` file instead.
 
 Now you can use debug tools in your IDE to run the Python code.
 Configure your debugger to run the Python module `minio_manager` with the environment variables from `.env`.
