@@ -7,14 +7,14 @@ from minio_manager.classes.logging_config import logger
 from minio_manager.classes.minio_resources import ServiceAccount
 from minio_manager.classes.secrets import secrets
 from minio_manager.classes.settings import settings
-from minio_manager.clients import admin_client, controller_user_policy
+from minio_manager.clients import get_admin_client, get_controller_user_policy
 from minio_manager.utilities import compare_objects, increment_error_count
 
 
 def service_account_exists(account: ServiceAccount):
     try:
         if account.access_key:
-            admin_client.get_service_account(account.access_key)
+            get_admin_client().get_service_account(account.access_key)
             return True
     except MinioAdminException as mae:
         decoded_error = json.loads(mae._body)
@@ -28,10 +28,10 @@ def service_account_exists(account: ServiceAccount):
             raise_specific_error(decoded_error["Code"], decoded_error["Message"], caused_by=mae)
 
     logger.debug(f"Access key for {account.full_name} not found in secret backend, trying to find it in MinIO.")
-    sa_list = json.loads(admin_client.list_service_account(settings.minio_controller_user))  # type: dict
+    sa_list = json.loads(get_admin_client().list_service_account(settings.minio_controller_user))  # type: dict
     for sa in sa_list["accounts"]:
         access_key = sa["accessKey"]
-        sa_info = json.loads(admin_client.get_service_account(access_key))  # type: dict
+        sa_info = json.loads(get_admin_client().get_service_account(access_key))  # type: dict
         if "name" not in sa_info:
             continue
         sa_name = sa_info.get("name")
@@ -63,7 +63,7 @@ def service_account_exists(account: ServiceAccount):
 
 def apply_base_policy(account: ServiceAccount):
     account.generate_service_account_policy()
-    admin_client.update_service_account(**account.as_dict)
+    get_admin_client().update_service_account(**account.as_dict)
 
 
 def handle_sa_policy(account: ServiceAccount):
@@ -79,7 +79,7 @@ def handle_sa_policy(account: ServiceAccount):
     """
     desired_policy = account.policy
 
-    current_service_account = json.loads(admin_client.get_service_account(account.access_key))  # type: dict
+    current_service_account = json.loads(get_admin_client().get_service_account(account.access_key))  # type: dict
     current_policy = json.loads(current_service_account.get("policy"))  # type: dict
 
     policies_diff_pre = compare_objects(current_policy, desired_policy)
@@ -88,7 +88,7 @@ def handle_sa_policy(account: ServiceAccount):
 
     logger.debug(f"Updating service account policy for '{account.full_name}'.")
     try:
-        admin_client.update_service_account(**account.as_dict)
+        get_admin_client().update_service_account(**account.as_dict)
     except MinioMalformedIamPolicyError:
         logger.error(
             f"Policy for service account '{account.full_name}' is malformed, reverting to base policy for service account."
@@ -96,7 +96,7 @@ def handle_sa_policy(account: ServiceAccount):
         apply_base_policy(account)
         return
 
-    updated_service_account = json.loads(admin_client.get_service_account(account.access_key))  # type: dict
+    updated_service_account = json.loads(get_admin_client().get_service_account(account.access_key))  # type: dict
     updated_policy = json.loads(updated_service_account.get("policy"))  # type: dict
     policies_diff_post = compare_objects(updated_policy, desired_policy)
     if not policies_diff_post:
@@ -105,7 +105,7 @@ def handle_sa_policy(account: ServiceAccount):
 
     logger.warning(f"Applying policy for service account '{account.full_name}' failed.")
     logger.debug("Comparing controller user policy to currently applied policy...")
-    policies_diff_fallback = compare_objects(controller_user_policy, updated_policy)
+    policies_diff_fallback = compare_objects(get_controller_user_policy(), updated_policy)
     if policies_diff_fallback:
         logger.error("Unknown situation where the live service account policy")
         logger.error("a) does not match what we tried to apply;")
@@ -155,7 +155,7 @@ def handle_service_account(bare_account: ServiceAccount):
             f"Service account {credentials.full_name} exists in secret backend but not in MinIO. Using existing credentials."
         )
         try:
-            admin_client.add_service_account(**credentials.as_dict)
+            get_admin_client().add_service_account(**credentials.as_dict)
             logger.info(f"Created service account '{credentials.full_name}' with access key '{credentials.access_key}'")
         except MinioAdminException as mae:
             decoded_error = json.loads(mae._body)
@@ -173,7 +173,7 @@ def handle_service_account(bare_account: ServiceAccount):
         # TODO: catch scenario where an access key is deleted in MinIO, but MinIO does not accept the creation of a
         #  service account with the same access key, which sometimes happens.
         # Create the service account in MinIO
-        new_service_account_raw = admin_client.add_service_account(**credentials.as_dict)
+        new_service_account_raw = get_admin_client().add_service_account(**credentials.as_dict)
         new_service_account_dict = json.loads(new_service_account_raw)["credentials"]  # type: dict
         credentials.access_key = new_service_account_dict["accessKey"]
         credentials.secret_key = new_service_account_dict["secretKey"]
