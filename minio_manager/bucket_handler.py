@@ -31,14 +31,22 @@ def configure_lifecycle(bucket):
 
     # First compare the current lifecycle configuration with the desired configuration
     logger.debug(f"Bucket {bucket.name}: comparing existing lifecycle management policy with desired state for bucket")
-    lifecycle_status = s3_client.get_bucket_lifecycle(bucket.name)
-    lifecycle_diff = compare_objects(lifecycle_status, bucket.lifecycle_config)
-    if not lifecycle_diff:
-        # If there is no difference, there is no need to update the lifecycle configuration
-        logger.debug(f"Bucket {bucket.name}: lifecycle management policies already up to date")
-        return
+    try:
+        lifecycle_status = s3_client.get_bucket_lifecycle(bucket.name)
+        lifecycle_diff = compare_objects(lifecycle_status, bucket.lifecycle_config)
+        if not lifecycle_diff:
+            # If there is no difference, there is no need to update the lifecycle configuration
+            logger.debug(f"Bucket {bucket.name}: lifecycle management policies already up to date")
+            return
 
-    logger.debug(f"Bucket {bucket.name}: current lifecycle management policy does not match desired state")
+        logger.debug(f"Bucket {bucket.name}: current lifecycle management policy does not match desired state")
+    except ValueError as ve:
+        if ve.args == "Rule filter must be provided":
+            logger.debug("Endpoint does not appear to support a GET request on the lifecycle API.")
+        else:
+            logger.error(f"Error getting lifecycle configuration: {ve.args}, ")
+            return
+
     # First clean up the existing lifecycle configuration
     s3_client.delete_bucket_lifecycle(bucket.name)
     logger.debug(f"Bucket {bucket.name}: removed existing lifecycle management policy")
