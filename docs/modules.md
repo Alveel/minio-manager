@@ -1,5 +1,7 @@
 ::: minio_manager.classes.resource_parser.ClusterResources
 
+::: minio_manager.classes.client_manager.ClientManager
+
 ::: minio_manager.classes.errors.MinioManagerBaseError
 
 ::: minio_manager.classes.logging_config.MinioManagerFilter

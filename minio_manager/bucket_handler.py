@@ -1,8 +1,8 @@
 from minio import S3Error
 
+from minio_manager.classes.client_manager import client_manager
 from minio_manager.classes.logging_config import logger
 from minio_manager.classes.minio_resources import Bucket, ServiceAccount
-from minio_manager.clients import s3_client
 from minio_manager.service_account_handler import handle_service_account
 from minio_manager.utilities import compare_objects, increment_error_count
 
@@ -11,10 +11,10 @@ def configure_versioning(bucket):
     if not bucket.versioning:
         return
 
-    versioning_status = s3_client.get_bucket_versioning(bucket.name)
+    versioning_status = client_manager.s3.get_bucket_versioning(bucket.name)
     if versioning_status.status != bucket.versioning.status:
         try:
-            s3_client.set_bucket_versioning(bucket.name, bucket.versioning)
+            client_manager.s3.set_bucket_versioning(bucket.name, bucket.versioning)
         except S3Error as s3e:
             if s3e.code == "InvalidBucketState":
                 logger.error(f"Bucket {bucket.name}: error setting versioning: {s3e.message}")
@@ -32,7 +32,7 @@ def configure_lifecycle(bucket):
     # First compare the current lifecycle configuration with the desired configuration
     logger.debug(f"Bucket {bucket.name}: comparing existing lifecycle management policy with desired state for bucket")
     try:
-        lifecycle_status = s3_client.get_bucket_lifecycle(bucket.name)
+        lifecycle_status = client_manager.s3.get_bucket_lifecycle(bucket.name)
         lifecycle_diff = compare_objects(lifecycle_status, bucket.lifecycle_config)
         if not lifecycle_diff:
             # If there is no difference, there is no need to update the lifecycle configuration
@@ -48,9 +48,9 @@ def configure_lifecycle(bucket):
             return
 
     # First clean up the existing lifecycle configuration
-    s3_client.delete_bucket_lifecycle(bucket.name)
+    client_manager.s3.delete_bucket_lifecycle(bucket.name)
     logger.debug(f"Bucket {bucket.name}: removed existing lifecycle management policy")
-    s3_client.set_bucket_lifecycle(bucket.name, bucket.lifecycle_config)
+    client_manager.s3.set_bucket_lifecycle(bucket.name, bucket.lifecycle_config)
     logger.info(f"Bucket {bucket.name}: lifecycle management policies updated")
 
 
@@ -65,9 +65,9 @@ def handle_bucket(bucket: Bucket):
         bucket (Bucket): The bucket to handle.
     """
     try:
-        if not s3_client.bucket_exists(bucket.name):
+        if not client_manager.s3.bucket_exists(bucket.name):
             logger.info(f"Creating bucket {bucket.name}")
-            s3_client.make_bucket(bucket.name)
+            client_manager.s3.make_bucket(bucket.name)
         else:
             logger.debug(f"Bucket {bucket.name} already exists")
     except S3Error as s3e:
