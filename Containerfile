@@ -21,8 +21,8 @@ RUN mkdir __pypackages__ && pdm sync --prod --no-editable
 # run stage
 FROM docker.io/python:3.13-alpine
 
-# install bash
-RUN apk add --no-cache bash
+# update packages and install bash
+RUN apk -U upgrade && apk add --no-cache bash
 
 # retrieve packages from build stage
 ENV PYTHONPATH=/project/pkgs
