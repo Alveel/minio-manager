@@ -76,7 +76,7 @@ def handle_bucket(bucket: Bucket):
     configure_versioning(bucket)
     configure_lifecycle(bucket)
 
-    if bucket.create_sa:
+    if bucket.create_service_account:
         # TODO: is there a nicer way to go about this?
         service_account = ServiceAccount(name=bucket.name)
         service_account.generate_service_account_policy()
