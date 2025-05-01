@@ -84,7 +84,7 @@ class ClusterResources:
                     logger.error(f"Error parsing versioning setting: {' '.join(ve.args)}")
                     versioning_config = VeCo(settings.default_bucket_versioning)  # workaround to use error count
                     increment_error_count()
-                create_sa = bool(bucket.get("create_service_account", settings.default_bucket_versioning))
+                create_sa = bool(bucket.get("create_service_account", settings.auto_create_service_account))
                 lifecycle_file = bucket.get("object_lifecycle_file")
                 if lifecycle_file:
                     logger.debug(f"Parsing bucket specific lifecycle file {lifecycle_file} for bucket {name}")
@@ -115,7 +115,7 @@ class ClusterResources:
         Returns: LifecycleConfig object
         """
         if not lifecycle_file:
-            return
+            return None
 
         rules: list = []
 
@@ -125,18 +125,18 @@ class ClusterResources:
         except FileNotFoundError:
             logger.error(f"Lifecycle file {lifecycle_file} not found, skipping configuration.")
             increment_error_count()
-            return
+            return None
         except PermissionError:
             logger.error(f"Incorrect file permissions on {lifecycle_file}, skipping configuration.")
             increment_error_count()
-            return
+            return None
 
         try:
             rules_dict = config_data["Rules"]
         except KeyError:
             logger.error(f"Lifecycle file {lifecycle_file} is missing the required 'Rules' key.")
             increment_error_count()
-            return
+            return None
 
         try:
             for rule_data in rules_dict:
@@ -147,7 +147,7 @@ class ClusterResources:
             increment_error_count()
 
         if not rules:
-            return
+            return None
 
         return LifecycleConfig(rules)
 
