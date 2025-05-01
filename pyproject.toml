@@ -110,6 +110,7 @@ source = ["minio_manager"]
 
 [tool.pdm.version]
 source = "scm"
+fallback_version = "dev"
 
 [tool.pdm.dev-dependencies]
 test = [
