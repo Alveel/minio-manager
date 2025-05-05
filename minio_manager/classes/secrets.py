@@ -9,16 +9,26 @@ import yaml
 from minio import Minio, S3Error
 from pykeepass import PyKeePass
 from pykeepass.exceptions import CredentialsError
+from pykeepass.group import Group
 
 from minio_manager.classes.logging_config import logger
 from minio_manager.classes.minio_resources import ServiceAccount
 from minio_manager.classes.settings import settings
+from minio_manager.nextcloud import nextcloud_enabled, nextcloud_upload
 
 
 class SecretManager:
     """SecretManager is responsible for managing credentials"""
 
+    backend_dirty: bool
+    backend_type: str
+    backend_bucket: str
+    backend_secure: bool
+    backend_path: str | None
+    keepass_temp_file: NamedTemporaryFile
+    keepass_group: Group | None
     backends_using_s3: tuple[str, ...] = "keepass"
+    backend_s3: Minio
 
     def __init__(self):
         logger.info("Loading secret backend...")
@@ -218,8 +228,9 @@ class SecretManager:
             # The PyKeePass save() function can take some time. So we want to run it once when the application is
             # exiting, not every time after creating or updating an entry.
             # After saving, upload the updated file to the S3 bucket and clean up the temp file.
+            t_filename = self.keepass_temp_file.name  # temp file name
+            t_filepath = Path(t_filename)
             if isinstance(self.backend, PyKeePass):
-                t_filename = self.keepass_temp_file.name  # temp file name
                 s_bucket_name = self.backend_bucket  # bucket name
                 s_filename = self.backend_path  # file name in bucket
                 logger.info(f"Saving modified {s_filename} and uploading back to bucket {s_bucket_name}.")
@@ -228,9 +239,13 @@ class SecretManager:
                 logger.debug(f"Uploading {t_filename} to bucket {s_bucket_name}")
                 self.backend_s3.fput_object(s_bucket_name, s_filename, t_filename)
                 logger.info(f"Successfully saved modified {s_filename}.")
+                if nextcloud_enabled:
+                    logger.debug(f"Uploading {t_filename} to Nextcloud")
+                    nextcloud_upload(t_filepath)
+                    logger.info(f"Saved {t_filename} to Nextcloud.")
             logger.debug(f"Cleaning up {self.keepass_temp_file.name}")
             self.keepass_temp_file.close()
-            Path(self.keepass_temp_file.name).unlink(missing_ok=True)
+            t_filepath.unlink(missing_ok=True)
 
 
 secrets = SecretManager()

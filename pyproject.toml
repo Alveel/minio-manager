@@ -18,6 +18,7 @@ dependencies = [
     "deepdiff[optimize]>=6.7.1",
     "pydantic-settings>=2.2.1",
     "pydantic>=2.6.4",
+    "nc-py-api>=0.19.2",
 ]
 license = {text = "MIT license"}
 keywords = ['minio', 's3', 'declarative']
