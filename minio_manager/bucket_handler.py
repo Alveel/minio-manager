@@ -39,7 +39,6 @@ def check_bucket_lifecycle(bucket):
     logger.debug(f"Bucket {bucket.name}: comparing existing lifecycle management policy with desired state for bucket")
     try:
         lifecycle_status = client_manager.s3.get_bucket_lifecycle(bucket.name)
-        settings._get_on_lifecycle_supported = True
         lifecycle_diff = compare_objects(lifecycle_status, bucket.lifecycle_config)
         if not lifecycle_diff:
             # If there is no difference, there is no need to update the lifecycle configuration
@@ -51,11 +50,11 @@ def check_bucket_lifecycle(bucket):
         # This error is expected if the bucket does not have a lifecycle configuration
         if "Rule filter must be provided" not in ve.args:
             logger.error(f"Unknown error getting lifecycle configuration: {ve.args}, ")
-        if not hasattr(settings, "_get_on_lifecycle_supported"):
-            logger.warning("minio-py does not appear to support a GET request on this lifecycle API endpoint!")
-            logger.warning("This is possibly caused by differences in MinIO and other S3-compatible solutions.")
-            logger.warning("Ignoring this error and always overwriting the lifecycle policy.")
-            settings._get_on_lifecycle_supported = False
+            return False
+
+        logger.warning("minio-py does not appear to support a GET request on this lifecycle API endpoint!")
+        logger.warning("Ignoring this error and always overwriting the lifecycle policy.")
+        settings._get_on_lifecycle_supported = False
         return False
 
 
@@ -68,15 +67,9 @@ def configure_lifecycle(bucket):
     if not bucket.lifecycle_config:
         return
 
-    # Check if get_bucket_lifecycle() works. If we found previously it is not, we skip this check,
-    # don't compare what's live on the server, and fallback to always overwriting any lifecycle configuration.
     # noinspection PyProtectedMember
-    if not hasattr(settings, "_get_on_lifecycle_supported"):
-        # Check if the lifecycle configuration is supported
-        if check_bucket_lifecycle(bucket):
-            return
-    elif settings._get_on_lifecycle_supported:
-        # get_bucket_lifecycle() works, compare the current lifecycle configuration with the desired state
+    if settings._get_on_lifecycle_supported:
+        # compare the current lifecycle configuration with the desired state
         if check_bucket_lifecycle(bucket):
             return
     else:
