@@ -3,6 +3,7 @@ import sys
 from logging import DEBUG, INFO, Filter, Formatter, Logger, LogRecord, StreamHandler
 
 from minio_manager.classes.settings import settings
+from minio_manager.utilities import increment_error_count
 
 RED = "\033[0;31m"
 GREEN = "\033[0;32m"
@@ -94,6 +95,10 @@ class MinioManagerLogger(Logger):
         handler.setFormatter(formatter)
         handler.addFilter(this_filter)
         self.addHandler(handler)
+
+    def error(self, msg, *args, **kwargs):
+        super().error(msg, *args, **kwargs)
+        increment_error_count()
 
     def critical(self, msg, *args, **kwargs):
         super().critical(msg, *args, **kwargs)

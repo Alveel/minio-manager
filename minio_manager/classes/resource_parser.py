@@ -11,7 +11,7 @@ from minio.versioningconfig import VersioningConfig as VeCo
 from minio_manager.classes.logging_config import logger
 from minio_manager.classes.minio_resources import Bucket, BucketPolicy, IamPolicy, IamPolicyAttachment, ServiceAccount
 from minio_manager.classes.settings import settings
-from minio_manager.utilities import get_error_count, increment_error_count, read_yaml
+from minio_manager.utilities import get_error_count, read_yaml
 
 
 class ClusterResources:
@@ -67,14 +67,12 @@ class ClusterResources:
                 name = bucket["name"]
                 if name in bucket_names:
                     logger.error(f"Bucket '{name}' defined multiple times.")
-                    increment_error_count()
                 logger.debug(f"Parsing bucket {name}")
                 allowed_prefixes = settings.allowed_bucket_prefixes
                 if allowed_prefixes and not name.startswith(allowed_prefixes):
                     logger.error(
                         f"Bucket '{name}' does not start with one of the required prefixes {allowed_prefixes}!"
                     )
-                    increment_error_count()
 
                 bucket_names.append(name)
                 versioning = bucket.get("versioning")
@@ -83,7 +81,6 @@ class ClusterResources:
                 except ValueError as ve:
                     logger.error(f"Error parsing versioning setting: {' '.join(ve.args)}")
                     versioning_config = VeCo(settings.default_bucket_versioning)  # workaround to use error count
-                    increment_error_count()
                 create_sa = bool(bucket.get("create_service_account", settings.auto_create_service_account))
                 lifecycle_file = bucket.get("object_lifecycle_file")
                 if lifecycle_file:
@@ -98,7 +95,6 @@ class ClusterResources:
                 bucket_objects.append(Bucket(name, create_sa, versioning_config, effective_lifecycle_config))
         except TypeError:
             logger.error("Buckets must be defined as a list of YAML dictionaries!")
-            increment_error_count()
 
         return bucket_objects
 
@@ -124,18 +120,15 @@ class ClusterResources:
                 config_data = json.load(f)
         except FileNotFoundError:
             logger.error(f"Lifecycle file {lifecycle_file} not found, skipping configuration.")
-            increment_error_count()
             return None
         except PermissionError:
             logger.error(f"Incorrect file permissions on {lifecycle_file}, skipping configuration.")
-            increment_error_count()
             return None
 
         try:
             rules_dict = config_data["Rules"]
         except KeyError:
             logger.error(f"Lifecycle file {lifecycle_file} is missing the required 'Rules' key.")
-            increment_error_count()
             return None
 
         try:
@@ -144,7 +137,6 @@ class ClusterResources:
                 rules.append(parsed_rule)
         except AttributeError:
             logger.error(f"Error parsing lifecycle file {lifecycle_file}. Is the format correct?")
-            increment_error_count()
 
         if not rules:
             return None
@@ -204,7 +196,6 @@ class ClusterResources:
                 bucket_policy_objects.append(BucketPolicy(bucket_policy["bucket"], bucket_policy["policy_file"]))
         except TypeError:
             logger.error("Bucket policies must be defined as a list of YAML dictionaries!")
-            increment_error_count()
 
         return bucket_policy_objects
 
@@ -230,7 +221,6 @@ class ClusterResources:
                 name = service_account["name"]
                 if name in service_account_names:
                     logger.error(f"Service account '{name}' defined multiple times.")
-                    increment_error_count()
                 service_account_names.append(name)
                 policy_file = service_account.get("policy_file")
                 sa_obj = ServiceAccount(name=name, policy_file=policy_file)
@@ -287,12 +277,10 @@ class ClusterResources:
                 name = iam_policy["name"]
                 if name in iam_policy_names:
                     logger.error(f"IAM policy '{name}' defined multiple times.")
-                    increment_error_count()
                 iam_policy_names.append(name)
                 iam_policy_objects.append(IamPolicy(name, iam_policy["policy_file"]))
         except TypeError:
             logger.error("IAM policies must be defined as a list of YAML dictionaries!")
-            increment_error_count()
 
         return iam_policy_objects
 

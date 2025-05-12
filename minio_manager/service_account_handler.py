@@ -8,7 +8,7 @@ from minio_manager.classes.logging_config import logger
 from minio_manager.classes.minio_resources import ServiceAccount
 from minio_manager.classes.secrets import secrets
 from minio_manager.classes.settings import settings
-from minio_manager.utilities import compare_objects, increment_error_count
+from minio_manager.utilities import compare_objects
 
 
 def service_account_exists(account: ServiceAccount):
@@ -54,9 +54,8 @@ def service_account_exists(account: ServiceAccount):
 
         # This is a fallback for when the description does not match the full name exactly
         if sa_name == account.name:
-            logger.warning(f"Found possible access key '{access_key}' for '{account.name}' in MinIO.")
+            logger.error(f"Found possible access key '{access_key}' for '{account.name}' in MinIO.")
             logger.warning("Please verify and modify the description accordingly.")
-            increment_error_count()
             return False
     return False
 
@@ -109,11 +108,12 @@ def handle_sa_policy(account: ServiceAccount):
     logger.debug("Comparing controller user policy to currently applied policy...")
     policies_diff_fallback = compare_objects(client_manager.controller_user_policy, updated_policy)
     if policies_diff_fallback:
-        logger.error("Unknown situation where the live service account policy")
-        logger.error("a) does not match what we tried to apply;")
-        logger.error("b) also does not match to the controller user's policy, which it should fall back to if")
-        logger.error("the policy we tried to apply has more permissions than the controller user's.")
-        increment_error_count()
+        logger.error(
+            "Unknown situation where the live service account policy\n"
+            "a) does not match what we tried to apply;\n"
+            "b) also does not match to the controller user's policy, which it should fall back to if\n"
+            "the policy we tried to apply has more permissions than the controller user's."
+        )
 
     logger.warning(f"Reverting to base policy for service account '{account.full_name}'")
     apply_base_policy(account)
@@ -142,13 +142,10 @@ def handle_service_account(bare_account: ServiceAccount):
     # Scenario 1: service account exists in MinIO but not in secret backend
     if sa_exists and not credentials.access_key:
         logger.error(
-            f"Service account {credentials.full_name} exists in MinIO but not in secret backend! Manual intervention required."
-        )
-        logger.error(
+            f"Service account {credentials.full_name} exists in MinIO but not in secret backend! Manual intervention required.\n"
             "Either find the credentials elsewhere and add them to the secret backend, or delete the service "
             "account from MinIO and try again."
         )
-        increment_error_count()
         return
 
     # Scenario 2: service account exists in secret backend but not in MinIO
@@ -163,7 +160,6 @@ def handle_service_account(bare_account: ServiceAccount):
             decoded_error = json.loads(mae._body)
             if decoded_error["Code"] == "XMinioMalformedIAMPolicy":
                 logger.error(f"Malformed IAM policy for service account '{credentials.full_name}'")
-                increment_error_count()
                 return
             raise_specific_error(decoded_error["Code"], decoded_error["Message"], caused_by=mae)
         sa_exists = True
