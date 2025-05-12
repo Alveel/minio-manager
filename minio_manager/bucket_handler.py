@@ -9,11 +9,16 @@ from minio_manager.utilities import compare_objects, increment_error_count
 
 
 def configure_versioning(bucket):
+    """
+    Configure Versioning for the specified bucket.
+    :param bucket: Bucket
+    """
     if not bucket.versioning:
         return
 
     versioning_status = client_manager.s3.get_bucket_versioning(bucket.name)
     if versioning_status.status != bucket.versioning.status:
+        # Versioning status does not match desired state
         try:
             client_manager.s3.set_bucket_versioning(bucket.name, bucket.versioning)
         except S3Error as s3e:
@@ -47,9 +52,10 @@ def check_bucket_lifecycle(bucket):
 
         logger.debug(f"Bucket {bucket.name}: current lifecycle management policy does not match desired state")
     except ValueError as ve:
-        # This error is expected if the bucket does not have a lifecycle configuration
+        # This error occurs even if the bucket has a lifecycle configuration.
+        # This happens specifically with the minio-py library and might be a bug.
         if "Rule filter must be provided" not in ve.args:
-            logger.error(f"Unknown error getting lifecycle configuration: {ve.args}, ")
+            logger.error(f"Unknown error getting lifecycle configuration: {ve.args}")
             return False
 
         logger.warning("minio-py does not appear to support a GET request on this lifecycle API endpoint!")
@@ -65,12 +71,15 @@ def configure_lifecycle(bucket):
     :param bucket: Bucket object
     """
     if not bucket.lifecycle_config:
+        # bucket does not have a desired lifecycle configuration
+        # TODO: ensure that the bucket does not have a lifecycle configuration
         return
 
     # noinspection PyProtectedMember
     if settings._get_on_lifecycle_supported:
         # compare the current lifecycle configuration with the desired state
         if check_bucket_lifecycle(bucket):
+            # existing lifecycle matches desired state, no need to update
             return
     else:
         logger.debug("get_bucket_lifecycle() does not appear to work, overwriting lifecycle policy")
