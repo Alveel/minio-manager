@@ -34,8 +34,9 @@ def handle_bucket_policy(bucket_policy: BucketPolicy):
                 current_policy = client_manager.s3.get_bucket_policy(bucket_policy.bucket)
             except S3Error as sbe:
                 if sbe.code == "MalformedPolicy":
-                    logger.exception("Do the resources in the policy file match the bucket name? Is it valid JSON?")
-                    increment_error_count()
+                    logger.error(
+                        "Unable to apply policy: do the resources in the policy file match the bucket name? Is it valid JSON?"
+                    )
                     return
 
     policies_diff = compare_objects(current_policy, desired_policy)
@@ -45,9 +46,8 @@ def handle_bucket_policy(bucket_policy: BucketPolicy):
     logger.info(f"Desired bucket policy for '{bucket_policy.bucket}' does not match current policy. Updating.")
     try:
         client_manager.s3.set_bucket_policy(bucket_policy.bucket, desired_policy_json)
-    except S3Error:
-        logger.exception("Failed to update bucket policy")
-        increment_error_count()
+    except S3Error as s3e:
+        logger.error(f"Failed to update bucket policy: {s3e.code}")
 
 
 def handle_iam_policy(iam_policy: IamPolicy):

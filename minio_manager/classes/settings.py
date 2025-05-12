@@ -89,6 +89,8 @@ class Settings(BaseSettings):
         default="", description="The service account policy file to use as a template"
     )
 
+    _get_on_lifecycle_supported: bool = True
+
     @classmethod
     def settings_customise_sources(
         cls,

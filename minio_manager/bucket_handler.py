@@ -3,32 +3,42 @@ from minio import S3Error
 from minio_manager.classes.client_manager import client_manager
 from minio_manager.classes.logging_config import logger
 from minio_manager.classes.minio_resources import Bucket, ServiceAccount
+from minio_manager.classes.settings import settings
 from minio_manager.service_account_handler import handle_service_account
-from minio_manager.utilities import compare_objects, increment_error_count
+from minio_manager.utilities import compare_objects
 
 
 def configure_versioning(bucket):
+    """
+    Configure Versioning for the specified bucket.
+    :param bucket: Bucket
+    """
     if not bucket.versioning:
         return
 
     versioning_status = client_manager.s3.get_bucket_versioning(bucket.name)
     if versioning_status.status != bucket.versioning.status:
+        # Versioning status does not match desired state
         try:
             client_manager.s3.set_bucket_versioning(bucket.name, bucket.versioning)
         except S3Error as s3e:
             if s3e.code == "InvalidBucketState":
                 logger.error(f"Bucket {bucket.name}: error setting versioning: {s3e.message}")
-                increment_error_count()
                 return
         if bucket.versioning.status == "Suspended":
             logger.warning(f"Bucket {bucket.name}: versioning is suspended!")
         logger.debug(f"Bucket {bucket.name}: versioning {bucket.versioning.status.lower()}")
 
 
-def configure_lifecycle(bucket):
-    if not bucket.lifecycle_config:
-        return
+def check_bucket_lifecycle(bucket):
+    """
+    Check the lifecycle management policy for the specified bucket.
+    This function compares the current lifecycle management policy with the desired state.
+    Return True if the lifecycle management policy is already up to date, False if not or if we encounter any errors.
 
+    :param bucket: Bucket object
+    :return: bool
+    """
     # First compare the current lifecycle configuration with the desired configuration
     logger.debug(f"Bucket {bucket.name}: comparing existing lifecycle management policy with desired state for bucket")
     try:
@@ -37,17 +47,44 @@ def configure_lifecycle(bucket):
         if not lifecycle_diff:
             # If there is no difference, there is no need to update the lifecycle configuration
             logger.debug(f"Bucket {bucket.name}: lifecycle management policies already up to date")
-            return
+            return True
 
         logger.debug(f"Bucket {bucket.name}: current lifecycle management policy does not match desired state")
     except ValueError as ve:
-        if ve.args == "Rule filter must be provided":
-            logger.debug("Endpoint does not appear to support a GET request on the lifecycle API.")
-        else:
-            logger.error(f"Error getting lifecycle configuration: {ve.args}, ")
-            return
+        # This error occurs even if the bucket has a lifecycle configuration.
+        # This happens specifically with the minio-py library and might be a bug.
+        if "Rule filter must be provided" not in ve.args:
+            logger.error(f"Unknown error getting lifecycle configuration: {ve.args}")
+            return False
 
-    # First clean up the existing lifecycle configuration
+        logger.warning("minio-py does not appear to support a GET request on this lifecycle API endpoint!")
+        logger.warning("Ignoring this error and always overwriting the lifecycle policy.")
+        settings._get_on_lifecycle_supported = False
+        return False
+
+
+def configure_lifecycle(bucket):
+    """
+    Configure the lifecycle management policy for the specified bucket.
+
+    :param bucket: Bucket object
+    """
+    if not bucket.lifecycle_config:
+        # bucket does not have a desired lifecycle configuration
+        # TODO: ensure that the bucket does not have a lifecycle configuration
+        return
+
+    # noinspection PyProtectedMember
+    if settings._get_on_lifecycle_supported:
+        # compare the current lifecycle configuration with the desired state
+        if check_bucket_lifecycle(bucket):
+            # existing lifecycle matches desired state, no need to update
+            return
+    else:
+        logger.debug("get_bucket_lifecycle() does not appear to work, overwriting lifecycle policy")
+
+    # Updating existing lifecycle configuration was found to be problematic, so we always delete any existing
+    # lifecycle configuration before setting the new one.
     client_manager.s3.delete_bucket_lifecycle(bucket.name)
     logger.debug(f"Bucket {bucket.name}: removed existing lifecycle management policy")
     client_manager.s3.set_bucket_lifecycle(bucket.name, bucket.lifecycle_config)
@@ -74,11 +111,9 @@ def handle_bucket(bucket: Bucket):
         if s3e.code == "AccessDenied":
             logger.error(f"Controller user does not have permission to manage bucket {bucket.name}")
             logger.debug(s3e.message)
-            increment_error_count()
             return
         else:
             logger.error(f"Unknown error creating bucket {bucket.name}: {s3e.message}")
-            increment_error_count()
             return
 
     configure_versioning(bucket)
