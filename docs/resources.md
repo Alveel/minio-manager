@@ -25,7 +25,7 @@ The `resource.yaml` supports the following properties for `bucket_policies`:
 
 | **Property**  | **Required** | **Description**                                                      | **Default** | **Example**                            |
 |---------------|--------------|----------------------------------------------------------------------|-------------|----------------------------------------|
-| `name`        | YES          | Specify the name of the bucket                                       | None        | `infra-test-tomato-bucket`             |
+| `bucket`        | YES          | Specify the name of the bucket                                       | None        | `infra-test-tomato-bucket`             |
 | `policy_file` | YES          | Specify the name of the policy that should be assigned to the bucket | None        | `bucket_policies/my_bucketpolicy.json` |
 
 ## Service accounts
