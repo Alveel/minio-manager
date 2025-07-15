@@ -6,6 +6,7 @@ from minio.error import MinioAdminException
 from minio_manager.classes.client_manager import client_manager
 from minio_manager.classes.logging_config import logger
 from minio_manager.classes.minio_resources import BucketPolicy, IamPolicy, IamPolicyAttachment
+from minio_manager.classes.settings import settings
 from minio_manager.utilities import compare_objects, increment_error_count, read_json
 
 
@@ -15,12 +16,23 @@ def handle_bucket_policy(bucket_policy: BucketPolicy):
 
     If the policy doesn't exist, create it.
     If the policy exists, compare the desired policy with the current policy, and update if needed.
+    If no policy file is specified, use the default bucket policy from settings if available.
 
     Args:
         bucket_policy: BucketPolicy
     """
     current_policy = {}
-    desired_policy = read_json(bucket_policy.policy_file)
+
+    # Determine which policy file to use
+    policy_file = bucket_policy.policy_file
+    if not policy_file and settings.default_bucket_policy_file:
+        policy_file = settings.default_bucket_policy_file
+        logger.info(f"Using default bucket policy file '{policy_file}' for bucket '{bucket_policy.bucket}'")
+    elif not policy_file:
+        logger.debug(f"No policy file specified for bucket '{bucket_policy.bucket}' and no default policy configured")
+        return
+
+    desired_policy = read_json(policy_file)
     desired_policy_json = json.dumps(desired_policy)
 
     try:

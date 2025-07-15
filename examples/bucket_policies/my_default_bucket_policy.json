@@ -1,0 +1,48 @@
+{
+  "Id": "SourceIP",
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "rclone-sync",
+      "Principal": "*",
+      "Action": [
+        "s3:*"
+      ],
+      "Effect": "Deny",
+      "Resource": [
+        "arn:aws:s3:::*",
+        "arn:aws:s3:::*/*"
+      ],
+      "Condition": {
+        "NotIpAddress": {
+          "aws:SourceIp": [
+            "::ffff:195.169.53.68",
+            "::ffff:195.169.53.132",
+            "::ffff:195.169.26.3"
+          ]
+        }
+      }
+    },
+    {
+      "Sid": "deny-from-vpn",
+      "Principal": "*",
+      "Action": [
+        "s3:Delete*",
+        "s3:GetObject",
+        "s3:PutObject"
+      ],
+      "Effect": "Deny",
+      "Resource": [
+        "arn:aws:s3:::*",
+        "arn:aws:s3:::*/*"
+      ],
+      "Condition": {
+        "IpAddress": {
+          "aws:SourceIp": [
+            "::ffff:195.169.26.3"
+          ]
+        }
+      }
+    }
+  ]
+}
