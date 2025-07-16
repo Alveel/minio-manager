@@ -18,12 +18,17 @@ def read_json(file) -> dict:
         return json.load(f)
 
 
-def normalize_policy(obj: dict) -> dict:
+def normalize_policy(obj):
     """
-    Normalize a policy by dumping and loading it with sorted keys
-    to ensure consistent comparison.
+    Recursively sort all dictionaries and lists in a JSON-compatible object.
+    This ensures consistent structure for accurate comparisons.
     """
-    return json.loads(json.dumps(obj, sort_keys=True))
+    if isinstance(obj, dict):
+        return {k: normalize_policy(obj[k]) for k in sorted(obj)}
+    elif isinstance(obj, list):
+        return sorted((normalize_policy(item) for item in obj), key=lambda x: json.dumps(x, sort_keys=True))
+    else:
+        return obj
 
 
 def compare_objects(current: dict, desired: dict) -> bool:

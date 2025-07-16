@@ -34,12 +34,16 @@ def handle_bucket_policy(bucket_policy: BucketPolicy, is_explicit: bool = False)
 
     current_policy = get_existing_bucket_policy(bucket_policy.bucket)
 
-    if current_policy is not None and compare_objects(current_policy, desired_policy):
-        logger.debug(f"Bucket policy for '{bucket_policy.bucket}' is up to date.")
-        return
-    elif not current_policy:
+    if current_policy is not None:
+        if compare_objects(current_policy, desired_policy):
+            logger.debug(f"Bucket policy for '{bucket_policy.bucket}' is up to date.")
+            return
+        else:
+            logger.info(f"Updating bucket policy for '{bucket_policy.bucket}'")
+    else:
         logger.info(f"Creating bucket policy for '{bucket_policy.bucket}'")
-        apply_bucket_policy(bucket_policy.bucket, desired_policy_json)
+
+    apply_bucket_policy(bucket_policy.bucket, desired_policy_json)
 
 
 def resolve_bucket_policy_file(bucket_policy: BucketPolicy):
@@ -73,6 +77,7 @@ def get_existing_bucket_policy(bucket: str) -> dict | None:
 
 def apply_bucket_policy(bucket: str, policy_json: str):
     try:
+        logger.debug(f"Applying bucket policy to '{bucket}'")
         client_manager.s3.set_bucket_policy(bucket, policy_json)
     except S3Error as e:
         if e.code == "MalformedPolicy":
@@ -80,7 +85,7 @@ def apply_bucket_policy(bucket: str, policy_json: str):
                 "Unable to apply policy: do the resources in the policy file match the bucket name? Is it valid JSON?"
             )
         else:
-            logger.error(f"Failed to update bucket policy: {e.code}")
+            logger.error(f"Failed to update bucket policy for '{bucket}': {e.code}")
 
 
 def handle_iam_policy(iam_policy: IamPolicy):
