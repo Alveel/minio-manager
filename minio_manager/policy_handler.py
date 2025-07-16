@@ -10,7 +10,7 @@ from minio_manager.classes.settings import settings
 from minio_manager.utilities import compare_objects, increment_error_count, read_json
 
 
-def handle_bucket_policy(bucket_policy: BucketPolicy):
+def handle_bucket_policy(bucket_policy: BucketPolicy, is_explicit: bool = False):
     """
     Manage policies for buckets.
     If the policy doesn't exist, create it.
@@ -19,6 +19,12 @@ def handle_bucket_policy(bucket_policy: BucketPolicy):
     If neither explicit nor default policy applies, remove the existing bucket policy.
     """
     policy_file = resolve_bucket_policy_file(bucket_policy)
+
+    if is_explicit:
+        logger.debug(
+            f"Using explicitly configured policy file '{bucket_policy.policy_file}' for bucket '{bucket_policy.bucket}'"
+        )
+
     if not policy_file:
         delete_existing_bucket_policy(bucket_policy.bucket)
         return
