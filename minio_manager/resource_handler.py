@@ -49,8 +49,8 @@ def handle_all_bucket_policies(resources: ClusterResources):
         handle_bucket_policy(BucketPolicy(bucket=bucket_name, policy_file=policy_file), is_explicit=is_explicit)
 
     default_policy_msg = f"'{default_policy_file}'" if default_policy_file else "None (no default policy configured)"
-    logger.info(f"Applied explicit policies to {explicit_count} bucket(s).")
-    logger.info(f"Applied default policy {default_policy_msg} to {default_count} bucket(s).")
+    logger.info(f"Applied explicit bucket policies to {explicit_count} bucket(s).")
+    logger.info(f"Applied default bucket policy {default_policy_msg} to {default_count} bucket(s).")
 
 
 def handle_all_service_accounts(resources: ClusterResources):

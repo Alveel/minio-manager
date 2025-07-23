@@ -1,3 +1,5 @@
+import json
+
 from minio import S3Error
 
 from minio_manager.classes.client_manager import client_manager
@@ -43,9 +45,17 @@ def check_bucket_lifecycle(bucket):
     logger.debug(f"Bucket {bucket.name}: comparing existing lifecycle management policy with desired state for bucket")
     try:
         lifecycle_status = client_manager.s3.get_bucket_lifecycle(bucket.name)
-        lifecycle_diff = compare_objects(lifecycle_status, bucket.lifecycle_config)
+
+        if not getattr(lifecycle_status, "rules", []):
+            logger.debug(f"Bucket {bucket.name}: has no lifecycle rules yet")
+            return False
+
+        # Convert LifecycleConfig objects to dicts (via JSON serialization)
+        current_dict = json.loads(json.dumps(lifecycle_status.__dict__, default=str))
+        desired_dict = json.loads(json.dumps(bucket.lifecycle_config.__dict__, default=str))
+
+        lifecycle_diff = compare_objects(current_dict, desired_dict)
         if not lifecycle_diff:
-            # If there is no difference, there is no need to update the lifecycle configuration
             logger.debug(f"Bucket {bucket.name}: lifecycle management policies already up to date")
             return True
 
@@ -62,6 +72,8 @@ def check_bucket_lifecycle(bucket):
         settings._get_on_lifecycle_supported = False
         return False
 
+    return False
+
 
 def configure_lifecycle(bucket):
     """
@@ -72,6 +84,7 @@ def configure_lifecycle(bucket):
     if not bucket.lifecycle_config:
         # bucket does not have a desired lifecycle configuration
         # TODO: ensure that the bucket does not have a lifecycle configuration
+        logger.warning(f"Bucket {bucket.name} has no lifecycle config (skipping apply)")
         return
 
     # noinspection PyProtectedMember
