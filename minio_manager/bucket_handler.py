@@ -1,5 +1,3 @@
-import json
-
 from minio import S3Error
 
 from minio_manager.classes.client_manager import client_manager
@@ -8,6 +6,26 @@ from minio_manager.classes.minio_resources import Bucket, ServiceAccount
 from minio_manager.classes.settings import settings
 from minio_manager.service_account_handler import handle_service_account
 from minio_manager.utilities import compare_objects
+
+
+def lifecycle_status_to_dict(lifecycle_config):
+    """
+    Convert a LifecycleConfig object to a comparable dictionary.
+    Handles both minio library objects and our internal objects.
+    """
+    if hasattr(lifecycle_config, "__dict__"):
+        result = {}
+        for key, value in lifecycle_config.__dict__.items():
+            if hasattr(value, "__dict__"):
+                # Recursively handle nested objects
+                result[key] = lifecycle_status_to_dict(value)
+            elif isinstance(value, list):
+                # Handle lists of objects
+                result[key] = [lifecycle_status_to_dict(item) if hasattr(item, "__dict__") else item for item in value]
+            else:
+                result[key] = value
+        return result
+    return lifecycle_config
 
 
 def configure_versioning(bucket):
@@ -50,9 +68,9 @@ def check_bucket_lifecycle(bucket):
             logger.debug(f"Bucket {bucket.name}: has no lifecycle rules yet")
             return False
 
-        # Convert LifecycleConfig objects to dicts (via JSON serialization)
-        current_dict = json.loads(json.dumps(lifecycle_status.__dict__, default=str))
-        desired_dict = json.loads(json.dumps(bucket.lifecycle_config.__dict__, default=str))
+        # Convert LifecycleConfig objects to comparable dicts
+        current_dict = lifecycle_status_to_dict(lifecycle_status)
+        desired_dict = lifecycle_status_to_dict(bucket.lifecycle_config)
 
         lifecycle_diff = compare_objects(current_dict, desired_dict)
         if not lifecycle_diff:
@@ -71,8 +89,6 @@ def check_bucket_lifecycle(bucket):
         logger.warning("Ignoring this error and always overwriting the lifecycle policy.")
         settings._get_on_lifecycle_supported = False
         return False
-
-    return False
 
 
 def configure_lifecycle(bucket):

@@ -46,14 +46,14 @@ def handle_bucket_policy(bucket_policy: BucketPolicy, is_explicit: bool = False)
     apply_bucket_policy(bucket_policy.bucket, desired_policy_json)
 
 
-def resolve_bucket_policy_file(bucket_policy: BucketPolicy):
+def resolve_bucket_policy_file(bucket_policy: BucketPolicy) -> str | None:
     policy_file = bucket_policy.policy_file
     if not policy_file and settings.default_bucket_policy_file:
         policy_file = settings.default_bucket_policy_file
     return policy_file
 
 
-def delete_existing_bucket_policy(bucket: str):
+def delete_existing_bucket_policy(bucket: str) -> None:
     logger.info(f"No policy specified for bucket '{bucket}'. Removing existing bucket policy if any.")
     try:
         client_manager.s3.delete_bucket_policy(bucket)
@@ -75,7 +75,7 @@ def get_existing_bucket_policy(bucket: str) -> dict | None:
         return None
 
 
-def apply_bucket_policy(bucket: str, policy_json: str):
+def apply_bucket_policy(bucket: str, policy_json: str) -> None:
     try:
         logger.debug(f"Applying bucket policy to '{bucket}'")
         client_manager.s3.set_bucket_policy(bucket, policy_json)

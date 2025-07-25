@@ -24,9 +24,14 @@ def normalize_policy(obj):
     This ensures consistent structure for accurate comparisons.
     """
     if isinstance(obj, dict):
-        return {k: normalize_policy(obj[k]) for k in sorted(obj)}
+        return {k: normalize_policy(v) for k, v in sorted(obj.items())}
     elif isinstance(obj, list):
-        return sorted((normalize_policy(item) for item in obj), key=lambda x: json.dumps(x, sort_keys=True))
+        # Sort list items but handle mixed types gracefully
+        try:
+            return sorted((normalize_policy(item) for item in obj), key=lambda x: json.dumps(x, sort_keys=True))
+        except TypeError:
+            # If items aren't comparable, just normalize them without sorting
+            return [normalize_policy(item) for item in obj]
     else:
         return obj
 

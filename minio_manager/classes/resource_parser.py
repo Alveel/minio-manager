@@ -73,12 +73,14 @@ class ClusterResources:
 
         if name in existing_names:
             logger.error(f"Bucket '{name}' defined multiple times.")
+            return None
         existing_names.append(name)
 
         if settings.allowed_bucket_prefixes and not name.startswith(tuple(settings.allowed_bucket_prefixes)):
             logger.error(
                 f"Bucket '{name}' does not start with one of the required prefixes {settings.allowed_bucket_prefixes}!"
             )
+            return None
 
         versioning_config = self._get_versioning_config(bucket_def)
         create_sa = bool(bucket_def.get("create_service_account", settings.auto_create_service_account))
@@ -106,6 +108,7 @@ class ClusterResources:
                 return lifecycle
             else:
                 logger.warning(f"Invalid lifecycle config in file {lifecycle_file}, falling back to default.")
+                return default_lifecycle
         else:
             logger.debug(
                 f"No bucket specific lifecycle file provided for bucket {bucket_name}, using default lifecycle policy."
