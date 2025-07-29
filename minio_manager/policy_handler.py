@@ -54,14 +54,14 @@ def resolve_bucket_policy_file(bucket_policy: BucketPolicy) -> str | None:
 
 
 def delete_existing_bucket_policy(bucket: str) -> None:
-    logger.info(f"No policy specified for bucket '{bucket}'. Removing existing bucket policy if any.")
+    logger.info(f"No policy specified for bucket {bucket}. Removing existing bucket policy if any.")
     try:
         client_manager.s3.delete_bucket_policy(bucket)
     except S3Error as e:
         if e.code == "NoSuchBucketPolicy":
-            logger.debug(f"No existing bucket policy to delete for bucket '{bucket}'")
+            logger.debug(f"No existing bucket policy to delete for bucket {bucket}")
         else:
-            logger.error(f"Failed to delete bucket policy for bucket '{bucket}': {e}")
+            logger.error(f"Failed to delete bucket policy for bucket {bucket}: {e}")
 
 
 def get_existing_bucket_policy(bucket: str) -> dict | None:
@@ -71,13 +71,13 @@ def get_existing_bucket_policy(bucket: str) -> dict | None:
     except S3Error as s3e:
         if s3e.code == "NoSuchBucketPolicy":
             return None
-        logger.error(f"Failed to fetch current bucket policy for '{bucket}': {s3e}")
+        logger.error(f"Failed to fetch current bucket policy for {bucket}: {s3e}")
         return None
 
 
 def apply_bucket_policy(bucket: str, policy_json: str) -> None:
     try:
-        logger.debug(f"Applying bucket policy to '{bucket}'")
+        logger.debug(f"Applying bucket policy to {bucket}")
         client_manager.s3.set_bucket_policy(bucket, policy_json)
     except S3Error as e:
         if e.code == "MalformedPolicy":
@@ -85,7 +85,7 @@ def apply_bucket_policy(bucket: str, policy_json: str) -> None:
                 "Unable to apply policy: do the resources in the policy file match the bucket name? Is it valid JSON?"
             )
         else:
-            logger.error(f"Failed to update bucket policy for '{bucket}': {e.code}")
+            logger.error(f"Failed to update bucket policy for {bucket}: {e.code}")
 
 
 def handle_iam_policy(iam_policy: IamPolicy):
