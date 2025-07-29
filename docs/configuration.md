@@ -23,6 +23,7 @@ Required variables without a default value must be manually configured.
 | `MINIO_MANAGER_DRY_RUN`                           | Only parse provided resources, do not try to apply them.                                   | No           | `False`                            |
 | `MINIO_MANAGER_DEFAULT_BUCKET_VERSIONING`         | Whether to globally enable (`Enabled`) or suspend (`Suspended`) bucket versioning          | Yes          | `Suspended`                        |
 | `MINIO_MANAGER_DEFAULT_LIFECYCLE_POLICY_FILE`     | What lifecycle policy (in `mc ilm export` format) to attach to all buckets by default      | No           |                                    |
+| `MINIO_MANAGER_DEFAULT_BUCKET_POLICY_FILE`        | What bucket policy (in JSON format) to attach to all buckets by default                    | No           |                                    |
 | `MINIO_MANAGER_AUTO_CREATE_SERVICE_ACCOUNT`       | Whether to automatically create service accounts with a generated access policy            | No           | `True`                             |
 | `MINIO_MANAGER_SERVICE_ACCOUNT_POLICY_BASE_FILE`⁴ | What policy to use as a base for a service account when automatically generated            | No           | `service-account-policy-base.json` |
 | `MINIO_MANAGER_ALLOWED_BUCKET_PREFIXES`           | Comma-separated list of prefixes of bucket names this controller user is allowed to manage | No           | `""`                               |

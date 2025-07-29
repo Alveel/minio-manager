@@ -33,70 +33,88 @@ class ClusterResources:
 
     def parse_buckets(self, buckets: list) -> list[Bucket]:
         """
-        Parse the provided buckets with the following steps:
-
-        For each provided bucket
-
-            1. check the provided versioning. If versioning is not provided, set the default.
-            2. check if an object lifecycle JSON file is provided, use the default_bucket_lifecycle_policy, or skip OLM
-            3. parse the file and create a LifecycleConfig object for the bucket
-            4. create a Bucket object
-
-        Args:
-            buckets: list of buckets to parse
-
-        Returns: [Bucket]: list of Bucket objects
+        Parse the provided buckets with validation, versioning, and lifecycle handling.
         """
         if not buckets:
             logger.debug("No buckets configured, skipping.")
             return []
 
-        bucket_objects = []
+        logger.debug(f"Parsing {len(buckets)} buckets...")
+
+        if settings.allowed_bucket_prefixes:
+            noun = "prefix" if len(settings.allowed_bucket_prefixes) == 1 else "prefixes"
+            prefixes_str = ", ".join(settings.allowed_bucket_prefixes)
+            logger.info(f"Only allowing buckets with the following {noun}: {prefixes_str}")
 
         default_lifecycle_config = self.parse_bucket_lifecycle_file(settings.default_lifecycle_policy_file)
+        if default_lifecycle_config is None:
+            logger.warning("Default lifecycle policy file could not be parsed or contains no valid rules.")
+
+        bucket_objects = []
         bucket_names = []
 
         try:
-            logger.debug(f"Parsing {len(buckets)} buckets...")
-            if settings.allowed_bucket_prefixes:
-                noun = "prefix" if len(settings.allowed_bucket_prefixes) == 1 else "prefixes"
-                prefixes_str = ", ".join(settings.allowed_bucket_prefixes)
-                logger.info(f"Only allowing buckets with the following {noun}: {prefixes_str}")
-            for bucket in buckets:
-                effective_lifecycle_config = default_lifecycle_config
-                name = bucket["name"]
-                if name in bucket_names:
-                    logger.error(f"Bucket '{name}' defined multiple times.")
-                logger.debug(f"Parsing bucket {name}")
-                allowed_prefixes = settings.allowed_bucket_prefixes
-                if allowed_prefixes and not name.startswith(allowed_prefixes):
-                    logger.error(
-                        f"Bucket '{name}' does not start with one of the required prefixes {allowed_prefixes}!"
-                    )
-
-                bucket_names.append(name)
-                versioning = bucket.get("versioning")
-                try:
-                    versioning_config = VeCo(versioning) if versioning else VeCo(settings.default_bucket_versioning)
-                except ValueError as ve:
-                    logger.error(f"Error parsing versioning setting: {' '.join(ve.args)}")
-                    versioning_config = VeCo(settings.default_bucket_versioning)  # workaround to use error count
-                create_sa = bool(bucket.get("create_service_account", settings.auto_create_service_account))
-                lifecycle_file = bucket.get("object_lifecycle_file")
-                if lifecycle_file:
-                    logger.debug(f"Parsing bucket specific lifecycle file {lifecycle_file} for bucket {name}")
-                    bucket_lifecycle = self.parse_bucket_lifecycle_file(lifecycle_file)
-                    if isinstance(bucket_lifecycle, LifecycleConfig):
-                        effective_lifecycle_config = bucket_lifecycle
-                else:
-                    logger.debug(
-                        f"No bucket specific lifecycle file provided for bucket {name}, using default lifecycle policy."
-                    )
-                bucket_objects.append(Bucket(name, create_sa, versioning_config, effective_lifecycle_config))
+            for bucket_def in buckets:
+                bucket = self._parse_single_bucket(bucket_def, bucket_names, default_lifecycle_config)
+                if bucket:
+                    bucket_objects.append(bucket)
         except TypeError:
             logger.error("Buckets must be defined as a list of YAML dictionaries!")
 
         return bucket_objects
+
+    def _parse_single_bucket(
+        self, bucket_def: dict, existing_names: list[str], default_lifecycle: LifecycleConfig | None
+    ) -> Bucket | None:
+        name = bucket_def.get("name")
+        if not name:
+            logger.error("Bucket definition missing required 'name' key.")
+            return None
+
+        if name in existing_names:
+            logger.error(f"Bucket '{name}' defined multiple times.")
+            return None
+        existing_names.append(name)
+
+        if settings.allowed_bucket_prefixes and not name.startswith(tuple(settings.allowed_bucket_prefixes)):
+            logger.error(
+                f"Bucket '{name}' does not start with one of the required prefixes {settings.allowed_bucket_prefixes}!"
+            )
+            return None
+
+        versioning_config = self._get_versioning_config(bucket_def)
+        create_sa = bool(bucket_def.get("create_service_account", settings.auto_create_service_account))
+
+        lifecycle_file = bucket_def.get("object_lifecycle_file")
+        lifecycle_config = self._get_effective_lifecycle(lifecycle_file, name, default_lifecycle)
+
+        return Bucket(name, create_sa, versioning_config, lifecycle_config)
+
+    def _get_versioning_config(self, bucket_def: dict) -> VeCo:
+        versioning = bucket_def.get("versioning")
+        try:
+            return VeCo(versioning) if versioning else VeCo(settings.default_bucket_versioning)
+        except ValueError as ve:
+            logger.error(f"Error parsing versioning setting: {' '.join(ve.args)}")
+            return VeCo(settings.default_bucket_versioning)
+
+    def _get_effective_lifecycle(
+        self, lifecycle_file: str | None, bucket_name: str, default_lifecycle: LifecycleConfig | None
+    ) -> LifecycleConfig | None:
+        if lifecycle_file:
+            logger.debug(f"Parsing bucket specific lifecycle file {lifecycle_file} for bucket '{bucket_name}'")
+            lifecycle = self.parse_bucket_lifecycle_file(lifecycle_file)
+            if isinstance(lifecycle, LifecycleConfig):
+                return lifecycle
+            else:
+                logger.warning(f"Invalid lifecycle config in file {lifecycle_file}, falling back to default.")
+                return default_lifecycle
+        else:
+            logger.debug(
+                f"No bucket specific lifecycle file provided for bucket '{bucket_name}', using default lifecycle policy."
+            )
+
+        return default_lifecycle
 
     def parse_bucket_lifecycle_file(self, lifecycle_file: str) -> LifecycleConfig | None:
         """
@@ -139,6 +157,7 @@ class ClusterResources:
             logger.error(f"Error parsing lifecycle file {lifecycle_file}. Is the format correct?")
 
         if not rules:
+            logger.warning(f"No valid lifecycle rules found in file {lifecycle_file}")
             return None
 
         return LifecycleConfig(rules)

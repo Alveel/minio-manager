@@ -85,6 +85,7 @@ class Settings(BaseSettings):
         default="Suspended", description="The default bucket versioning state [Enabled|Suspended]"
     )
     default_lifecycle_policy_file: str | None = Field(default=None, description="The default lifecycle policy file")
+    default_bucket_policy_file: str | None = Field(default=None, description="The default bucket policy file")
     service_account_policy_base_file: str = Field(
         default="", description="The service account policy file to use as a template"
     )

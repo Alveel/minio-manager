@@ -6,48 +6,86 @@ from minio.error import MinioAdminException
 from minio_manager.classes.client_manager import client_manager
 from minio_manager.classes.logging_config import logger
 from minio_manager.classes.minio_resources import BucketPolicy, IamPolicy, IamPolicyAttachment
+from minio_manager.classes.settings import settings
 from minio_manager.utilities import compare_objects, increment_error_count, read_json
 
 
-def handle_bucket_policy(bucket_policy: BucketPolicy):
+def handle_bucket_policy(bucket_policy: BucketPolicy, is_explicit: bool = False):
     """
     Manage policies for buckets.
-
     If the policy doesn't exist, create it.
     If the policy exists, compare the desired policy with the current policy, and update if needed.
-
-    Args:
-        bucket_policy: BucketPolicy
+    If no policy file is specified, use the default bucket policy from settings if available.
+    If neither explicit nor default policy applies, remove the existing bucket policy.
     """
-    current_policy = {}
-    desired_policy = read_json(bucket_policy.policy_file)
-    desired_policy_json = json.dumps(desired_policy)
+    policy_file = resolve_bucket_policy_file(bucket_policy)
 
-    try:
-        current_policy_str = client_manager.s3.get_bucket_policy(bucket_policy.bucket)
-        current_policy = json.loads(current_policy_str)
-    except S3Error as s3e:
-        if s3e.code == "NoSuchBucketPolicy":
-            logger.info(f"Creating bucket policy for {bucket_policy.bucket}")
-            try:
-                client_manager.s3.set_bucket_policy(bucket_policy.bucket, desired_policy_json)
-                current_policy = client_manager.s3.get_bucket_policy(bucket_policy.bucket)
-            except S3Error as sbe:
-                if sbe.code == "MalformedPolicy":
-                    logger.error(
-                        "Unable to apply policy: do the resources in the policy file match the bucket name? Is it valid JSON?"
-                    )
-                    return
+    if is_explicit:
+        logger.debug(
+            f"Using explicitly configured policy file '{bucket_policy.policy_file}' for bucket '{bucket_policy.bucket}'"
+        )
 
-    policies_diff = compare_objects(current_policy, desired_policy)
-    if not policies_diff:
+    if not policy_file:
+        delete_existing_bucket_policy(bucket_policy.bucket)
         return
 
-    logger.info(f"Desired bucket policy for '{bucket_policy.bucket}' does not match current policy. Updating.")
+    desired_policy = read_json(policy_file)
+    desired_policy_json = json.dumps(desired_policy)
+
+    current_policy = get_existing_bucket_policy(bucket_policy.bucket)
+
+    if current_policy is not None:
+        if compare_objects(current_policy, desired_policy):
+            logger.debug(f"Bucket policy for '{bucket_policy.bucket}' is up to date.")
+            return
+        else:
+            logger.info(f"Updating bucket policy for '{bucket_policy.bucket}'")
+    else:
+        logger.info(f"Creating bucket policy for '{bucket_policy.bucket}'")
+
+    apply_bucket_policy(bucket_policy.bucket, desired_policy_json)
+
+
+def resolve_bucket_policy_file(bucket_policy: BucketPolicy) -> str | None:
+    policy_file = bucket_policy.policy_file
+    if not policy_file and settings.default_bucket_policy_file:
+        policy_file = settings.default_bucket_policy_file
+    return policy_file
+
+
+def delete_existing_bucket_policy(bucket: str) -> None:
+    logger.info(f"No policy specified for bucket '{bucket}'. Removing existing bucket policy if any.")
     try:
-        client_manager.s3.set_bucket_policy(bucket_policy.bucket, desired_policy_json)
+        client_manager.s3.delete_bucket_policy(bucket)
+    except S3Error as e:
+        if e.code == "NoSuchBucketPolicy":
+            logger.debug(f"No existing bucket policy to delete for bucket '{bucket}'")
+        else:
+            logger.error(f"Failed to delete bucket policy for bucket '{bucket}': {e}")
+
+
+def get_existing_bucket_policy(bucket: str) -> dict | None:
+    try:
+        current_policy_str = client_manager.s3.get_bucket_policy(bucket)
+        return json.loads(current_policy_str)
     except S3Error as s3e:
-        logger.error(f"Failed to update bucket policy: {s3e.code}")
+        if s3e.code == "NoSuchBucketPolicy":
+            return None
+        logger.error(f"Failed to fetch current bucket policy for '{bucket}': {s3e}")
+        return None
+
+
+def apply_bucket_policy(bucket: str, policy_json: str) -> None:
+    try:
+        logger.debug(f"Applying bucket policy to '{bucket}'")
+        client_manager.s3.set_bucket_policy(bucket, policy_json)
+    except S3Error as e:
+        if e.code == "MalformedPolicy":
+            logger.error(
+                "Unable to apply policy: do the resources in the policy file match the bucket name? Is it valid JSON?"
+            )
+        else:
+            logger.error(f"Failed to update bucket policy for '{bucket}': {e.code}")
 
 
 def handle_iam_policy(iam_policy: IamPolicy):

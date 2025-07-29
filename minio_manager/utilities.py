@@ -3,7 +3,6 @@ import time
 from pathlib import Path
 
 import yaml
-from deepdiff import DeepDiff
 
 error_count = 0
 start_time = time.time()
@@ -19,12 +18,29 @@ def read_json(file) -> dict:
         return json.load(f)
 
 
-def compare_objects(a: dict, b: dict, ignore_order: bool = True) -> bool | dict:
-    """Compare two dicts and return False if they match, the differences if they don't"""
-    result = DeepDiff(a, b, ignore_order=ignore_order)
-    if result:
-        return result
-    return False
+def normalize_policy(obj):
+    """
+    Recursively sort all dictionaries and lists in a JSON-compatible object.
+    This ensures consistent structure for accurate comparisons.
+    """
+    if isinstance(obj, dict):
+        return {k: normalize_policy(v) for k, v in sorted(obj.items())}
+    elif isinstance(obj, list):
+        # Sort list items but handle mixed types gracefully
+        try:
+            return sorted((normalize_policy(item) for item in obj), key=lambda x: json.dumps(x, sort_keys=True))
+        except TypeError:
+            # If items aren't comparable, just normalize them without sorting
+            return [normalize_policy(item) for item in obj]
+    else:
+        return obj
+
+
+def compare_objects(current: dict, desired: dict) -> bool:
+    """
+    Compare two JSON-compatible objects after normalizing.
+    """
+    return normalize_policy(current) == normalize_policy(desired)
 
 
 def increment_error_count():
