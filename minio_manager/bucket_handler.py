@@ -43,11 +43,11 @@ def configure_versioning(bucket):
             client_manager.s3.set_bucket_versioning(bucket.name, bucket.versioning)
         except S3Error as s3e:
             if s3e.code == "InvalidBucketState":
-                logger.error(f"Bucket {bucket.name}: error setting versioning: {s3e.message}")
+                logger.error(f"Bucket '{bucket.name}': error setting versioning: {s3e.message}")
                 return
         if bucket.versioning.status == "Suspended":
-            logger.warning(f"Bucket {bucket.name}: versioning is suspended!")
-        logger.debug(f"Bucket {bucket.name}: versioning {bucket.versioning.status.lower()}")
+            logger.warning(f"Bucket '{bucket.name}': versioning is suspended!")
+        logger.debug(f"Bucket '{bucket.name}': versioning {bucket.versioning.status.lower()}")
 
 
 def check_bucket_lifecycle(bucket):
@@ -60,12 +60,14 @@ def check_bucket_lifecycle(bucket):
     :return: bool
     """
     # First compare the current lifecycle configuration with the desired configuration
-    logger.debug(f"Bucket {bucket.name}: comparing existing lifecycle management policy with desired state for bucket")
+    logger.debug(
+        f"Bucket '{bucket.name}': comparing existing lifecycle management policy with desired state for bucket"
+    )
     try:
         lifecycle_status = client_manager.s3.get_bucket_lifecycle(bucket.name)
 
         if not getattr(lifecycle_status, "rules", []):
-            logger.debug(f"Bucket {bucket.name}: has no lifecycle rules yet")
+            logger.debug(f"Bucket '{bucket.name}': has no lifecycle rules yet")
             return False
 
         # Convert LifecycleConfig objects to comparable dicts
@@ -74,10 +76,10 @@ def check_bucket_lifecycle(bucket):
 
         lifecycle_diff = compare_objects(current_dict, desired_dict)
         if not lifecycle_diff:
-            logger.debug(f"Bucket {bucket.name}: lifecycle management policies already up to date")
+            logger.debug(f"Bucket '{bucket.name}': lifecycle management policies already up to date")
             return True
 
-        logger.debug(f"Bucket {bucket.name}: current lifecycle management policy does not match desired state")
+        logger.debug(f"Bucket '{bucket.name}': current lifecycle management policy does not match desired state")
     except ValueError as ve:
         # This error occurs even if the bucket has a lifecycle configuration.
         # This happens specifically with the minio-py library and might be a bug.
@@ -100,7 +102,7 @@ def configure_lifecycle(bucket):
     if not bucket.lifecycle_config:
         # bucket does not have a desired lifecycle configuration
         # TODO: ensure that the bucket does not have a lifecycle configuration
-        logger.warning(f"Bucket {bucket.name} has no lifecycle config (skipping apply)")
+        logger.warning(f"Bucket '{bucket.name}' has no lifecycle config (skipping apply)")
         return
 
     # noinspection PyProtectedMember
@@ -115,9 +117,9 @@ def configure_lifecycle(bucket):
     # Updating existing lifecycle configuration was found to be problematic, so we always delete any existing
     # lifecycle configuration before setting the new one.
     client_manager.s3.delete_bucket_lifecycle(bucket.name)
-    logger.debug(f"Bucket {bucket.name}: removed existing lifecycle management policy")
+    logger.debug(f"Bucket '{bucket.name}': removed existing lifecycle management policy")
     client_manager.s3.set_bucket_lifecycle(bucket.name, bucket.lifecycle_config)
-    logger.info(f"Bucket {bucket.name}: lifecycle management policies updated")
+    logger.info(f"Bucket '{bucket.name}': lifecycle management policies updated")
 
 
 def handle_bucket(bucket: Bucket):
@@ -132,17 +134,17 @@ def handle_bucket(bucket: Bucket):
     """
     try:
         if not client_manager.s3.bucket_exists(bucket.name):
-            logger.info(f"Creating bucket {bucket.name}")
+            logger.info(f"Creating bucket '{bucket.name}'")
             client_manager.s3.make_bucket(bucket.name)
         else:
-            logger.debug(f"Bucket {bucket.name} already exists")
+            logger.debug(f"Bucket '{bucket.name}' already exists")
     except S3Error as s3e:
         if s3e.code == "AccessDenied":
-            logger.error(f"Controller user does not have permission to manage bucket {bucket.name}")
+            logger.error(f"Controller user does not have permission to manage bucket '{bucket.name}'")
             logger.debug(s3e.message)
             return
         else:
-            logger.error(f"Unknown error creating bucket {bucket.name}: {s3e.message}")
+            logger.error(f"Unknown error creating bucket '{bucket.name}': {s3e.message}")
             return
 
     configure_versioning(bucket)

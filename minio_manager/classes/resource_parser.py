@@ -102,7 +102,7 @@ class ClusterResources:
         self, lifecycle_file: str | None, bucket_name: str, default_lifecycle: LifecycleConfig | None
     ) -> LifecycleConfig | None:
         if lifecycle_file:
-            logger.debug(f"Parsing bucket specific lifecycle file {lifecycle_file} for bucket {bucket_name}")
+            logger.debug(f"Parsing bucket specific lifecycle file {lifecycle_file} for bucket '{bucket_name}'")
             lifecycle = self.parse_bucket_lifecycle_file(lifecycle_file)
             if isinstance(lifecycle, LifecycleConfig):
                 return lifecycle
@@ -111,7 +111,7 @@ class ClusterResources:
                 return default_lifecycle
         else:
             logger.debug(
-                f"No bucket specific lifecycle file provided for bucket {bucket_name}, using default lifecycle policy."
+                f"No bucket specific lifecycle file provided for bucket '{bucket_name}', using default lifecycle policy."
             )
 
         return default_lifecycle
