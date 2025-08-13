@@ -100,10 +100,12 @@ def configure_lifecycle(bucket):
     :param bucket: Bucket object
     """
     if not bucket.lifecycle_config:
+        # bucket does not have a desired lifecycle configuration
+        # TODO: ensure that the bucket does not have a lifecycle configuration
         logger.warning(f"Bucket '{bucket.name}' has no lifecycle config (skipping apply)")
         return
 
-    # Efficient: only update if current and desired policies differ
+    # Only update lifecycle if current and desired policies differ
     try:
         lifecycle_status = client_manager.s3.get_bucket_lifecycle(bucket.name)
         current_dict = lifecycle_status_to_dict(lifecycle_status)
@@ -116,6 +118,8 @@ def configure_lifecycle(bucket):
     except Exception as e:
         logger.warning(f"Could not fetch current lifecycle for bucket '{bucket.name}' (will overwrite): {e}")
 
+    # Updating existing lifecycle configuration was found to be problematic, so we always delete any existing
+    # lifecycle configuration before setting the new one.
     client_manager.s3.delete_bucket_lifecycle(bucket.name)
     logger.debug(f"Bucket '{bucket.name}': removed existing lifecycle management policy")
     client_manager.s3.set_bucket_lifecycle(bucket.name, bucket.lifecycle_config)
