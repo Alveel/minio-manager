@@ -20,6 +20,9 @@ check: ## Run code quality tools.
 
 start-local-test:
 	@echo "🚀 Running local test environment"
+	@echo "🧹 Stopping any existing MinIO test container..."
+	@podman stop minio-local-test 2>/dev/null || true
+	@podman rm minio-local-test 2>/dev/null || true
 	@podman run --detach --name minio-local-test --rm -p 9000:9000 -p 9001:9001 \
 		quay.io/minio/minio server /data --console-address ":9001"
 	@echo "😴 Waiting for MinIO to start..."
@@ -52,7 +55,9 @@ run-test-environment: start-local-test configure-admin configure-controller ## R
 	cp examples/my_group/secrets-insecure.yaml .
 
 stop-test-environment: ## Stop the running test environment
-	@podman stop minio-local-test
+	@echo "🛑 Stopping MinIO test environment..."
+	@podman stop minio-local-test 2>/dev/null || true
+	@podman rm minio-local-test 2>/dev/null || true
 
 .PHONY: test
 test: ## Run tests without MinIO (only utility and basic tests)
