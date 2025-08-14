@@ -61,6 +61,61 @@ make stop-test-environment
 
 **Note** that the created `secrets-insecure.yaml` will not be removed automatically and will get overwritten by the setup command.
 
+## Testing
+
+MinIO Manager includes a comprehensive test suite covering bucket creation, lifecycle policies, bucket policies, and integration scenarios.
+
+### Quick Testing
+
+```bash
+# Run unit tests (no MinIO required)
+make test-unit
+
+# Run all tests (MinIO tests will be skipped if no test environment)
+make test
+```
+
+### Integration Testing
+
+For full integration testing with MinIO:
+
+```bash
+# Start test environment, run all tests, then stop environment
+make test-full
+
+# Or manually:
+make run-test-environment  # Start MinIO test environment
+make test-all             # Run all tests including integration tests
+make stop-test-environment # Stop test environment
+```
+
+### Test Coverage
+
+```bash
+# Generate coverage report
+make test-coverage
+```
+
+### Available Test Targets
+
+- `make test` - Run tests (MinIO tests skipped if no environment)
+- `make test-unit` - Run only unit tests (no MinIO required)
+- `make test-integration` - Run integration tests (requires MinIO)
+- `make test-all` - Run all tests (requires MinIO test environment)
+- `make test-coverage` - Run tests with coverage report
+- `make test-full` - Complete cycle: start environment → test → stop environment
+
+### Test Structure
+
+- **`tests/test_basic.py`** - Basic functionality tests
+- **`tests/test_utilities.py`** - Utility function and class tests
+- **`tests/test_bucket_creation.py`** - Bucket creation and management tests
+- **`tests/test_lifecycle_policies.py`** - Lifecycle policy tests
+- **`tests/test_bucket_policies.py`** - Bucket policy tests
+- **`tests/test_integration.py`** - Full integration scenarios
+
+Tests automatically detect MinIO availability and skip integration tests when no test environment is running.
+
 To finalize the set-up for publishing to PyPi or Artifactory, see
 [here](https://fpgmaas.github.io/cookiecutter-pdm/features/publishing/#set-up-for-pypi).
 For activating the automatic documentation with MkDocs, see

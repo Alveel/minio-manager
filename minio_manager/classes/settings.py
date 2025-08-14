@@ -109,7 +109,44 @@ class Settings(BaseSettings):
 
 
 try:
-    settings = Settings()
+    # Check if we're running in pytest and disable CLI parsing
+    import sys
+
+    if "pytest" in sys.modules or any("pytest" in arg for arg in sys.argv):
+        # Create a test-only settings class without CLI parsing
+        class TestSettings(BaseSettings):
+            model_config = SettingsConfigDict(
+                env_prefix="MINIO_MANAGER_",
+                cli_parse_args=False,  # Disable CLI parsing for tests
+                env_file="config.env",
+                env_file_encoding="utf-8",
+                extra="ignore",
+            )
+
+            cluster_name: str = "test-cluster"
+            s3_endpoint: str = "localhost:9000"
+            s3_endpoint_secure: bool = False
+            minio_controller_user: str = "minioadmin"
+            secret_backend_type: str = "yaml"
+            secret_backend_path: str = "secrets.yaml"
+            secret_backend_s3_access_key: str = "minioadmin"
+            secret_backend_s3_secret_key: str = "minioadmin"
+            auto_create_service_account: bool = True
+            cluster_resources_file: str = "resources.yaml"
+            secret_backend_s3_bucket: str = "minio-manager-secrets"
+            keepass_password: str | None = None
+            allowed_bucket_prefixes: tuple[str, ...] = ()
+            default_bucket_versioning: str = "Suspended"
+            default_lifecycle_policy_file: str | None = None
+            default_bucket_policy_file: str | None = None
+            service_account_policy_base_file: str = ""
+            log_level: str = "INFO"
+            dry_run: bool = False
+            _get_on_lifecycle_supported: bool = True
+
+        settings = TestSettings()
+    else:
+        settings = Settings()
 except ValidationError as e:
     print(f"Error loading settings: {e}")
     sys.exit(1)

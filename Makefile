@@ -54,6 +54,37 @@ run-test-environment: start-local-test configure-admin configure-controller ## R
 stop-test-environment: ## Stop the running test environment
 	@podman stop minio-local-test
 
+.PHONY: test
+test: ## Run tests without MinIO (only utility and basic tests)
+	@echo "🧪 Running tests (MinIO tests will be skipped)"
+	@pdm run pytest tests/ -v --tb=short
+
+.PHONY: test-unit
+test-unit: ## Run only unit tests that don't require MinIO
+	@echo "🧪 Running unit tests (no MinIO required)"
+	@pdm run pytest tests/test_basic.py tests/test_utilities.py -v
+
+.PHONY: test-integration
+test-integration: ## Run integration tests (requires MinIO test environment)
+	@echo "🧪 Running integration tests (requires MinIO test environment)"
+	@echo "💡 Make sure to run 'make run-test-environment' first"
+	@pdm run pytest tests/test_bucket_creation.py tests/test_lifecycle_policies.py tests/test_bucket_policies.py tests/test_integration.py -v
+
+.PHONY: test-all
+test-all: ## Run all tests including integration tests (requires MinIO test environment)
+	@echo "🧪 Running all tests (requires MinIO test environment)"
+	@echo "💡 Make sure to run 'make run-test-environment' first"
+	@pdm run pytest tests/ -v
+
+.PHONY: test-coverage
+test-coverage: ## Run tests with coverage report
+	@echo "🧪 Running tests with coverage"
+	@pdm run pytest tests/ --cov=minio_manager --cov-report=html --cov-report=term-missing
+
+.PHONY: test-full
+test-full: run-test-environment test-all stop-test-environment ## Start test environment, run all tests, then stop environment
+	@echo "✅ Full test cycle completed"
+
 .PHONY: build
 build: clean-build ## Build wheel file
 	@echo "🚀 Creating wheel file"
