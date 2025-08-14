@@ -32,7 +32,7 @@ class TestMinIOManagerIntegration:
             "MINIO_MANAGER_SECRET_BACKEND_S3_ACCESS_KEY": "minioadmin",
             "MINIO_MANAGER_SECRET_BACKEND_S3_SECRET_KEY": "minioadmin",
             "MINIO_MANAGER_ALLOWED_BUCKET_PREFIXES": "integration-test-,test-,demo-",
-            "MINIO_MANAGER_SERVICE_ACCOUNT_POLICY_FILE": "tests/fixtures/service_account_policies/default_policy.json"
+            "MINIO_MANAGER_SERVICE_ACCOUNT_POLICY_FILE": "examples/my_service_account_policy.json"
         }
         
         for key, value in env_vars.items():
