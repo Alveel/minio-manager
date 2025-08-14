@@ -18,7 +18,7 @@ check: ## Run code quality tools.
 	@echo "🚀 Checking for obsolete dependencies: Running deptry"
 	@pdm run deptry .
 
-start-local-test:
+start-local-test: ## Start local MinIO test environment
 	@echo "🚀 Running local test environment"
 	@echo "🧹 Stopping any existing MinIO test container..."
 	@podman stop minio-local-test 2>/dev/null || true
@@ -30,26 +30,31 @@ start-local-test:
 	@echo "🪛 Configuring 'mc' alias 'local-test-admin'"
 	@mc alias set local-test-admin http://localhost:9000 minioadmin minioadmin
 
-configure-admin:
+configure-admin: ## Configure mc alias for admin access
 	@echo "🪛 Configuring 'mc' alias 'minio-admin'"
 	@mc alias set minio-admin http://localhost:9000 minioadmin minioadmin
 
-configure-controller:
+configure-controller: ## Setup the minio-manager controller user and service account
 	@echo "👷 Creating user 'local-test-controller'"
-	@mc admin user add local-test-admin local-test-controller insecure-password-for-testing
+	@mc admin user add local-test-admin local-test-controller insecure-password-for-testing || echo "User may already exist"
 
-	@echo "🚧 Creating user policy for controller user and assigning to user 'local-test-controller'"
-	@mc admin policy create local-test-admin local-test-controller-policy examples/bucket-group-user-policy.json
-	@mc admin policy attach local-test-admin local-test-controller-policy --user=local-test-controller
+	@echo "🚧 Ensuring consoleAdmin policy is attached to user 'local-test-controller'"
+	@mc admin policy attach local-test-admin consoleAdmin --user=local-test-controller || echo "Policy may already be attached"
 
 	@echo "🪛 Configuring 'mc' alias 'local-test-controller'"
 	@mc alias set local-test-controller http://localhost:9000 local-test-controller insecure-password-for-testing
 
-	@echo "🤖 Creating service account for 'local-test-controller' user"
-	@mc admin user svcacct add local-test-controller local-test-controller \
-		--name "Local Test" \
+	@echo "🤖 Creating service account for 'local-test-controller' user with static credentials"
+	@mc admin user svcacct remove local-test-admin static-for-testing 2>/dev/null || echo "Service account doesn't exist yet"
+	@mc admin user svcacct add local-test-admin local-test-controller \
+		--name "MinIO Manager Test Controller" \
 		--access-key static-for-testing \
 		--secret-key static-secret-key-for-testing
+
+	@echo "✅ Controller service account setup completed!"
+	@echo "   User: local-test-controller (with consoleAdmin policy)"
+	@echo "   Service Account Access Key: static-for-testing"
+	@echo "   Service Account Secret Key: static-secret-key-for-testing"
 
 run-test-environment: start-local-test configure-admin configure-controller ## Run the test environment
 	cp examples/my_group/secrets-insecure.yaml .

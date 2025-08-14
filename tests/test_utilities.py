@@ -93,7 +93,7 @@ class TestMinioResourceClasses:
         bucket = Bucket(name="valid-bucket-name")
 
         assert bucket.name == "valid-bucket-name"
-        assert bucket.create_service_account is True  # Default from settings
+        assert bucket.create_service_account is False  # Default from TestSettings
         assert bucket.versioning is None
         assert bucket.lifecycle_config is None
 

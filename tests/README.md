@@ -4,36 +4,41 @@ This directory contains comprehensive tests for the MinIO Manager functionality.
 
 ## Prerequisites
 
-Before running the tests, you need to have a MinIO test environment running. The easiest way is to use Docker:
+Before running the tests, you need to have a MinIO test environment running with proper service account configuration.
+
+### Quick Start (Recommended)
+
+Use the provided Makefile target to set up everything:
 
 ```bash
-# Start MinIO in development mode
+# Start MinIO and configure all required accounts/policies
+make run-test-environment
+```
+
+This will:
+- Start MinIO in a container
+- Configure admin access
+- Create controller user and policies  
+- Set up the test service account with proper credentials
+- Copy required configuration files
+
+### Manual Setup
+
+If you prefer manual setup or need to troubleshoot:
+
+```bash
+# 1. Start MinIO in development mode
 docker run -p 9000:9000 -p 9001:9001 \
   -e "MINIO_ROOT_USER=minioadmin" \
   -e "MINIO_ROOT_PASSWORD=minioadmin" \
   quay.io/minio/minio server /data --console-address ":9001"
+
+# 2. Configure MinIO aliases and create controller user with service account
+make configure-admin
+make configure-controller  # This sets up everything needed for testing
 ```
 
-Or using docker-compose:
-
-```yaml
-version: '3.8'
-services:
-  minio:
-    image: quay.io/minio/minio
-    command: server /data --console-address ":9001"
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-    environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
-    volumes:
-      - minio_data:/data
-
-volumes:
-  minio_data:
-```
+**Important**: The `configure-controller` target creates the controller user with admin privileges and sets up the test service account with static credentials. This is essential for integration tests that use minio_manager functions instead of direct MinIO SDK calls.
 
 ## Running Tests
 

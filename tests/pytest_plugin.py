@@ -1,10 +1,64 @@
-"""Pytest plugin to handle minio_manager imports without CLI conflicts."""
+"""Pytest plugin for minio-manager tests."""
 
 import os
 import sys
+import subprocess
+from pathlib import Path
 
 
-def pytest_configure(config):
+def _ensure_test_service_account():
+    """Ensure the test service account exists and is properly configured."""
+    try:
+        # Check if MinIO is accessible
+        result = subprocess.run(
+            ["mc", "admin", "info", "local-test-admin"],
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
+        
+        if result.returncode != 0:
+            print("⚠️  MinIO test environment not accessible. Skipping service account setup.")
+            print("💡 Run 'make run-test-environment' to start the test environment.")
+            return
+            
+        # Check if service account already exists
+        result = subprocess.run(
+            ["mc", "admin", "user", "svcacct", "ls", "local-test-admin", "local-test-controller"],
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
+        
+        # If service account exists and has our test keys, we're good
+        if result.returncode == 0 and "static-for-testing" in result.stdout:
+            print("✅ Test service account already configured")
+            return
+            
+        # Run the Makefile target to set up controller
+        print("🔧 Setting up test service account via Makefile...")
+        result = subprocess.run(
+            ["make", "configure-controller"], 
+            capture_output=True, 
+            text=True, 
+            timeout=30,
+            cwd=Path(__file__).parent.parent
+        )
+        if result.returncode == 0:
+            print("✅ Test service account setup completed")
+        else:
+            print(f"❌ Service account setup failed: {result.stderr}")
+            print("💡 Make sure MinIO is running and 'mc' is installed")
+            
+    except subprocess.TimeoutExpired:
+        print("⚠️  Timeout while checking MinIO - tests may fail")
+    except FileNotFoundError:
+        print("⚠️  MinIO client (mc) not found - service account setup skipped")
+    except Exception as e:
+        print(f"⚠️  Error during service account setup: {e}")
+
+
+def mock_cli_settings():
     """Configure pytest to prevent CLI parsing conflicts."""
     # Set environment variables for tests
     os.environ.setdefault("MINIO_MANAGER_CLUSTER_NAME", "test-cluster")
@@ -45,9 +99,12 @@ def pytest_configure(config):
 
 
 def pytest_sessionstart(session):
-    """Prevent CLI parsing at session start."""
+    """Prevent CLI parsing at session start and ensure test prerequisites."""
     # Store original argv
     original_argv = sys.argv.copy()
+
+    # Check and setup test service account if needed
+    _ensure_test_service_account()
 
     # Mock the settings module before any imports
     from pydantic_settings import BaseSettings, SettingsConfigDict

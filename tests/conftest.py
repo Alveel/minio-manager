@@ -2,11 +2,40 @@
 
 import json
 import tempfile
+import subprocess
 from collections.abc import Generator
 from pathlib import Path
 
 import pytest
 from minio import Minio
+
+
+@pytest.fixture(scope="session", autouse=True)
+def ensure_test_environment():
+    """Ensure test environment is properly set up before any tests run."""
+    try:
+        # Check if MinIO is accessible and service account exists
+        result = subprocess.run(
+            ["mc", "admin", "user", "svcacct", "ls", "testminio", "local-test-controller"],
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
+        
+        # If command succeeds and our test service account is found, we're ready
+        if result.returncode == 0 and "static-for-testing" in result.stdout:
+            yield
+            return
+            
+    except (subprocess.TimeoutExpired, FileNotFoundError):
+        pass
+    
+    # If we get here, either MinIO isn't running or service account isn't set up
+    print("\n⚠️  Test environment may not be fully configured.")
+    print("💡 For integration tests, run: make run-test-environment")
+    print("💡 Or manually start MinIO and run: make configure-controller")
+    
+    yield
 
 
 @pytest.fixture(scope="session")

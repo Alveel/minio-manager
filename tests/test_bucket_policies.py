@@ -1,6 +1,7 @@
-"""Tests for bucket policy management."""
+"""Tests for bucket policy management using minio_manager functions."""
 
 import json
+import tempfile
 from pathlib import Path
 
 import pytest
@@ -8,7 +9,8 @@ from minio import Minio
 from minio.error import S3Error
 
 from minio_manager.classes.minio_resources import Bucket, BucketPolicy
-from minio_manager.policy_handler import handle_bucket_policy
+from minio_manager.policy_handler import handle_bucket_policy, apply_bucket_policy, get_existing_bucket_policy
+from minio_manager.bucket_handler import handle_bucket
 from tests.conftest import requires_minio
 
 
@@ -17,11 +19,12 @@ class TestBucketPolicyCreation:
     """Test bucket policy creation and management."""
 
     def test_set_simple_bucket_policy(self, minio_client: Minio, test_bucket_name: str, cleanup_bucket):
-        """Test setting a simple bucket policy."""
+        """Test setting a simple bucket policy using minio_manager."""
         cleanup_bucket(test_bucket_name)
 
-        # Create bucket
-        minio_client.make_bucket(test_bucket_name)
+        # Create bucket using minio_manager
+        bucket = Bucket(name=test_bucket_name)
+        handle_bucket(bucket)
 
         # Create simple bucket policy
         policy = {
@@ -37,12 +40,11 @@ class TestBucketPolicyCreation:
             ],
         }
 
-        # Set bucket policy
-        minio_client.set_bucket_policy(test_bucket_name, json.dumps(policy))
+        # Set bucket policy using minio_manager
+        apply_bucket_policy(test_bucket_name, json.dumps(policy))
 
-        # Verify bucket policy
-        current_policy_str = minio_client.get_bucket_policy(test_bucket_name)
-        current_policy = json.loads(current_policy_str)
+        # Verify bucket policy using minio_manager
+        current_policy = get_existing_bucket_policy(test_bucket_name)
 
         assert current_policy["Version"] == "2012-10-17"
         assert len(current_policy["Statement"]) == 1
@@ -50,11 +52,12 @@ class TestBucketPolicyCreation:
         assert current_policy["Statement"][0]["Effect"] == "Allow"
 
     def test_set_bucket_policy_with_conditions(self, minio_client: Minio, test_bucket_name: str, cleanup_bucket):
-        """Test setting bucket policy with conditions."""
+        """Test setting bucket policy with conditions using minio_manager."""
         cleanup_bucket(test_bucket_name)
 
-        # Create bucket
-        minio_client.make_bucket(test_bucket_name)
+        # Create bucket using minio_manager
+        bucket = Bucket(name=test_bucket_name)
+        handle_bucket(bucket)
 
         # Create bucket policy with IP conditions
         policy = {
@@ -71,12 +74,11 @@ class TestBucketPolicyCreation:
             ],
         }
 
-        # Set bucket policy
-        minio_client.set_bucket_policy(test_bucket_name, json.dumps(policy))
+        # Set bucket policy using minio_manager
+        apply_bucket_policy(test_bucket_name, json.dumps(policy))
 
-        # Verify bucket policy
-        current_policy_str = minio_client.get_bucket_policy(test_bucket_name)
-        current_policy = json.loads(current_policy_str)
+        # Verify bucket policy using minio_manager
+        current_policy = get_existing_bucket_policy(test_bucket_name)
 
         assert "Condition" in current_policy["Statement"][0]
         assert "IpAddress" in current_policy["Statement"][0]["Condition"]
@@ -85,11 +87,12 @@ class TestBucketPolicyCreation:
         assert "10.0.0.0/8" in source_ips
 
     def test_set_bucket_policy_deny_effect(self, minio_client: Minio, test_bucket_name: str, cleanup_bucket):
-        """Test setting bucket policy with Deny effect."""
+        """Test setting bucket policy with Deny effect using minio_manager."""
         cleanup_bucket(test_bucket_name)
 
-        # Create bucket
-        minio_client.make_bucket(test_bucket_name)
+        # Create bucket using minio_manager
+        bucket = Bucket(name=test_bucket_name)
+        handle_bucket(bucket)
 
         # Create bucket policy with Deny effect
         policy = {
@@ -105,12 +108,11 @@ class TestBucketPolicyCreation:
             ],
         }
 
-        # Set bucket policy
-        minio_client.set_bucket_policy(test_bucket_name, json.dumps(policy))
+        # Set bucket policy using minio_manager
+        apply_bucket_policy(test_bucket_name, json.dumps(policy))
 
-        # Verify bucket policy
-        current_policy_str = minio_client.get_bucket_policy(test_bucket_name)
-        current_policy = json.loads(current_policy_str)
+        # Verify bucket policy using minio_manager
+        current_policy = get_existing_bucket_policy(test_bucket_name)
 
         assert current_policy["Statement"][0]["Effect"] == "Deny"
         actions = current_policy["Statement"][0]["Action"]
@@ -157,31 +159,95 @@ class TestBucketPolicyFromFile:
     """Test bucket policy creation from files."""
 
     def test_bucket_policy_from_json_file(
-        self, minio_client: Minio, test_bucket_name: str, temp_policy_file: Path, cleanup_bucket
+        self, minio_client: Minio, test_bucket_name: str, cleanup_bucket
     ):
-        """Test setting bucket policy from JSON file."""
+        """Test setting bucket policy from JSON file using minio_manager."""
         cleanup_bucket(test_bucket_name)
 
-        # Create bucket
-        minio_client.make_bucket(test_bucket_name)
+        # Create bucket using minio_manager
+        bucket = Bucket(name=test_bucket_name)
+        handle_bucket(bucket)
 
-        # Read policy from file
-        with open(temp_policy_file) as f:
-            policy = json.load(f)
+        # Create policy content with correct bucket name
+        policy_content = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Sid": "AllowReadAccess",
+                    "Effect": "Allow",
+                    "Principal": "*",
+                    "Action": ["s3:GetObject"],
+                    "Resource": [f"arn:aws:s3:::{test_bucket_name}/*"],
+                }
+            ],
+        }
 
-        # Update resource ARN to match our test bucket
-        policy["Statement"][0]["Resource"] = [f"arn:aws:s3:::{test_bucket_name}/*"]
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+            json.dump(policy_content, f)
+            temp_policy_path = f.name
 
-        # Set bucket policy
-        minio_client.set_bucket_policy(test_bucket_name, json.dumps(policy))
+        try:
+            # Create BucketPolicy object pointing to the temp policy file
+            bucket_policy = BucketPolicy(bucket=test_bucket_name, policy_file=temp_policy_path)
+            
+            # Use minio_manager handle_bucket_policy function
+            handle_bucket_policy(bucket_policy)
 
-        # Verify bucket policy
-        current_policy_str = minio_client.get_bucket_policy(test_bucket_name)
-        current_policy = json.loads(current_policy_str)
+            # Verify bucket policy using minio_manager
+            current_policy = get_existing_bucket_policy(test_bucket_name)
 
-        assert current_policy["Version"] == "2012-10-17"
-        assert current_policy["Statement"][0]["Sid"] == "AllowReadAccess"
-        assert current_policy["Statement"][0]["Action"] == ["s3:GetObject"]
+            assert current_policy["Version"] == "2012-10-17"
+            assert current_policy["Statement"][0]["Sid"] == "AllowReadAccess"
+            assert current_policy["Statement"][0]["Action"] == ["s3:GetObject"]
+        finally:
+            # Cleanup temporary file
+            Path(temp_policy_path).unlink(missing_ok=True)
+
+    def test_handle_bucket_policy_comprehensive(self, minio_client: Minio, test_bucket_name: str, cleanup_bucket):
+        """Test comprehensive bucket policy handling using minio_manager functions."""
+        cleanup_bucket(test_bucket_name)
+
+        # Create bucket using minio_manager
+        bucket = Bucket(name=test_bucket_name)
+        handle_bucket(bucket)
+
+        # Create a temporary policy file
+        policy_content = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Sid": "AllowPublicReadWrite",
+                    "Effect": "Allow",
+                    "Principal": "*",
+                    "Action": ["s3:GetObject", "s3:PutObject"],
+                    "Resource": [f"arn:aws:s3:::{test_bucket_name}/*"]
+                }
+            ]
+        }
+        
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+            json.dump(policy_content, f)
+            temp_policy_path = f.name
+
+        try:
+            # Create BucketPolicy object
+            bucket_policy = BucketPolicy(bucket=test_bucket_name, policy_file=temp_policy_path)
+            
+            # Use handle_bucket_policy function
+            handle_bucket_policy(bucket_policy)
+            
+            # Verify policy was applied using minio_manager
+            current_policy = get_existing_bucket_policy(test_bucket_name)
+            
+            assert current_policy["Version"] == "2012-10-17"
+            assert len(current_policy["Statement"]) == 1
+            assert current_policy["Statement"][0]["Sid"] == "AllowPublicReadWrite"
+            assert "s3:GetObject" in current_policy["Statement"][0]["Action"]
+            assert "s3:PutObject" in current_policy["Statement"][0]["Action"]
+            
+        finally:
+            # Cleanup temporary file
+            Path(temp_policy_path).unlink(missing_ok=True)
 
     def test_bucket_policy_class_initialization(self, temp_policy_file: Path):
         """Test BucketPolicy class initialization."""
