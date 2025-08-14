@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 from minio import Minio
+from minio.deleteobjects import DeleteObject
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -110,28 +111,50 @@ def test_bucket_name() -> str:
 
 
 @pytest.fixture
-def cleanup_bucket(minio_client: Minio):
-    """Fixture to cleanup buckets after tests."""
+def cleanup_bucket(minio_client):
+    """Fixture to clean up created buckets during test."""
     buckets_to_cleanup = []
 
-    def register_bucket(bucket_name: str):
-        buckets_to_cleanup.append(bucket_name)
-
-    yield register_bucket
-
-    # Cleanup
-    for bucket_name in buckets_to_cleanup:
+    def cleanup_bucket_func(bucket_name):
+        """Clean up bucket immediately and register for teardown cleanup."""
+        # Immediate cleanup for idempotency
         try:
-            # Remove all objects first
-            objects = minio_client.list_objects(bucket_name, recursive=True)
-            for obj in objects:
-                minio_client.remove_object(bucket_name, obj.object_name)
-
-            # Remove bucket
             if minio_client.bucket_exists(bucket_name):
+                # Remove all objects in bucket first
+                objects = minio_client.list_objects(bucket_name, recursive=True)
+                delete_object_list = [DeleteObject(obj.object_name) for obj in objects]
+                if delete_object_list:
+                    errors = minio_client.remove_objects(bucket_name, delete_object_list)
+                    for error in errors:
+                        print(f"Error deleting object: {error}")
+                
+                # Remove bucket
                 minio_client.remove_bucket(bucket_name)
         except Exception as e:
-            print(f"Warning: Failed to cleanup bucket {bucket_name}: {e}")
+            print(f"Error cleaning up bucket {bucket_name} immediately: {e}")
+        
+        # Register for teardown cleanup as well (defensive)
+        if bucket_name not in buckets_to_cleanup:
+            buckets_to_cleanup.append(bucket_name)
+
+    yield cleanup_bucket_func
+
+    # Cleanup after test (defensive - should already be clean)
+    for bucket_name in buckets_to_cleanup:
+        try:
+            if minio_client.bucket_exists(bucket_name):
+                # Remove all objects in bucket first
+                objects = minio_client.list_objects(bucket_name, recursive=True)
+                delete_object_list = [DeleteObject(obj.object_name) for obj in objects]
+                if delete_object_list:
+                    errors = minio_client.remove_objects(bucket_name, delete_object_list)
+                    for error in errors:
+                        print(f"Error deleting object: {error}")
+                
+                # Remove bucket
+                minio_client.remove_bucket(bucket_name)
+        except Exception as e:
+            print(f"Error cleaning up bucket {bucket_name}: {e}")
 
 
 requires_minio = pytest.mark.skipif(False, reason="MinIO test environment not available")  # Will be set dynamically
