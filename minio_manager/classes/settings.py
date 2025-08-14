@@ -50,7 +50,7 @@ class Settings(BaseSettings):
         cli_parse_args=True,
         cli_kebab_case=True,
         env_prefix="MINIO_MANAGER_",
-        env_file="config.env",
+        env_file=".env",
         env_file_encoding="utf-8",
         extra="ignore",
     )
@@ -111,36 +111,19 @@ class Settings(BaseSettings):
 try:
     # Check if we're running in pytest and disable CLI parsing
     import sys
+    from pathlib import Path
 
     if "pytest" in sys.modules or any("pytest" in arg for arg in sys.argv):
         # Create a test-only settings class without CLI parsing
-        class TestSettings(BaseSettings):
+        class TestSettings(Settings):
             model_config = SettingsConfigDict(
-                env_prefix="MINIO_MANAGER_",
                 cli_parse_args=False,  # Disable CLI parsing for tests
-                env_file="config.env",
+                cli_kebab_case=True,
+                env_prefix="MINIO_MANAGER_",
+                env_file="tests/fixtures/.env",  # Use the .env file in fixtures directory
                 env_file_encoding="utf-8",
                 extra="ignore",
             )
-            cluster_name: str = "test-cluster"
-            s3_endpoint: str = "localhost:9000"
-            s3_endpoint_secure: bool = False
-            minio_controller_user: str = "local-test-controller"
-            secret_backend_type: str = "yaml"
-            secret_backend_path: str = "secrets-insecure.yaml"
-            secret_backend_s3_access_key: str = "minioadmin"
-            secret_backend_s3_secret_key: str = "minioadmin"
-            auto_create_service_account: bool = False  # Disable service account creation for tests
-            cluster_resources_file: str = "resources.yaml"
-            secret_backend_s3_bucket: str = "minio-manager-secrets"  # May be unused if using YAML backend
-            # keepass_password: str | None = None  # Unused since secret_backend_type is "yaml"
-            allowed_bucket_prefixes: tuple[str, ...] = ()
-            default_bucket_versioning: str = "Suspended"
-            default_bucket_policy_file: str | None = None  # Add missing field for tests
-            service_account_policy_base_file: str = ""
-            log_level: str = "INFO"
-            dry_run: bool = False
-            _get_on_lifecycle_supported: bool = True
 
         settings = TestSettings()
     else:

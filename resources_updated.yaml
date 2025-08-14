@@ -1,0 +1,20 @@
+# Updated test resources for MinIO Manager integration testing
+# This file tests policy updates and idempotency
+
+buckets:
+  - name: integration-test-default-bucket
+    versioning: Enabled
+    lifecycle_policy_file: examples/lifecycle_policies/default_lifecycle_30_days.json
+    bucket_policy_file: tests/fixtures/bucket_policies/default_bucket_full_access_policy.json
+    # No change - should be idempotent
+
+  - name: integration-test-custom-bucket
+    versioning: Suspended
+    lifecycle_policy_file: examples/lifecycle_policies/alternative_lifecycle_90_days.json
+    bucket_policy_file: tests/fixtures/bucket_policies/custom_bucket_read_only_policy.json
+    # Policy change: FullAccess -> ReadOnlyAccess
+
+  - name: integration-test-minimal-bucket
+    versioning: Suspended
+    bucket_policy_file: tests/fixtures/bucket_policies/minimal_bucket_read_only_policy.json
+    # Policy addition: None -> ReadOnlyAccess

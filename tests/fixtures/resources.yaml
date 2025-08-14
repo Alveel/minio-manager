@@ -1,0 +1,16 @@
+buckets:
+  - name: integration-test-default-bucket
+    object_lifecycle_file: tests/fixtures/lifecycle_policies/default_lifecycle_30_days.json
+    versioning: Enabled
+  - name: integration-test-custom-bucket
+    object_lifecycle_file: tests/fixtures/lifecycle_policies/default_lifecycle_30_days.json
+    versioning: Suspended
+  - name: integration-test-minimal-bucket
+    object_lifecycle_file: tests/fixtures/lifecycle_policies/default_lifecycle_30_days.json
+    versioning: Suspended
+
+bucket_policies:
+  - bucket: integration-test-default-bucket
+    policy_file: tests/fixtures/bucket_policies/default_bucket_readonly_policy.json
+  - bucket: integration-test-custom-bucket
+    policy_file: tests/fixtures/bucket_policies/custom_bucket_full_access_policy.json

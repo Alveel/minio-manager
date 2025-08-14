@@ -1,0 +1,30 @@
+---
+
+buckets:
+  - name: integration-test-default-bucket
+    create_service_account: false
+    versioning: Enabled
+    # Updated lifecycle policy (changed from 30 to 60 days)
+    object_lifecycle_file: /Users/ewelder/Git_NA/minio-manager/minio-manager-python/tests/fixtures/lifecycle_policies/updated_lifecycle_60_days.json
+  - name: integration-test-custom-bucket  
+    create_service_account: false
+    versioning: Suspended
+    # Same lifecycle policy (no change)
+    object_lifecycle_file: /Users/ewelder/Git_NA/minio-manager/minio-manager-python/tests/fixtures/lifecycle_policies/custom_lifecycle_90_days.json
+  - name: integration-test-minimal-bucket
+    create_service_account: false
+    # Added new versioning config
+    versioning: Enabled
+    # Added new lifecycle policy  
+    object_lifecycle_file: /Users/ewelder/Git_NA/minio-manager/minio-manager-python/tests/fixtures/lifecycle_policies/default_lifecycle_30_days.json
+
+bucket_policies:
+  - bucket: integration-test-default-bucket
+    # Updated bucket policy (changed from read-only to full access)
+    policy_file: /Users/ewelder/Git_NA/minio-manager/minio-manager-python/tests/fixtures/bucket_policies/default_bucket_full_access_policy.json
+  - bucket: integration-test-custom-bucket
+    # Updated bucket policy (changed from full access to read-only)
+    policy_file: /Users/ewelder/Git_NA/minio-manager/minio-manager-python/tests/fixtures/bucket_policies/custom_bucket_read_only_policy.json
+  - bucket: integration-test-minimal-bucket
+    # Added new bucket policy
+    policy_file: /Users/ewelder/Git_NA/minio-manager/minio-manager-python/tests/fixtures/bucket_policies/minimal_bucket_read_only_policy.json

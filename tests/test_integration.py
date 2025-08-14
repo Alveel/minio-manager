@@ -1,322 +1,334 @@
-"""Integration tests for MinIO Manager functionality."""
+"""End-to-end integration tests for MinIO Manager functionality using real config files."""
 
 import json
+import os
+import tempfile
 from pathlib import Path
+from unittest.mock import patch
 
+import pytest
 from minio import Minio
-from minio.lifecycleconfig import Expiration, Filter, LifecycleConfig, NoncurrentVersionExpiration, Rule
-from minio.versioningconfig import VersioningConfig
+from minio.error import S3Error
 
+from minio_manager.classes.resource_parser import ClusterResources
+from minio_manager.classes.settings import Settings
+from minio_manager.resource_handler import handle_resources
 from tests.conftest import requires_minio
 
 
 @requires_minio
-class TestIntegrationScenarios:
-    """Test full integration scenarios combining buckets, policies, and lifecycle configurations."""
+class TestMinIOManagerIntegration:
+    """End-to-end tests using minio_manager classes with real configuration files."""
 
-    def test_complete_bucket_setup(
-        self, minio_client: Minio, test_bucket_name: str, temp_policy_file: Path, cleanup_bucket
-    ):
-        """Test complete bucket setup with versioning, lifecycle, and policy."""
-        cleanup_bucket(test_bucket_name)
-
-        # Step 1: Create bucket
-        minio_client.make_bucket(test_bucket_name)
-        assert minio_client.bucket_exists(test_bucket_name)
-
-        # Step 2: Enable versioning
-        versioning_config = VersioningConfig("Enabled")
-        minio_client.set_bucket_versioning(test_bucket_name, versioning_config)
-
-        current_versioning = minio_client.get_bucket_versioning(test_bucket_name)
-        assert current_versioning.status == "Enabled"
-
-        # Step 3: Set lifecycle configuration
-        rule = Rule(
-            rule_id="CompleteSetupRule",
-            rule_filter=Filter(prefix=""),
-            status="Enabled",
-            expiration=Expiration(days=365),
-            noncurrent_version_expiration=NoncurrentVersionExpiration(noncurrent_days=30),
-        )
-        lifecycle_config = LifecycleConfig([rule])
-        minio_client.set_bucket_lifecycle(test_bucket_name, lifecycle_config)
-
-        current_lifecycle = minio_client.get_bucket_lifecycle(test_bucket_name)
-        assert len(current_lifecycle.rules) == 1
-        assert current_lifecycle.rules[0].rule_id == "CompleteSetupRule"
-
-        # Step 4: Set bucket policy
-        policy = {
-            "Version": "2012-10-17",
-            "Statement": [
-                {
-                    "Sid": "AllowPublicRead",
-                    "Effect": "Allow",
-                    "Principal": "*",
-                    "Action": ["s3:GetObject"],
-                    "Resource": [f"arn:aws:s3:::{test_bucket_name}/*"],
-                }
-            ],
+    @pytest.fixture(autouse=True)
+    def setup_environment(self, monkeypatch):
+        """Set up environment variables for integration tests."""
+        # Set environment variables directly
+        env_vars = {
+            "MINIO_MANAGER_CLUSTER_NAME": "local-test-cluster",
+            "MINIO_MANAGER_S3_ENDPOINT": "localhost:9000",
+            "MINIO_MANAGER_MINIO_CONTROLLER_USER": "local-test-controller",
+            "MINIO_MANAGER_SECRET_BACKEND_TYPE": "insecure-env",
+            "MINIO_MANAGER_SECRET_BACKEND_S3_ACCESS_KEY": "minioadmin",
+            "MINIO_MANAGER_SECRET_BACKEND_S3_SECRET_KEY": "minioadmin",
+            "MINIO_MANAGER_ALLOWED_BUCKET_PREFIXES": "integration-test-,test-,demo-",
+            "MINIO_MANAGER_SERVICE_ACCOUNT_POLICY_FILE": "tests/fixtures/service_account_policies/default_policy.json"
         }
-        minio_client.set_bucket_policy(test_bucket_name, json.dumps(policy))
+        
+        for key, value in env_vars.items():
+            monkeypatch.setenv(key, value)
+    
+    def parse_resources_safely(self, resources_file: str):
+        """Parse resources while handling sys.exit gracefully."""
+        cluster_resources = ClusterResources()
+        
+        # Patch sys.exit to raise an exception instead
+        with patch('sys.exit') as mock_exit:
+            try:
+                cluster_resources.parse_resources(resources_file)
+                return cluster_resources
+            except Exception as e:
+                if mock_exit.called:
+                    # Get the exit code
+                    exit_code = mock_exit.call_args[0][0] if mock_exit.call_args[0] else 1
+                    pytest.fail(f"Resource parsing failed with sys.exit({exit_code}): {e}")
+                else:
+                    raise e
 
-        current_policy_str = minio_client.get_bucket_policy(test_bucket_name)
-        current_policy = json.loads(current_policy_str)
-        assert current_policy["Statement"][0]["Sid"] == "AllowPublicRead"
-
-        # Verify everything is still configured correctly
-        assert minio_client.bucket_exists(test_bucket_name)
-        assert minio_client.get_bucket_versioning(test_bucket_name).status == "Enabled"
-        assert len(minio_client.get_bucket_lifecycle(test_bucket_name).rules) == 1
-        assert json.loads(minio_client.get_bucket_policy(test_bucket_name))["Version"] == "2012-10-17"
-
-    def test_bucket_with_object_operations(self, minio_client: Minio, test_bucket_name: str, cleanup_bucket):
-        """Test bucket operations with actual objects."""
-        cleanup_bucket(test_bucket_name)
-
-        # Create bucket with versioning
-        minio_client.make_bucket(test_bucket_name)
-        versioning_config = VersioningConfig("Enabled")
-        minio_client.set_bucket_versioning(test_bucket_name, versioning_config)
-
-        # Upload test objects
-        test_objects = [
-            ("test1.txt", b"Hello World 1"),
-            ("test2.txt", b"Hello World 2"),
-            ("folder/test3.txt", b"Hello World 3"),
+    def cleanup_integration_buckets(self, minio_client: Minio):
+        """Clean up all integration test buckets."""
+        bucket_names = [
+            "integration-test-default-bucket",
+            "integration-test-custom-bucket", 
+            "integration-test-minimal-bucket"
         ]
+        
+        for bucket_name in bucket_names:
+            try:
+                if minio_client.bucket_exists(bucket_name):
+                    # Remove all objects and versions
+                    try:
+                        objects = minio_client.list_objects(bucket_name, recursive=True)
+                        for obj in objects:
+                            minio_client.remove_object(bucket_name, obj.object_name)
+                    except Exception:
+                        pass
+                    
+                    # Remove bucket policies and lifecycle
+                    try:
+                        minio_client.delete_bucket_policy(bucket_name)
+                    except Exception:
+                        pass
+                    try:
+                        minio_client.delete_bucket_lifecycle(bucket_name)
+                    except Exception:
+                        pass
+                    
+                    # Remove bucket
+                    minio_client.remove_bucket(bucket_name)
+            except Exception as e:
+                print(f"Error cleaning up bucket {bucket_name}: {e}")
 
-        for obj_name, obj_data in test_objects:
-            from io import BytesIO
+    def test_initial_resource_deployment(self, minio_client: Minio):
+        """Test initial deployment of resources using minio_manager."""
+        # Clean up any existing test buckets
+        self.cleanup_integration_buckets(minio_client)
 
-            minio_client.put_object(test_bucket_name, obj_name, BytesIO(obj_data), len(obj_data))
-
-        # Verify objects exist
-        objects = list(minio_client.list_objects(test_bucket_name, recursive=True))
-        object_names = [obj.object_name for obj in objects]
-
-        assert "test1.txt" in object_names
-        assert "test2.txt" in object_names
-        assert "folder/test3.txt" in object_names
-
-        # Test object retrieval
-        response = minio_client.get_object(test_bucket_name, "test1.txt")
-        data = response.read()
-        assert data == b"Hello World 1"
-        response.close()
-        response.release_conn()
-
-        # Upload new version of same object
-        minio_client.put_object(
-            test_bucket_name, "test1.txt", BytesIO(b"Hello World 1 - Updated"), len(b"Hello World 1 - Updated")
-        )
-
-        # Verify we can still get the object (latest version)
-        response = minio_client.get_object(test_bucket_name, "test1.txt")
-        data = response.read()
-        assert data == b"Hello World 1 - Updated"
-        response.close()
-        response.release_conn()
-
-    def test_lifecycle_policy_interaction(self, minio_client: Minio, test_bucket_name: str, cleanup_bucket):
-        """Test interaction between lifecycle policies and bucket operations."""
-        cleanup_bucket(test_bucket_name)
-
-        # Create bucket with versioning (required for some lifecycle rules)
-        minio_client.make_bucket(test_bucket_name)
-        versioning_config = VersioningConfig("Enabled")
-        minio_client.set_bucket_versioning(test_bucket_name, versioning_config)
-
-        # Set up lifecycle policy for different prefixes
-        rules = [
-            Rule(
-                rule_id="ArchiveLogs",
-                rule_filter=Filter(prefix="logs/"),
-                status="Enabled",
-                expiration=Expiration(days=30),
-            ),
-            Rule(
-                rule_id="ArchiveTemp",
-                rule_filter=Filter(prefix="temp/"),
-                status="Enabled",
-                expiration=Expiration(days=7),
-            ),
-            Rule(
-                rule_id="ArchiveGeneral",
-                rule_filter=Filter(prefix=""),
-                status="Enabled",
-                expiration=Expiration(days=365),
-                noncurrent_version_expiration=NoncurrentVersionExpiration(noncurrent_days=90),
-            ),
-        ]
-        lifecycle_config = LifecycleConfig(rules)
-        minio_client.set_bucket_lifecycle(test_bucket_name, lifecycle_config)
-
-        # Upload objects with different prefixes
-        test_objects = [
-            ("logs/app.log", b"Log data"),
-            ("temp/scratch.txt", b"Temporary data"),
-            ("data/important.txt", b"Important data"),
-        ]
-
-        for obj_name, obj_data in test_objects:
-            from io import BytesIO
-
-            minio_client.put_object(test_bucket_name, obj_name, BytesIO(obj_data), len(obj_data))
-
-        # Verify all objects are present
-        objects = list(minio_client.list_objects(test_bucket_name, recursive=True))
-        object_names = [obj.object_name for obj in objects]
-
-        assert "logs/app.log" in object_names
-        assert "temp/scratch.txt" in object_names
-        assert "data/important.txt" in object_names
-
-        # Verify lifecycle configuration is still active
-        current_lifecycle = minio_client.get_bucket_lifecycle(test_bucket_name)
-        assert len(current_lifecycle.rules) == 3
-
-        rule_ids = [rule.rule_id for rule in current_lifecycle.rules]
-        assert "ArchiveLogs" in rule_ids
-        assert "ArchiveTemp" in rule_ids
-        assert "ArchiveGeneral" in rule_ids
-
-    def test_policy_and_access_control(self, minio_client: Minio, test_bucket_name: str, cleanup_bucket):
-        """Test bucket policy and access control scenarios."""
-        cleanup_bucket(test_bucket_name)
-
-        # Create bucket
-        minio_client.make_bucket(test_bucket_name)
-
-        # Set restrictive policy (deny by default, allow only specific actions)
-        policy = {
-            "Version": "2012-10-17",
-            "Statement": [
-                {
-                    "Sid": "AllowReadOnly",
-                    "Effect": "Allow",
-                    "Principal": "*",
-                    "Action": ["s3:GetObject", "s3:ListBucket"],
-                    "Resource": [f"arn:aws:s3:::{test_bucket_name}", f"arn:aws:s3:::{test_bucket_name}/*"],
-                },
-                {
-                    "Sid": "DenyWrite",
-                    "Effect": "Deny",
-                    "Principal": "*",
-                    "Action": ["s3:PutObject", "s3:DeleteObject"],
-                    "Resource": [f"arn:aws:s3:::{test_bucket_name}/*"],
-                    "Condition": {"StringNotEquals": {"aws:userid": "minio"}},
-                },
-            ],
-        }
-
-        minio_client.set_bucket_policy(test_bucket_name, json.dumps(policy))
-
-        # Verify policy is set
-        current_policy_str = minio_client.get_bucket_policy(test_bucket_name)
-        current_policy = json.loads(current_policy_str)
-
-        assert len(current_policy["Statement"]) == 2
-
-        # Find the statements by Sid
-        allow_stmt = None
-        deny_stmt = None
-        for stmt in current_policy["Statement"]:
-            if stmt["Sid"] == "AllowReadOnly":
-                allow_stmt = stmt
-            elif stmt["Sid"] == "DenyWrite":
-                deny_stmt = stmt
-
-        assert allow_stmt is not None
-        assert deny_stmt is not None
-
-        # Verify allow statement
-        assert allow_stmt["Effect"] == "Allow"
-        assert "s3:GetObject" in allow_stmt["Action"]
-        assert "s3:ListBucket" in allow_stmt["Action"]
-
-        # Verify deny statement
-        assert deny_stmt["Effect"] == "Deny"
-        assert "s3:PutObject" in deny_stmt["Action"]
-        assert "s3:DeleteObject" in deny_stmt["Action"]
-
-    def test_bucket_cleanup_and_teardown(self, minio_client: Minio, test_bucket_name: str, cleanup_bucket):
-        """Test complete cleanup of bucket with all configurations."""
-        cleanup_bucket(test_bucket_name)
-
-        # Create bucket with full configuration
-        minio_client.make_bucket(test_bucket_name)
-
-        # Set versioning
-        versioning_config = VersioningConfig("Enabled")
-        minio_client.set_bucket_versioning(test_bucket_name, versioning_config)
-
-        # Set lifecycle
-        rule = Rule(
-            rule_id="TestCleanup", rule_filter=Filter(prefix=""), status="Enabled", expiration=Expiration(days=30)
-        )
-        lifecycle_config = LifecycleConfig([rule])
-        minio_client.set_bucket_lifecycle(test_bucket_name, lifecycle_config)
-
-        # Set policy
-        policy = {
-            "Version": "2012-10-17",
-            "Statement": [
-                {
-                    "Sid": "TestPolicy",
-                    "Effect": "Allow",
-                    "Principal": "*",
-                    "Action": ["s3:GetObject"],
-                    "Resource": [f"arn:aws:s3:::{test_bucket_name}/*"],
-                }
-            ],
-        }
-        minio_client.set_bucket_policy(test_bucket_name, json.dumps(policy))
-
-        # Add some objects
-        from io import BytesIO
-
-        for i in range(3):
-            minio_client.put_object(
-                test_bucket_name,
-                f"test-object-{i}.txt",
-                BytesIO(f"Test data {i}".encode()),
-                len(f"Test data {i}".encode()),
-            )
-
-        # Verify everything is configured
-        assert minio_client.bucket_exists(test_bucket_name)
-        assert minio_client.get_bucket_versioning(test_bucket_name).status == "Enabled"
-        assert len(minio_client.get_bucket_lifecycle(test_bucket_name).rules) == 1
-        assert minio_client.get_bucket_policy(test_bucket_name) is not None
-
-        objects = list(minio_client.list_objects(test_bucket_name))
-        assert len(objects) == 3
-
-        # Test the cleanup process (this will be done by the fixture)
-        # But let's verify we can clean up manually too
-
-        # Remove objects and all versions
-        for obj in minio_client.list_objects(test_bucket_name, recursive=True):
-            minio_client.remove_object(test_bucket_name, obj.object_name)
-
-        # Also remove any object versions if versioning was enabled
+        # Parse and apply the initial resources
+        resources_file = "tests/fixtures/test_resources.yaml"  # Use the existing test file in fixtures
+        cluster_resources = self.parse_resources_safely(resources_file)        # Apply resources using minio_manager
+        handle_resources(cluster_resources)
+        
+        # Verify bucket creation and configuration
+        # 1. Verify integration-test-default-bucket
+        assert minio_client.bucket_exists("integration-test-default-bucket")
+        
+        # Should have 30-day lifecycle policy
+        lifecycle = minio_client.get_bucket_lifecycle("integration-test-default-bucket")
+        assert len(lifecycle.rules) == 1
+        assert lifecycle.rules[0].rule_id == "ExpireDeleteMarkerAndOldVersionsAfter30Days"
+        assert lifecycle.rules[0].noncurrent_version_expiration.noncurrent_days == 30
+        
+        # Should have versioning enabled
+        versioning = minio_client.get_bucket_versioning("integration-test-default-bucket")
+        assert versioning.status == "Enabled"
+        
+        # Should have read-only bucket policy
+        policy_str = minio_client.get_bucket_policy("integration-test-default-bucket")
+        policy = json.loads(policy_str)
+        assert any("s3:GetObject" in stmt.get("Action", []) for stmt in policy["Statement"])
+        
+        # 2. Verify integration-test-custom-bucket
+        assert minio_client.bucket_exists("integration-test-custom-bucket")
+        
+        # Should have 90-day lifecycle policy
+        lifecycle = minio_client.get_bucket_lifecycle("integration-test-custom-bucket")
+        assert len(lifecycle.rules) == 1
+        assert lifecycle.rules[0].rule_id == "ExpireDeleteMarkersAfter90Days"
+        assert lifecycle.rules[0].noncurrent_version_expiration.noncurrent_days == 90
+        
+        # Should have versioning suspended
+        versioning = minio_client.get_bucket_versioning("integration-test-custom-bucket")
+        assert versioning.status == "Suspended"
+        
+        # Should have full access bucket policy
+        policy_str = minio_client.get_bucket_policy("integration-test-custom-bucket")
+        policy = json.loads(policy_str)
+        # Check for full access actions (PutObject, DeleteObject, etc.)
+        actions = set()
+        for stmt in policy["Statement"]:
+            actions.update(stmt.get("Action", []))
+        assert "s3:PutObject" in actions
+        assert "s3:DeleteObject" in actions
+        
+        # 3. Verify integration-test-minimal-bucket
+        assert minio_client.bucket_exists("integration-test-minimal-bucket")
+        
+        # Should have default lifecycle policy (30 days) applied since no explicit policy
+        lifecycle = minio_client.get_bucket_lifecycle("integration-test-minimal-bucket")
+        assert len(lifecycle.rules) == 1
+        assert lifecycle.rules[0].rule_id == "ExpireDeleteMarkerAndOldVersionsAfter30Days"
+        assert lifecycle.rules[0].noncurrent_version_expiration.noncurrent_days == 30
+        
+        # Should not have bucket policy initially  
         try:
-            for obj in minio_client.list_objects(test_bucket_name, recursive=True, include_version=True):
-                minio_client.remove_object(test_bucket_name, obj.object_name, version_id=obj.version_id)
-        except Exception:
-            pass  # May not have versions or versioning support
+            minio_client.get_bucket_policy("integration-test-minimal-bucket")
+            assert False, "Expected no bucket policy"
+        except S3Error as e:
+            assert e.code == 'NoSuchBucketPolicy'
 
-        # Remove configurations (optional - bucket deletion will clean these up)
-        try:
-            minio_client.delete_bucket_policy(test_bucket_name)
-            minio_client.delete_bucket_lifecycle(test_bucket_name)
-        except Exception:
-            pass  # These might not exist or might be cleaned up automatically
+    def test_resource_updates_and_idempotency(self, minio_client: Minio):
+        """Test updating resources and verifying idempotent behavior."""
+        # Ensure initial state exists (run first deployment)
+        self.test_initial_resource_deployment(minio_client)
 
-        # Remove bucket
-        minio_client.remove_bucket(test_bucket_name)
+        # Apply the updated resources configuration
+        updated_resources_file = "tests/fixtures/test_resources_updated.yaml"  # Use the existing updated file in fixtures
+        cluster_resources = self.parse_resources_safely(updated_resources_file)        # Apply updated resources using minio_manager
+        handle_resources(cluster_resources)
+        
+        # Verify changes were applied correctly
+        
+        # 1. integration-test-default-bucket: lifecycle policy should be updated (30->60 days)
+        lifecycle = minio_client.get_bucket_lifecycle("integration-test-default-bucket")
+        assert len(lifecycle.rules) == 1
+        assert lifecycle.rules[0].rule_id == "ExpireDeleteMarkerAndOldVersionsAfter60Days"
+        assert lifecycle.rules[0].noncurrent_version_expiration.noncurrent_days == 60
+        
+        # Bucket policy should change from read-only to full access
+        policy_str = minio_client.get_bucket_policy("integration-test-default-bucket")
+        policy = json.loads(policy_str)
+        # Check for full access actions (PutObject, DeleteObject indicate write permissions)
+        actions = set()
+        for stmt in policy["Statement"]:
+            actions.update(stmt.get("Action", []))
+        assert "s3:PutObject" in actions
+        assert "s3:DeleteObject" in actions
+        
+        # 2. integration-test-custom-bucket: lifecycle policy should remain 90 days (no change)
+        lifecycle = minio_client.get_bucket_lifecycle("integration-test-custom-bucket")
+        assert len(lifecycle.rules) == 1
+        assert lifecycle.rules[0].rule_id == "ExpireDeleteMarkersAfter90Days"
+        assert lifecycle.rules[0].noncurrent_version_expiration.noncurrent_days == 90
+        
+        # Bucket policy should change from full access to read-only
+        policy_str = minio_client.get_bucket_policy("integration-test-custom-bucket")
+        policy = json.loads(policy_str)
+        # Check for read-only actions (GetObject but not PutObject/DeleteObject)
+        actions = set()
+        for stmt in policy["Statement"]:
+            actions.update(stmt.get("Action", []))
+        assert "s3:GetObject" in actions
+        assert "s3:PutObject" not in actions
+        assert "s3:DeleteObject" not in actions
+        
+        # 3. integration-test-minimal-bucket: should now have lifecycle policy (new: 30 days)
+        lifecycle = minio_client.get_bucket_lifecycle("integration-test-minimal-bucket")
+        assert len(lifecycle.rules) == 1
+        assert lifecycle.rules[0].rule_id == "ExpireDeleteMarkerAndOldVersionsAfter30Days"
+        assert lifecycle.rules[0].noncurrent_version_expiration.noncurrent_days == 30
+        
+        # Should now have versioning enabled (was not set before)
+        versioning = minio_client.get_bucket_versioning("integration-test-minimal-bucket")
+        assert versioning.status == "Enabled"
+        
+        # Should now have a bucket policy (new)
+        policy_str = minio_client.get_bucket_policy("integration-test-minimal-bucket")
+        policy = json.loads(policy_str)
+        assert any("s3:GetObject" in stmt.get("Action", []) for stmt in policy["Statement"])
 
-        # Verify bucket is gone
-        assert not minio_client.bucket_exists(test_bucket_name)
+    def test_idempotent_reapplication(self, minio_client: Minio):
+        """Test that applying the same configuration multiple times is idempotent."""
+        # Start with updated configuration
+        self.test_resource_updates_and_idempotency(minio_client)
+        
+        # Store current state
+        default_lifecycle_before = minio_client.get_bucket_lifecycle("integration-test-default-bucket")
+        default_policy_before = minio_client.get_bucket_policy("integration-test-default-bucket")
+        minimal_versioning_before = minio_client.get_bucket_versioning("integration-test-minimal-bucket")
+        
+        # Verify custom bucket has read-only policy 
+        custom_policy_before = minio_client.get_bucket_policy("integration-test-custom-bucket")
+        
+        # Apply the same configuration again
+        updated_resources_file = "tests/fixtures/test_resources_updated.yaml"  # Use the existing file in fixtures
+        cluster_resources = self.parse_resources_safely(updated_resources_file)
+        handle_resources(cluster_resources)
+        
+        # Verify state is identical (idempotent)
+        default_lifecycle_after = minio_client.get_bucket_lifecycle("integration-test-default-bucket")
+        default_policy_after = minio_client.get_bucket_policy("integration-test-default-bucket")
+        minimal_versioning_after = minio_client.get_bucket_versioning("integration-test-minimal-bucket")
+        
+        # Verify custom bucket still has read-only policy
+        custom_policy_after = minio_client.get_bucket_policy("integration-test-custom-bucket")
+        
+        # Compare states (should be identical)
+        assert len(default_lifecycle_before.rules) == len(default_lifecycle_after.rules)
+        assert (default_lifecycle_before.rules[0].rule_id == 
+                default_lifecycle_after.rules[0].rule_id)
+        assert (default_lifecycle_before.rules[0].noncurrent_version_expiration.noncurrent_days ==
+                default_lifecycle_after.rules[0].noncurrent_version_expiration.noncurrent_days)
+        
+        # Compare policies (content should be functionally identical)
+        policy_before = json.loads(default_policy_before)
+        policy_after = json.loads(default_policy_after)
+        
+        # Compare the essential policy elements
+        assert policy_before["Version"] == policy_after["Version"]
+        assert len(policy_before["Statement"]) == len(policy_after["Statement"])
+        assert policy_before["Statement"][0]["Sid"] == policy_after["Statement"][0]["Sid"]
+        assert policy_before["Statement"][0]["Effect"] == policy_after["Statement"][0]["Effect"]
+        assert set(policy_before["Statement"][0]["Action"]) == set(policy_after["Statement"][0]["Action"])
+        assert set(policy_before["Statement"][0]["Resource"]) == set(policy_after["Statement"][0]["Resource"])
+        
+        # Compare versioning
+        assert minimal_versioning_before.status == minimal_versioning_after.status
+        
+        # Compare custom bucket policies (should be identical)
+        policy_before_custom = json.loads(custom_policy_before)
+        policy_after_custom = json.loads(custom_policy_after)
+        assert policy_before_custom["Statement"][0]["Sid"] == policy_after_custom["Statement"][0]["Sid"]
+        assert set(policy_before_custom["Statement"][0]["Action"]) == set(policy_after_custom["Statement"][0]["Action"])
+
+    def test_configuration_validation(self):
+        """Test that configuration files are valid and can be parsed."""
+        # Test initial configuration parsing
+        resources_file = "tests/fixtures/test_resources.yaml"  # Use the existing test file in fixtures
+        cluster_resources = self.parse_resources_safely(resources_file)
+        
+        # Verify buckets were parsed
+        assert len(cluster_resources.buckets) == 3
+        bucket_names = [bucket.name for bucket in cluster_resources.buckets]
+        assert "integration-test-default-bucket" in bucket_names
+        assert "integration-test-custom-bucket" in bucket_names
+        assert "integration-test-minimal-bucket" in bucket_names
+        
+        # Verify service accounts were parsed (none in test config)
+        assert len(cluster_resources.service_accounts) == 0
+        
+        # Test updated configuration parsing
+        updated_resources_file = "tests/fixtures/test_resources_updated.yaml"  # Use the existing file in fixtures
+        cluster_resources_updated = self.parse_resources_safely(updated_resources_file)
+        
+        # Verify updated buckets
+        assert len(cluster_resources_updated.buckets) == 3
+        
+        # Verify required lifecycle policy files exist
+        lifecycle_files = [
+            "default_lifecycle_30_days.json",
+            "custom_lifecycle_90_days.json", 
+            "updated_lifecycle_60_days.json"
+        ]
+        
+        for lifecycle_file in lifecycle_files:
+            lifecycle_path = Path(__file__).parent / "fixtures" / "lifecycle_policies" / lifecycle_file
+            assert lifecycle_path.exists(), f"Lifecycle file not found: {lifecycle_path}"
+        
+        # Verify required bucket policy files exist
+        policy_files = [
+            "read_only_policy.json",
+            "full_access_policy.json"
+        ]
+        
+        for policy_file in policy_files:
+            policy_path = Path(__file__).parent / "fixtures" / "bucket_policies" / policy_file
+            assert policy_path.exists(), f"Policy file not found: {policy_path}"
+
+    def test_cleanup_and_teardown(self, minio_client: Minio):
+        """Test complete cleanup of all integration test resources."""
+        # Ensure we have resources deployed
+        self.test_resource_updates_and_idempotency(minio_client)
+        
+        # Perform cleanup
+        self.cleanup_integration_buckets(minio_client)
+        
+        # Verify all buckets are removed
+        bucket_names = [
+            "integration-test-default-bucket",
+            "integration-test-custom-bucket",
+            "integration-test-minimal-bucket"
+        ]
+        
+        for bucket_name in bucket_names:
+            assert not minio_client.bucket_exists(bucket_name), f"Bucket {bucket_name} should not exist after cleanup"

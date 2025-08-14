@@ -1,9 +1,9 @@
 config.yaml
-*.env
+/*.env
 !tests/resources/config.yaml
 environments/*
 docs/source
-secrets*
+/secrets*
 *.kdbx
 
 # From https://raw.githubusercontent.com/github/gitignore/main/Python.gitignore
@@ -113,7 +113,7 @@ celerybeat.pid
 *.sage.py
 
 # Environments
-.env
+/.env
 .*.env
 .venv
 env/

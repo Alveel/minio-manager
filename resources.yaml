@@ -1,0 +1,22 @@
+# Test resources for MinIO Manager integration testing
+# This file should be used with the .env configuration and secrets-insecure.yaml
+
+buckets:
+  - name: integration-test-default-bucket
+    versioning: Enabled
+    object_lifecycle_file: examples/lifecycle_policies/default_lifecycle_30_days.json
+
+  - name: integration-test-custom-bucket
+    versioning: Suspended
+    object_lifecycle_file: examples/lifecycle_policies/alternative_lifecycle_90_days.json
+
+  - name: integration-test-minimal-bucket
+    versioning: Suspended
+    # No lifecycle or bucket policy specified (minimal configuration)
+
+bucket_policies:
+  - bucket: integration-test-default-bucket
+    policy_file: tests/fixtures/bucket_policies/default_bucket_full_access_policy.json
+  
+  - bucket: integration-test-custom-bucket
+    policy_file: tests/fixtures/bucket_policies/custom_bucket_full_access_policy.json
