@@ -118,7 +118,7 @@ try:
                 cli_parse_args=False,  # Disable CLI parsing for tests
                 cli_kebab_case=True,
                 env_prefix="MINIO_MANAGER_",
-                env_file="tests/fixtures/.env",  # Use the .env file in fixtures directory
+                env_file="tests/fixtures/.testenv",  # Use the .env file in fixtures directory
                 env_file_encoding="utf-8",
                 extra="ignore",
             )
