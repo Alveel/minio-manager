@@ -137,19 +137,21 @@ make test-coverage
 
 ### Test Structure
 
+- **`tests/test_integration.py`** - Comprehensive end-to-end integration tests (29 tests)
 - **`tests/test_basic.py`** - Basic functionality tests
 - **`tests/test_utilities.py`** - Utility function and class tests
 - **`tests/test_bucket_creation.py`** - Bucket creation and management tests
 - **`tests/test_bucket_prefix_integration.py`** - Bucket prefix validation integration tests
 - **`tests/test_lifecycle_policies.py`** - Lifecycle policy tests
 - **`tests/test_bucket_policies.py`** - Bucket policy tests
-- **`tests/test_integration.py`** - Full integration scenarios
 - **`tests/test_resource_parser.py`** - Resource parsing and validation tests
 - **`tests/test_secrets.py`** - Secret management tests
 - **`tests/test_iam_policies.py`** - IAM policy tests
 - **`tests/test_service_account_handler.py`** - Service account management tests
 
 Tests automatically detect MinIO availability and skip integration tests when no test environment is running.
+
+**📚 For detailed testing information, see the [Testing Documentation](https://alveel.github.io/minio-manager/testing/).**
 
 To finalize the set-up for publishing to PyPi or Artifactory, see
 [here](https://fpgmaas.github.io/cookiecutter-pdm/features/publishing/#set-up-for-pypi).

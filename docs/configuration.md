@@ -29,7 +29,7 @@ Required variables without a default value must be manually configured.
 | `MINIO_MANAGER_ALLOWED_BUCKET_PREFIXES`           | Comma-separated list of prefixes of bucket names this controller user is allowed to manage | No           | `""`                               |
 
 1. Only specify the host and port as per the [example `.env`](#configenv), without `https://` or trailing slashes
-2. Currently only Keepass is supported
+2. Supported types: `keepass` for KeePass databases, `yaml` for local YAML files (development/testing)
 3. Possible values are `INFO` or `DEBUG`
 4. Defaults to [`service-account-policy-base.json`][service-account-policy-base]. MUST contain `BUCKET_NAME_REPLACE_ME` in the resources to work
 
@@ -41,6 +41,50 @@ This was only implemented to easily toggle dry run mode with `--dry-run`,
 but the wonderful Pydantic library automatically enables it for all options, so use it if you must!
 
 You can easily view all options with `minio-manager --help`
+
+## Secret Backend Types
+
+### KeePass Backend (`keepass`)
+
+The default and recommended secret backend for production use. Stores credentials in an encrypted KeePass database.
+
+**Required Configuration:**
+- `MINIO_MANAGER_SECRET_BACKEND_TYPE=keepass`
+- `MINIO_MANAGER_KEEPASS_PASSWORD` - Database password
+- `MINIO_MANAGER_SECRET_BACKEND_PATH=secrets.kdbx` - Path to KeePass file in S3
+
+**Database Structure:**
+- Root group must be named "Passwords"
+- Must have a group called "s3" with subgroups for each MinIO cluster
+- Entry names must be unique within the cluster group
+- Entries are found by title, username is not considered
+
+### YAML Backend (`yaml`)
+
+A file-based secret backend for development and testing. **Not recommended for production.**
+
+**Required Configuration:**
+- `MINIO_MANAGER_SECRET_BACKEND_TYPE=yaml`
+- `MINIO_MANAGER_SECRET_BACKEND_PATH=path/to/secrets.yaml` - Path to YAML file
+
+**YAML File Format:**
+```yaml
+# Controller user credentials
+controller-user-name:
+  access_key: "controller-access-key"
+  secret_key: "controller-secret-key"
+
+# Service account credentials (auto-managed)
+service-account-name:
+  access_key: "auto-generated-access-key"
+  secret_key: "auto-generated-secret-key"
+```
+
+**Features:**
+- Automatic service account credential management
+- Human-readable format for debugging
+- Local file system storage (no S3 required)
+- Session-based cleanup in test environments
 
 ## Examples
 
