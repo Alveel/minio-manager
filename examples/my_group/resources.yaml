@@ -1,15 +1,16 @@
 ---
 
 buckets:
-  - name: local-test-my-test-bucket
-    create_service_account: True
-    versioning: Enabled
-  - name: local-test-second-test-bucket
+  - name: local-test-1
     create_service_account: False
-    object_lifecycle_file: examples/lifecycle_policies/alternative_lifecycle.json
-  - name: local-test-second-test-bucket2
-    create_service_account: False
+    versioning: Suspended
+    object_lifecycle_file: examples/lifecycle_policies/alternative_lifecycle_90_days.json
+  - name: local-test-2
+    object_lifecycle_file: examples/lifecycle_policies/alternative_lifecycle_120_days.json
+  - name: local-test-3
+  - name: local-test-4
+    object_lifecycle_file: examples/lifecycle_policies/alternative_lifecycle_90_days.json
 
 service_accounts:
-  - name: sa-for-second-test-bucket
+  - name: local-test-1
     policy_file: examples/user_policies/my_user.json

@@ -179,7 +179,18 @@ def handle_service_account(bare_account: ServiceAccount):
         secrets.set_password(credentials)
         logger.info(f"Created service account '{credentials.full_name}' with access key '{credentials.access_key}'")
 
+    # Load custom policy if policy_file is set
     if credentials.policy_file:
-        handle_sa_policy(credentials)
-        if credentials.policy_generated:
-            credentials.policy_file.unlink(missing_ok=True)
+        with open(credentials.policy_file) as f:
+            policy_doc = json.load(f)
+        credentials.policy = policy_doc  # Set policy to the document
+
+    # Update service account with policy document
+    client_manager.admin.update_service_account(
+        access_key=credentials.access_key,
+        policy=credentials.policy,
+        description=credentials.description,
+    )
+
+    if credentials.policy_file and credentials.policy_generated:
+        credentials.policy_file.unlink(missing_ok=True)

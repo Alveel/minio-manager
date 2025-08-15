@@ -105,14 +105,18 @@ def configure_lifecycle(bucket):
         logger.warning(f"Bucket '{bucket.name}' has no lifecycle config (skipping apply)")
         return
 
-    # noinspection PyProtectedMember
-    if settings._get_on_lifecycle_supported:
-        # compare the current lifecycle configuration with the desired state
-        if check_bucket_lifecycle(bucket):
-            # existing lifecycle matches desired state, no need to update
+    # Only update lifecycle if current and desired policies differ
+    try:
+        lifecycle_status = client_manager.s3.get_bucket_lifecycle(bucket.name)
+        current_dict = lifecycle_status_to_dict(lifecycle_status)
+        desired_dict = lifecycle_status_to_dict(bucket.lifecycle_config)
+        if compare_objects(current_dict, desired_dict):
+            logger.debug(f"Bucket '{bucket.name}': lifecycle management policies already up to date")
             return
-    else:
-        logger.debug("get_bucket_lifecycle() does not appear to work, overwriting lifecycle policy")
+        else:
+            logger.info(f"Bucket '{bucket.name}': lifecycle management policy differs, updating...")
+    except Exception as e:
+        logger.warning(f"Could not fetch current lifecycle for bucket '{bucket.name}' (will overwrite): {e}")
 
     # Updating existing lifecycle configuration was found to be problematic, so we always delete any existing
     # lifecycle configuration before setting the new one.

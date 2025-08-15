@@ -5,13 +5,20 @@
             "Effect": "Allow",
             "Action": [
                 "s3:ListBucket",
-                "s3:GetBucketObjectLockConfiguration",
                 "s3:GetBucketPolicy",
-                "s3:GetBucketLocation",
-                "s3:GetBucketTagging"
+                "s3:GetBucketLocation"
             ],
             "Resource": [
-                "arn:aws:s3:::local-test-my-test-bucket"
+                "arn:aws:s3:::local-test-1"
+            ]
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "s3:GetObject"
+            ],
+            "Resource": [
+                "arn:aws:s3:::local-test-1/*"
             ]
         }
     ]
