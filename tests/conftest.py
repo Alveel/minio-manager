@@ -3,7 +3,6 @@
 import json
 import os
 import tempfile
-import subprocess
 from collections.abc import Generator
 from pathlib import Path
 
@@ -42,41 +41,6 @@ def pytest_configure(config):
         os.environ["MINIO_MANAGER_ALLOWED_BUCKET_PREFIXES"] = "integration-test-,test-,demo-"
 
 
-# @pytest.fixture(scope="session")
-# def monkeypatch_session():
-#     """Session-scoped monkeypatch fixture for setting environment variables."""
-#     mp = pytest.MonkeyPatch()
-#     yield mp
-#     mp.undo()
-
-
-# @pytest.fixture
-# def temp_policy_file() -> Generator[Path, None, None]:
-#     """Create a temporary policy file for testing."""
-#     policy_content = {
-#         "Version": "2012-10-17",
-#         "Statement": [
-#             {
-#                 "Sid": "AllowReadAccess",
-#                 "Effect": "Allow",
-#                 "Principal": "*",
-#                 "Action": ["s3:GetObject"],
-#                 "Resource": ["arn:aws:s3:::test-bucket/*"],
-#             }
-#         ],
-#     }
-
-#     with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
-#         json.dump(policy_content, f, indent=2)
-#         temp_path = Path(f.name)
-
-#     try:
-#         yield temp_path
-#     finally:
-#         if temp_path.exists():
-#             temp_path.unlink()
-
-
 @pytest.fixture(scope="session", autouse=True)
 def clean_secrets_file():
     """Ensure the secrets file starts clean for each test session."""
@@ -97,42 +61,6 @@ def clean_secrets_file():
     
     yield
     # Cleanup happens in pytest_sessionfinish
-
-
-@pytest.fixture(scope="session")
-def monkeypatch_session():
-    """Session-scoped monkeypatch fixture for setting environment variables."""
-    mp = pytest.MonkeyPatch()
-    yield mp
-    mp.undo()
-
-
-@pytest.fixture(scope="session", autouse=True)
-def ensure_test_environment():
-    """Ensure test environment is properly set up before any tests run."""
-    try:
-        # Check if MinIO is accessible and service account exists
-        result = subprocess.run(
-            ["mc", "admin", "user", "svcacct", "ls", "testminio", "local-test-controller"],
-            capture_output=True,
-            text=True,
-            timeout=5
-        )
-        
-        # If command succeeds and our test service account is found, we're ready
-        if result.returncode == 0 and "static-for-testing" in result.stdout:
-            yield
-            return
-            
-    except (subprocess.TimeoutExpired, FileNotFoundError):
-        pass
-    
-    # If we get here, either MinIO isn't running or service account isn't set up
-    print("\n⚠️  Test environment may not be fully configured.")
-    print("💡 For integration tests, run: make run-test-environment")
-    print("💡 Or manually start MinIO and run: make configure-controller")
-    
-    yield
 
 
 @pytest.fixture(scope="session")
