@@ -12,6 +12,7 @@ from minio import Minio
 from minio.deleteobjects import DeleteObject
 
 
+# Define custom pytest marks
 def pytest_configure(config):
     """Configure pytest and set up test environment variables before any imports."""
     # Load environment variables from .testenv file
@@ -36,9 +37,66 @@ def pytest_configure(config):
         os.environ["MINIO_MANAGER_MINIO_CONTROLLER_USER"] = "local-test-controller"
         os.environ["MINIO_MANAGER_DRY_RUN"] = "false"
         os.environ["MINIO_MANAGER_LOG_LEVEL"] = "INFO"
-        os.environ["MINIO_MANAGER_AUTO_CREATE_SERVICE_ACCOUNT"] = "false"
+        os.environ["MINIO_MANAGER_AUTO_CREATE_SERVICE_ACCOUNT"] = "true"  # Enable for comprehensive testing
         os.environ["MINIO_MANAGER_DEFAULT_BUCKET_VERSIONING"] = "Suspended"
         os.environ["MINIO_MANAGER_ALLOWED_BUCKET_PREFIXES"] = "integration-test-,test-,demo-"
+
+
+# @pytest.fixture(scope="session")
+# def monkeypatch_session():
+#     """Session-scoped monkeypatch fixture for setting environment variables."""
+#     mp = pytest.MonkeyPatch()
+#     yield mp
+#     mp.undo()
+
+
+# @pytest.fixture
+# def temp_policy_file() -> Generator[Path, None, None]:
+#     """Create a temporary policy file for testing."""
+#     policy_content = {
+#         "Version": "2012-10-17",
+#         "Statement": [
+#             {
+#                 "Sid": "AllowReadAccess",
+#                 "Effect": "Allow",
+#                 "Principal": "*",
+#                 "Action": ["s3:GetObject"],
+#                 "Resource": ["arn:aws:s3:::test-bucket/*"],
+#             }
+#         ],
+#     }
+
+#     with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+#         json.dump(policy_content, f, indent=2)
+#         temp_path = Path(f.name)
+
+#     try:
+#         yield temp_path
+#     finally:
+#         if temp_path.exists():
+#             temp_path.unlink()
+
+
+@pytest.fixture(scope="session", autouse=True)
+def clean_secrets_file():
+    """Ensure the secrets file starts clean for each test session."""
+    secrets_file = Path(__file__).parent / "fixtures" / "testsecrets-insecure.yaml"
+    controller_secrets = {
+        "local-test-controller": {
+            "access_key": "static-for-testing",
+            "secret_key": "static-secret-key-for-testing"
+        }
+    }
+    
+    try:
+        import yaml
+        with open(secrets_file, 'w') as f:
+            yaml.dump(controller_secrets, f, default_flow_style=False)
+    except Exception as e:
+        print(f"Error initializing secrets file: {e}")
+    
+    yield
+    # Cleanup happens in pytest_sessionfinish
 
 
 @pytest.fixture(scope="session")
@@ -193,6 +251,26 @@ def cleanup_bucket(minio_client):
                 minio_client.remove_bucket(bucket_name)
         except Exception as e:
             print(f"Error cleaning up bucket {bucket_name}: {e}")
+
+
+def pytest_sessionfinish(session, exitstatus):
+    """Clean up test data at the end of the test session."""
+    # Reset the secrets file to only contain the controller user
+    secrets_file = Path(__file__).parent / "fixtures" / "testsecrets-insecure.yaml"
+    controller_secrets = {
+        "local-test-controller": {
+            "access_key": "static-for-testing",
+            "secret_key": "static-secret-key-for-testing"
+        }
+    }
+    
+    try:
+        import yaml
+        with open(secrets_file, 'w') as f:
+            yaml.dump(controller_secrets, f, default_flow_style=False)
+        print(f"Cleaned up secrets file: {secrets_file}")
+    except Exception as e:
+        print(f"Error cleaning up secrets file: {e}")
 
 
 requires_minio = pytest.mark.skipif(False, reason="MinIO test environment not available")  # Will be set dynamically

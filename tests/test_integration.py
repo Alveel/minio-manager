@@ -434,3 +434,144 @@ class TestMinIOManagerIntegration:
             assert False, "Expected no bucket policy when no default is configured"
         except S3Error as e:
             assert e.code == 'NoSuchBucketPolicy', f"Expected NoSuchBucketPolicy, got {e.code}"
+
+    def test_service_account_auto_creation(self, minio_client: Minio, test_bucket_name: str, cleanup_bucket):
+        """Test that service accounts are automatically created for buckets when enabled."""
+        # Create bucket which should trigger service account creation
+        bucket = Bucket(name=test_bucket_name)
+        resources = ClusterResources()
+        resources.buckets = [bucket]
+        resources.bucket_policies = []
+        resources.service_accounts = []
+        resources.iam_policies = []
+        resources.iam_policy_attachments = []
+        
+        handle_resources(resources)
+        
+        # Force secrets backend to save changes to file
+        from minio_manager.classes.secrets import secrets
+        if secrets.backend_dirty and secrets.backend_type == "yaml":
+            from pathlib import Path
+            import yaml
+            with Path(secrets.backend_path).open("w") as f:
+                yaml.safe_dump(secrets.backend, f, allow_unicode=True, default_flow_style=False, sort_keys=False)
+        
+        # Verify bucket exists
+        assert minio_client.bucket_exists(test_bucket_name)
+        
+        # Verify service account was created by checking credentials in secret backend
+        import yaml
+        from pathlib import Path
+        
+        secrets_file = Path("tests/fixtures/testsecrets-insecure.yaml")
+        assert secrets_file.exists(), "Secret backend file should exist"
+        
+        with open(secrets_file, 'r') as f:
+            secrets_data = yaml.safe_load(f) or {}
+        
+        # Service account should be stored with bucket name
+        assert test_bucket_name in secrets_data, f"Service account '{test_bucket_name}' should be created and stored"
+        
+        service_account_data = secrets_data[test_bucket_name]
+        assert 'access_key' in service_account_data, "Access key should be stored"
+        assert 'secret_key' in service_account_data, "Secret key should be stored"
+        assert len(service_account_data['access_key']) > 0, "Access key should not be empty"
+
+    def test_service_account_credentials_in_secret_backend(self, minio_client: Minio, test_bucket_name: str, cleanup_bucket):
+        """Test that service account credentials are properly stored in the secret backend."""
+        import yaml
+        from pathlib import Path
+        
+        # Create bucket which should trigger service account creation and credential storage
+        bucket = Bucket(name=test_bucket_name)
+        resources = ClusterResources()
+        resources.buckets = [bucket]
+        resources.bucket_policies = []
+        resources.service_accounts = []
+        resources.iam_policies = []
+        resources.iam_policy_attachments = []
+        
+        handle_resources(resources)
+        
+        # Force secrets backend to save changes to file
+        from minio_manager.classes.secrets import secrets
+        if secrets.backend_dirty and secrets.backend_type == "yaml":
+            with Path(secrets.backend_path).open("w") as f:
+                yaml.safe_dump(secrets.backend, f, allow_unicode=True, default_flow_style=False, sort_keys=False)
+        
+        # Verify bucket exists
+        assert minio_client.bucket_exists(test_bucket_name)
+        
+        # Check that credentials were written to secret backend
+        secrets_file = Path("tests/fixtures/testsecrets-insecure.yaml")
+        assert secrets_file.exists(), "Secret backend file should exist"
+        
+        with open(secrets_file, 'r') as f:
+            secrets_data = yaml.safe_load(f) or {}
+        
+        # Verify service account credentials are stored
+        assert test_bucket_name in secrets_data, f"Service account '{test_bucket_name}' credentials should be in secrets backend"
+        
+        service_account_data = secrets_data[test_bucket_name]
+        assert 'access_key' in service_account_data, "Access key should be stored"
+        assert 'secret_key' in service_account_data, "Secret key should be stored"
+        
+        # Verify the stored data makes sense
+        assert len(service_account_data['access_key']) > 0, "Access key should not be empty"
+        assert len(service_account_data['secret_key']) > 0, "Secret key should not be empty"
+        
+        # Verify credentials are actually functional by testing with MinIO client
+        test_client = Minio(
+            "localhost:9000",
+            access_key=service_account_data['access_key'],
+            secret_key=service_account_data['secret_key'],
+            secure=False
+        )
+        
+        # Service account should be able to access its bucket
+        assert test_client.bucket_exists(test_bucket_name), "Service account should be able to access its bucket"
+
+    def test_explicit_service_account_creation(self, minio_client: Minio, test_bucket_name: str, cleanup_bucket):
+        """Test creation of explicitly configured service accounts."""
+        from minio_manager.classes.minio_resources import ServiceAccount
+        
+        # Create bucket and explicit service account
+        bucket = Bucket(name=test_bucket_name)
+        service_account = ServiceAccount(name=f"{test_bucket_name}-explicit")
+        
+        resources = ClusterResources()
+        resources.buckets = [bucket]
+        resources.bucket_policies = []
+        resources.service_accounts = [service_account]
+        resources.iam_policies = []
+        resources.iam_policy_attachments = []
+        
+        handle_resources(resources)
+        
+        # Force secrets backend to save changes to file
+        from minio_manager.classes.secrets import secrets
+        if secrets.backend_dirty and secrets.backend_type == "yaml":
+            from pathlib import Path
+            import yaml
+            with Path(secrets.backend_path).open("w") as f:
+                yaml.safe_dump(secrets.backend, f, allow_unicode=True, default_flow_style=False, sort_keys=False)
+        
+        # Verify bucket exists
+        assert minio_client.bucket_exists(test_bucket_name)
+        
+        # Verify both auto-created and explicit service accounts by checking secret backend
+        import yaml
+        from pathlib import Path
+        
+        secrets_file = Path("tests/fixtures/testsecrets-insecure.yaml")
+        assert secrets_file.exists(), "Secret backend file should exist"
+        
+        with open(secrets_file, 'r') as f:
+            secrets_data = yaml.safe_load(f) or {}
+        
+        # Auto-created account (same name as bucket)
+        assert test_bucket_name in secrets_data, f"Auto-created service account '{test_bucket_name}' should exist"
+        
+        # Explicitly created account
+        explicit_name = f"{test_bucket_name}-explicit"
+        assert explicit_name in secrets_data, f"Explicit service account '{explicit_name}' should exist"
