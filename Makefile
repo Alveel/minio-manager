@@ -1,5 +1,6 @@
 THIS_FILE := $(lastword $(MAKEFILE_LIST))
 GIT_TAG := $(shell git for-each-ref --sort=creatordate --format '%(refname)' refs/tags | tail -n 1 | cut -d '/' -f 3)
+MINIO_VERSION := RELEASE.2025-04-03T14-56-28Z
 
 .PHONY: install
 install: ## Install the environment and install the pre-commit hooks
@@ -24,7 +25,7 @@ start-local-test: ## Start local MinIO test environment
 	@podman stop minio-local-test 2>/dev/null || true
 	@podman rm minio-local-test 2>/dev/null || true
 	@podman run --detach --name minio-local-test --rm -p 9000:9000 -p 9001:9001 \
-		quay.io/minio/minio server /data --console-address ":9001"
+		quay.io/minio/minio:$(MINIO_VERSION) server /data --console-address ":9001"
 	@echo "😴 Waiting for MinIO to start..."
 	@sleep 4
 	@echo "🪛 Configuring 'mc' alias 'local-test-admin'"
@@ -95,7 +96,7 @@ test-coverage: ## Run tests with coverage report
 	@pdm run pytest tests/ --cov=minio_manager --cov-report=html --cov-report=term-missing
 
 .PHONY: test-full
-test-full: run-test-environment test-all stop-test-environment ## Start test environment, run all tests, then stop environment
+test-full: run-test-environment test-all ## Start test environment, run all tests
 	@echo "✅ Full test cycle completed"
 
 .PHONY: build
