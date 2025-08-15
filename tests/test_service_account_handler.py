@@ -4,6 +4,7 @@ from pathlib import Path
 from unittest.mock import Mock, patch, MagicMock, mock_open
 from tempfile import NamedTemporaryFile
 
+from minio.error import MinioAdminException
 from minio_manager.classes.minio_resources import ServiceAccount
 from minio_manager.service_account_handler import (
     service_account_exists,
@@ -41,6 +42,271 @@ class TestServiceAccountFunctions:
             # Function doesn't catch exceptions in current implementation
             # This test documents the current behavior
             pass
+
+
+class TestServiceAccountExistsComplexLookup:
+    """Test complex service account lookup scenarios in service_account_exists function."""
+
+    @patch('minio_manager.service_account_handler.settings')
+    @patch('minio_manager.service_account_handler.client_manager')
+    def test_service_account_exists_no_access_key_found_by_exact_name_match(self, mock_client_manager, mock_settings):
+        """Test finding service account by exact name match when no access key in secrets."""
+        # Account with no access key (not in secrets backend)
+        account = ServiceAccount(name="test-account")
+        mock_settings.minio_controller_user = "test-user"
+        
+        # Mock MinIO responses
+        sa_list_response = json.dumps({
+            "accounts": [
+                {"accessKey": "AKIA123456789"},
+                {"accessKey": "AKIA987654321"}
+            ]
+        })
+        
+        sa_info_1 = json.dumps({
+            "name": "other-account",
+            "description": "Some other account"
+        })
+        
+        sa_info_2 = json.dumps({
+            "name": "test-account",  # Exact match!
+            "description": "Test account description"
+        })
+        
+        mock_client_manager.admin.list_service_account.return_value = sa_list_response
+        mock_client_manager.admin.get_service_account.side_effect = [sa_info_1, sa_info_2]
+        
+        result = service_account_exists(account)
+        
+        assert result is True
+        mock_client_manager.admin.list_service_account.assert_called_once_with("test-user")
+        assert mock_client_manager.admin.get_service_account.call_count == 2
+
+    @patch('minio_manager.service_account_handler.settings')
+    @patch('minio_manager.service_account_handler.client_manager')
+    def test_service_account_exists_no_access_key_found_by_description_prefix(self, mock_client_manager, mock_settings):
+        """Test finding service account by description prefix for long names (>32 chars)."""
+        # Long account name that would be truncated in MinIO name field
+        long_name = "very-long-service-account-name-that-exceeds-32-characters"
+        account = ServiceAccount(name=long_name)
+        mock_settings.minio_controller_user = "test-user"
+        
+        # Mock MinIO responses
+        sa_list_response = json.dumps({
+            "accounts": [{"accessKey": "AKIA123456789"}]
+        })
+        
+        # Service account info with truncated name but full name in description
+        sa_info = json.dumps({
+            "name": "very-long-service-account-name",  # Truncated to 32 chars
+            "description": f"{long_name} - Service account for bucket access"  # Full name in description
+        })
+        
+        mock_client_manager.admin.list_service_account.return_value = sa_list_response
+        mock_client_manager.admin.get_service_account.return_value = sa_info
+        
+        result = service_account_exists(account)
+        
+        assert result is True
+
+    @patch('minio_manager.service_account_handler.settings')
+    @patch('minio_manager.service_account_handler.client_manager')
+    @patch('minio_manager.service_account_handler.logger')
+    def test_service_account_exists_no_access_key_fallback_match_with_warning(self, mock_logger, mock_client_manager, mock_settings):
+        """Test fallback match by name with warning when description doesn't match exactly."""
+        # Use a long name to trigger the fallback scenario
+        long_name = "test-account-with-very-long-name-that-exceeds-32-characters"
+        account = ServiceAccount(name=long_name)  # full_name will be the long name, name will be truncated
+        mock_settings.minio_controller_user = "test-user"
+
+        # Mock MinIO responses
+        sa_list_response = json.dumps({
+            "accounts": [{"accessKey": "AKIA123456789"}]
+        })
+
+        # Service account with truncated name (32 chars) but non-matching description format
+        sa_info = json.dumps({
+            "name": long_name[:32],  # This matches account.name (truncated) but not account.full_name
+            "description": "Some custom description not following format"  # Doesn't start with full_name
+        })
+
+        mock_client_manager.admin.list_service_account.return_value = sa_list_response
+        mock_client_manager.admin.get_service_account.return_value = sa_info
+
+        result = service_account_exists(account)
+
+        assert result is False  # Function returns False for fallback matches
+        # Verify warning was logged
+        mock_logger.error.assert_called_once()
+        mock_logger.warning.assert_called_once_with("Please verify and modify the description accordingly.")
+        # Check that the error log contains the truncated name (32 chars)
+        expected_truncated_name = long_name[:32]  # "test-account-with-very-long-name"
+        mock_logger.error.assert_called_with(
+            f"Found possible access key 'AKIA123456789' for '{expected_truncated_name}' in MinIO."
+        )
+        mock_logger.warning.assert_called_with(
+            "Please verify and modify the description accordingly."
+        )
+
+    @patch('minio_manager.service_account_handler.settings')
+    @patch('minio_manager.service_account_handler.client_manager')
+    def test_service_account_exists_no_access_key_not_found(self, mock_client_manager, mock_settings):
+        """Test service account not found when neither name nor description matches."""
+        account = ServiceAccount(name="missing-account")
+        mock_settings.minio_controller_user = "test-user"
+        
+        # Mock MinIO responses with non-matching accounts
+        sa_list_response = json.dumps({
+            "accounts": [
+                {"accessKey": "AKIA123456789"},
+                {"accessKey": "AKIA987654321"}
+            ]
+        })
+        
+        sa_info_1 = json.dumps({
+            "name": "other-account-1",
+            "description": "Some description"
+        })
+        
+        sa_info_2 = json.dumps({
+            "name": "other-account-2", 
+            "description": "Another description"
+        })
+        
+        mock_client_manager.admin.list_service_account.return_value = sa_list_response
+        mock_client_manager.admin.get_service_account.side_effect = [sa_info_1, sa_info_2]
+        
+        result = service_account_exists(account)
+        
+        assert result is False
+
+    @patch('minio_manager.service_account_handler.settings')
+    @patch('minio_manager.service_account_handler.client_manager')
+    def test_service_account_exists_no_access_key_no_accounts_exist(self, mock_client_manager, mock_settings):
+        """Test service account lookup when no service accounts exist for user."""
+        account = ServiceAccount(name="test-account")
+        mock_settings.minio_controller_user = "test-user"
+        
+        # Mock MinIO response with no accounts
+        sa_list_response = json.dumps({"accounts": None})
+        mock_client_manager.admin.list_service_account.return_value = sa_list_response
+        
+        result = service_account_exists(account)
+        
+        assert result is False
+        mock_client_manager.admin.get_service_account.assert_not_called()
+
+    @patch('minio_manager.service_account_handler.settings')
+    @patch('minio_manager.service_account_handler.client_manager')
+    def test_service_account_exists_no_access_key_skip_accounts_without_name(self, mock_client_manager, mock_settings):
+        """Test skipping service accounts that don't have name field."""
+        account = ServiceAccount(name="test-account")
+        mock_settings.minio_controller_user = "test-user"
+        
+        # Mock MinIO responses
+        sa_list_response = json.dumps({
+            "accounts": [
+                {"accessKey": "AKIA123456789"},
+                {"accessKey": "AKIA987654321"}
+            ]
+        })
+        
+        # First account has no name field, second has matching name
+        sa_info_1 = json.dumps({
+            "description": "Account without name field"
+            # Missing "name" field
+        })
+        
+        sa_info_2 = json.dumps({
+            "name": "test-account",
+            "description": "Valid account"
+        })
+        
+        mock_client_manager.admin.list_service_account.return_value = sa_list_response
+        mock_client_manager.admin.get_service_account.side_effect = [sa_info_1, sa_info_2]
+        
+        result = service_account_exists(account)
+        
+        assert result is True
+
+    @patch('minio_manager.service_account_handler.settings')
+    @patch('minio_manager.service_account_handler.client_manager')
+    def test_service_account_exists_no_access_key_skip_accounts_without_description(self, mock_client_manager, mock_settings):
+        """Test skipping service accounts that don't have description when needed for long names."""
+        long_name = "very-long-service-account-name-that-exceeds-32-characters"
+        account = ServiceAccount(name=long_name)
+        mock_settings.minio_controller_user = "test-user"
+        
+        # Mock MinIO responses
+        sa_list_response = json.dumps({
+            "accounts": [{"accessKey": "AKIA123456789"}]
+        })
+        
+        # Service account with truncated name but no description
+        sa_info = json.dumps({
+            "name": "very-long-service-account-name",  # Truncated, doesn't match full name
+            # Missing "description" field
+        })
+        
+        mock_client_manager.admin.list_service_account.return_value = sa_list_response
+        mock_client_manager.admin.get_service_account.return_value = sa_info
+        
+        result = service_account_exists(account)
+        
+        assert result is False
+
+    @patch('minio_manager.service_account_handler.settings')
+    @patch('minio_manager.service_account_handler.client_manager')
+    @patch('minio_manager.service_account_handler.raise_specific_error')
+    def test_service_account_exists_with_access_key_other_exception(self, mock_raise_error, mock_client_manager, mock_settings):
+        """Test service account exists with access key but other MinIO exception occurs."""
+        account = ServiceAccount(name="test-account", access_key="AKIA123456789")
+        mock_settings.minio_controller_user = "test-user"
+
+        # Mock MinIO exception that's not XMinioInvalidIAMCredentials
+        exception_body = json.dumps({"Code": "InternalError", "Message": "Server error"})
+        mock_exception = MinioAdminException("Error", body=exception_body)
+        mock_client_manager.admin.get_service_account.side_effect = mock_exception
+
+        # Configure raise_specific_error to actually raise an exception
+        mock_raise_error.side_effect = Exception("Specific error raised")
+
+        # The function should call raise_specific_error for non-credential errors
+        with pytest.raises(Exception, match="Specific error raised"):
+            service_account_exists(account)
+
+        # Verify raise_specific_error was called with correct parameters
+        mock_raise_error.assert_called_once_with("InternalError", "Server error", caused_by=mock_exception)        # Should call raise_specific_error for non-credential errors
+        mock_raise_error.assert_called_once_with(
+            "InternalError", "Server error", caused_by=mock_exception
+        )
+
+    @patch('minio_manager.service_account_handler.settings')
+    @patch('minio_manager.service_account_handler.client_manager')
+    def test_service_account_exists_with_access_key_invalid_credentials_then_search(self, mock_client_manager, mock_settings):
+        """Test service account with access key that's invalid, then searches in MinIO list."""
+        account = ServiceAccount(name="test-account", access_key="INVALID123")
+        mock_settings.minio_controller_user = "test-user"
+        
+        # Mock MinIO exception for invalid credentials
+        exception_body = json.dumps({"Code": "XMinioInvalidIAMCredentials", "Message": "Invalid credentials"})
+        mock_exception = MinioAdminException("Error", body=exception_body)
+        mock_client_manager.admin.get_service_account.side_effect = [
+            mock_exception,  # First call with access key fails
+            json.dumps({"name": "test-account", "description": "Found account"})  # Second call during search succeeds
+        ]
+        
+        # Mock list response
+        sa_list_response = json.dumps({
+            "accounts": [{"accessKey": "AKIA999888777"}]
+        })
+        mock_client_manager.admin.list_service_account.return_value = sa_list_response
+        
+        result = service_account_exists(account)
+        
+        assert result is True
+        # Should call get_service_account twice: once with access key, once during search
+        assert mock_client_manager.admin.get_service_account.call_count == 2
 
     @patch('minio_manager.service_account_handler.client_manager')
     def test_apply_base_policy_success(self, mock_client_manager):
@@ -408,4 +674,58 @@ class TestServiceAccountComplexScenarios:
             access_key=mock_credentials.access_key,
             policy=custom_policy,
             description=mock_credentials.description
+        )
+
+    @patch('minio_manager.service_account_handler.secrets')
+    @patch('minio_manager.service_account_handler.service_account_exists')
+    @patch('minio_manager.service_account_handler.client_manager')
+    def test_handle_service_account_scenario_4_both_exist_in_sync(self, mock_client_manager, mock_sa_exists, mock_secrets):
+        """Test handle_service_account scenario 4: service account exists in both MinIO and secrets (happy path)."""
+        bare_account = ServiceAccount(name="synced-account")
+        
+        # Mock: exists in both places
+        mock_credentials = ServiceAccount(
+            name="synced-account",
+            access_key="SYNCED123",
+            secret_key="synced-secret-key"
+        )
+        mock_secrets.get_credentials.return_value = mock_credentials
+        mock_sa_exists.return_value = True
+        
+        handle_service_account(bare_account)
+        
+        # Verify no creation calls were made (already exists)
+        mock_client_manager.admin.add_service_account.assert_not_called()
+        mock_secrets.set_password.assert_not_called()
+        
+        # Verify update was still called for policy sync
+        mock_client_manager.admin.update_service_account.assert_called_once()
+
+    @patch('minio_manager.service_account_handler.secrets')
+    @patch('minio_manager.service_account_handler.service_account_exists')
+    @patch('minio_manager.service_account_handler.client_manager')
+    @patch('minio_manager.service_account_handler.logger')
+    def test_handle_service_account_scenario_2_minio_admin_exception(self, mock_logger, mock_client_manager, mock_sa_exists, mock_secrets):
+        """Test handle_service_account scenario 2 with MinIO admin exception during recreation."""
+        bare_account = ServiceAccount(name="exception-account")
+        
+        # Mock credentials exist in secrets but not in MinIO
+        mock_credentials = ServiceAccount(
+            name="exception-account",
+            access_key="EXCEPTION123",
+            secret_key="exception-secret-key"
+        )
+        mock_secrets.get_credentials.return_value = mock_credentials
+        mock_sa_exists.return_value = False
+        
+        # Mock MinIO exception during service account creation
+        exception_body = json.dumps({"Code": "XMinioMalformedIAMPolicy", "Message": "Invalid policy"})
+        mock_exception = MinioAdminException("Error", body=exception_body)
+        mock_client_manager.admin.add_service_account.side_effect = mock_exception
+        
+        handle_service_account(bare_account)
+        
+        # Verify error was logged and function returned early
+        mock_logger.error.assert_called_with(
+            f"Malformed IAM policy for service account '{mock_credentials.full_name}'"
         )
