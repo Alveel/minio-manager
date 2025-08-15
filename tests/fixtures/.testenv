@@ -23,8 +23,8 @@ MINIO_MANAGER_SECRET_BACKEND_PATH=tests/fixtures/testsecrets-insecure.yaml
 MINIO_MANAGER_SECRET_BACKEND_S3_ACCESS_KEY=minioadmin
 MINIO_MANAGER_SECRET_BACKEND_S3_SECRET_KEY=minioadmin
 
-# Default Policies (disable default policies for testing to avoid ARN mismatches)
-MINIO_MANAGER_DEFAULT_BUCKET_POLICY_FILE=
+# Default Policies
+MINIO_MANAGER_DEFAULT_BUCKET_POLICY_FILE=tests/fixtures/bucket_policies/test_default_bucket_policy.json
 MINIO_MANAGER_DEFAULT_LIFECYCLE_POLICY_FILE=tests/fixtures/lifecycle_policies/default_lifecycle_30_days.json
 
 # Bucket Configuration

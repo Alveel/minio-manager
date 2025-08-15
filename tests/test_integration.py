@@ -10,8 +10,10 @@ import pytest
 from minio import Minio
 from minio.error import S3Error
 
+from minio_manager.classes.minio_resources import Bucket, BucketPolicy
 from minio_manager.classes.resource_parser import ClusterResources
 from minio_manager.classes.settings import Settings
+from minio_manager.policy_handler import get_existing_bucket_policy
 from minio_manager.resource_handler import handle_resources
 from tests.conftest import requires_minio
 
@@ -150,12 +152,18 @@ class TestMinIOManagerIntegration:
         assert lifecycle.rules[0].rule_id == "ExpireDeleteMarkerAndOldVersionsAfter30Days"
         assert lifecycle.rules[0].noncurrent_version_expiration.noncurrent_days == 30
         
-        # Should not have bucket policy initially  
-        try:
-            minio_client.get_bucket_policy("integration-test-minimal-bucket")
-            assert False, "Expected no bucket policy"
-        except S3Error as e:
-            assert e.code == 'NoSuchBucketPolicy'
+        # Should have default bucket policy applied since no explicit policy is configured
+        policy_str = minio_client.get_bucket_policy("integration-test-minimal-bucket")
+        policy = json.loads(policy_str)
+        # Verify it contains the expected elements from our default policy
+        assert "Statement" in policy
+        assert len(policy["Statement"]) > 0
+        # The default policy should allow basic operations for authenticated users
+        actions = set()
+        for stmt in policy["Statement"]:
+            if stmt.get("Effect") == "Allow":
+                actions.update(stmt.get("Action", []))
+        assert "s3:GetObject" in actions or "s3:*" in actions
 
     def test_resource_updates_and_idempotency(self, minio_client: Minio):
         """Test updating resources and verifying idempotent behavior."""
@@ -332,3 +340,97 @@ class TestMinIOManagerIntegration:
         
         for bucket_name in bucket_names:
             assert not minio_client.bucket_exists(bucket_name), f"Bucket {bucket_name} should not exist after cleanup"
+
+    def test_default_bucket_policy_application(self, minio_client: Minio, test_bucket_name: str, cleanup_bucket):
+        """Test that default bucket policies are applied when no explicit policy is specified."""
+        # Create a single bucket without any explicit policy
+        bucket = Bucket(name=test_bucket_name)
+        resources = ClusterResources()
+        resources.buckets = [bucket]
+        resources.bucket_policies = []  # No explicit policies
+        resources.service_accounts = []
+        resources.iam_policies = []
+        resources.iam_policy_attachments = []
+        
+        handle_resources(resources)
+        
+        # Verify bucket exists
+        assert minio_client.bucket_exists(test_bucket_name)
+        
+        # Verify default policy was applied
+        bucket_policy = get_existing_bucket_policy(test_bucket_name)
+        assert bucket_policy is not None, "Default bucket policy should be applied"
+        
+        # Verify policy structure
+        assert "Statement" in bucket_policy
+        assert len(bucket_policy["Statement"]) > 0
+        
+        # Verify it allows basic authenticated operations (from our test default policy)
+        actions = set()
+        for stmt in bucket_policy["Statement"]:
+            if stmt.get("Effect") == "Allow":
+                actions.update(stmt.get("Action", []))
+        assert any(action in actions for action in ["s3:GetObject", "s3:PutObject", "s3:ListBucket"])
+
+    def test_explicit_policy_overrides_default(self, minio_client: Minio, test_bucket_name: str, cleanup_bucket):
+        """Test that explicit bucket policies override the default policy."""
+        # Create bucket with explicit policy
+        bucket = Bucket(name=test_bucket_name)
+        explicit_policy = BucketPolicy(
+            bucket=test_bucket_name,
+            policy_file="examples/bucket_policies/my_default_bucket_policy.json"
+        )
+        
+        resources = ClusterResources()
+        resources.buckets = [bucket]
+        resources.bucket_policies = [explicit_policy]
+        resources.service_accounts = []
+        resources.iam_policies = []
+        resources.iam_policy_attachments = []
+        
+        handle_resources(resources)
+        
+        # Verify bucket exists
+        assert minio_client.bucket_exists(test_bucket_name)
+        
+        # Verify explicit policy was applied (not default)
+        policy_str = minio_client.get_bucket_policy(test_bucket_name)
+        policy = json.loads(policy_str)
+        
+        # The explicit policy should have IP-based restrictions
+        statements = policy.get("Statement", [])
+        ip_conditions_found = any(
+            "Condition" in stmt and "NotIpAddress" in stmt.get("Condition", {})
+            for stmt in statements
+        )
+        assert ip_conditions_found, "Explicit policy should contain IP-based conditions, proving it overrode the default"
+
+    def test_no_default_bucket_policy_configured(self, minio_client: Minio, test_bucket_name: str, cleanup_bucket):
+        """Test that when no default bucket policy is configured, buckets without explicit policies remain policy-free."""
+        # Create bucket without explicit policy, but with no default policy configured
+        bucket = Bucket(name=test_bucket_name)
+        resources = ClusterResources()
+        resources.buckets = [bucket]
+        resources.bucket_policies = []  # No explicit policies
+        resources.service_accounts = []
+        resources.iam_policies = []
+        resources.iam_policy_attachments = []
+        
+        # Mock settings in both modules to have no default bucket policy
+        with patch('minio_manager.resource_handler.settings') as mock_settings_resource, \
+             patch('minio_manager.policy_handler.settings') as mock_settings_policy:
+            
+            mock_settings_resource.default_bucket_policy_file = None  # No default policy
+            mock_settings_policy.default_bucket_policy_file = None   # No default policy
+            
+            handle_resources(resources)
+        
+        # Verify bucket exists
+        assert minio_client.bucket_exists(test_bucket_name)
+        
+        # Verify no bucket policy was applied
+        try:
+            minio_client.get_bucket_policy(test_bucket_name)
+            assert False, "Expected no bucket policy when no default is configured"
+        except S3Error as e:
+            assert e.code == 'NoSuchBucketPolicy', f"Expected NoSuchBucketPolicy, got {e.code}"
