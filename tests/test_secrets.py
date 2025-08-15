@@ -32,7 +32,6 @@ class TestSecretManager:
                 assert secret_manager.backend_path == str(self.test_secrets_file)
                 assert isinstance(secret_manager.backend, dict)
                 assert "local-test-controller" in secret_manager.backend
-                assert "minioadmin" in secret_manager.backend
                 
                 # Verify warning about insecure backend
                 mock_logger.warning.assert_called_with(

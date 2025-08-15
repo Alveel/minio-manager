@@ -35,11 +35,14 @@ configure-admin: ## Configure mc alias for admin access
 	@mc alias set minio-admin http://localhost:9000 minioadmin minioadmin
 
 configure-controller: ## Setup the minio-manager controller user and service account
-	@echo "👷 Creating user 'local-test-controller'"
+	@echo "� Creating test-controller-policy"
+	@mc admin policy create local-test-admin test-controller-policy examples/controller_policies/test-controller-policy.json || echo "Policy may already exist"
+
+	@echo "�👷 Creating user 'local-test-controller'"
 	@mc admin user add local-test-admin local-test-controller insecure-password-for-testing || echo "User may already exist"
 
-	@echo "🚧 Ensuring consoleAdmin policy is attached to user 'local-test-controller'"
-	@mc admin policy attach local-test-admin consoleAdmin --user=local-test-controller || echo "Policy may already be attached"
+	@echo "🚧 Ensuring test-controller-policy is attached to user 'local-test-controller'"
+	@mc admin policy attach local-test-admin test-controller-policy --user=local-test-controller || echo "Policy may already be attached"
 
 	@echo "🪛 Configuring 'mc' alias 'local-test-controller'"
 	@mc alias set local-test-controller http://localhost:9000 local-test-controller insecure-password-for-testing
@@ -52,7 +55,7 @@ configure-controller: ## Setup the minio-manager controller user and service acc
 		--secret-key static-secret-key-for-testing
 
 	@echo "✅ Controller service account setup completed!"
-	@echo "   User: local-test-controller (with consoleAdmin policy)"
+	@echo "   User: local-test-controller (with test-controller-policy)"
 	@echo "   Service Account Access Key: static-for-testing"
 	@echo "   Service Account Secret Key: static-secret-key-for-testing"
 

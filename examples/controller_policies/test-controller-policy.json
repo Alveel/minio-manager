@@ -1,0 +1,34 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "s3:*"
+            ],
+            "Resource": [
+                "arn:aws:s3:::*",
+                "arn:aws:s3:::*/*"
+            ]
+        },
+        {
+            "Effect": "Deny",
+            "Action": [
+                "s3:ForceDeleteBucket",
+                "s3:DeleteBucket",
+                "s3:DeleteObjectVersion"
+            ],
+            "Resource": [
+                "arn:aws:s3:::*/*",
+                "arn:aws:s3:::*"
+            ]
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "admin:ListServiceAccounts",
+                "admin:UpdateServiceAccount"
+            ]
+        }
+    ]
+}
