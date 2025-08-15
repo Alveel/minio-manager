@@ -24,6 +24,11 @@ delete any resources anywhere.
 - [Python](https://www.python.org/) (3.9 or newer)
 - [PDM](https://pdm-project.org/)
 
+### For Development and Testing
+
+- [Podman](https://podman.io/) - Required for running local MinIO test environment
+- [MinIO Client (mc)](https://min.io/docs/minio/linux/reference/minio-mc.html) - Required for MinIO configuration during testing
+
 ## Getting started with your project
 
 Install the environment and the pre-commit hooks with
@@ -43,6 +48,8 @@ make run-test-environment
 ```
 **Note**: requires [Podman](https://podman.io/)!
 
+The test environment uses MinIO version `RELEASE.2025-04-03T14-56-28Z` for consistent and reproducible testing. You can modify the `MINIO_VERSION` variable in the Makefile to use a different version if needed.
+
 Copy `.env.example` to `config.env` and modify to your liking.
 
 By default, MinIO Manager automatically loads a .env file from `config.env`. Of course, you can configure your IDE to load `.env` or any other `env` file instead.
@@ -60,6 +67,29 @@ make stop-test-environment
 ```
 
 **Note** that the created `secrets-insecure.yaml` will not be removed automatically and will get overwritten by the setup command.
+
+### MinIO Version Configuration
+
+The test environment uses a specific MinIO version (`RELEASE.2025-04-03T14-56-28Z`) defined in the Makefile for consistent and reproducible testing. To use a different version:
+
+1. Edit the `MINIO_VERSION` variable in the Makefile
+2. Stop and restart the test environment:
+   ```bash
+   make stop-test-environment
+   make run-test-environment
+   ```
+
+This ensures all developers and CI/CD systems use the same MinIO version for testing.
+
+### Bucket Prefix Validation
+
+MinIO Manager supports bucket prefix validation to enforce naming conventions. This is configured via the `MINIO_MANAGER_ALLOWED_BUCKET_PREFIXES` environment variable. 
+
+- **Resource-level validation**: Buckets that don't match allowed prefixes are filtered out during YAML resource parsing
+- **Integration testing**: Comprehensive tests verify prefix validation behavior with various scenarios
+- **Configuration**: Set allowed prefixes as comma-separated values (e.g., `"test-,demo-,project-"`)
+
+When prefix validation is enabled, only buckets matching the configured prefixes will be processed.
 
 ## Testing
 
@@ -80,7 +110,7 @@ make test
 For full integration testing with MinIO:
 
 ```bash
-# Start test environment, run all tests, then stop environment
+# (Stop if running) Start test environment, run all tests
 make test-full
 
 # Or manually:
@@ -110,9 +140,14 @@ make test-coverage
 - **`tests/test_basic.py`** - Basic functionality tests
 - **`tests/test_utilities.py`** - Utility function and class tests
 - **`tests/test_bucket_creation.py`** - Bucket creation and management tests
+- **`tests/test_bucket_prefix_integration.py`** - Bucket prefix validation integration tests
 - **`tests/test_lifecycle_policies.py`** - Lifecycle policy tests
 - **`tests/test_bucket_policies.py`** - Bucket policy tests
 - **`tests/test_integration.py`** - Full integration scenarios
+- **`tests/test_resource_parser.py`** - Resource parsing and validation tests
+- **`tests/test_secrets.py`** - Secret management tests
+- **`tests/test_iam_policies.py`** - IAM policy tests
+- **`tests/test_service_account_handler.py`** - Service account management tests
 
 Tests automatically detect MinIO availability and skip integration tests when no test environment is running.
 
