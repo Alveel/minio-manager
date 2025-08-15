@@ -50,7 +50,7 @@ class Settings(BaseSettings):
         cli_parse_args=True,
         cli_kebab_case=True,
         env_prefix="MINIO_MANAGER_",
-        env_file=".env",
+        env_file="config.env",
         env_file_encoding="utf-8",
         extra="ignore",
     )
@@ -110,8 +110,6 @@ class Settings(BaseSettings):
 
 try:
     # Check if we're running in pytest and disable CLI parsing
-    import sys
-    from pathlib import Path
 
     if "pytest" in sys.modules or any("pytest" in arg for arg in sys.argv):
         # Create a test-only settings class without CLI parsing
