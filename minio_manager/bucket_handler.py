@@ -75,11 +75,12 @@ def check_bucket_lifecycle(bucket):
         desired_dict = lifecycle_status_to_dict(bucket.lifecycle_config)
 
         lifecycle_diff = compare_objects(current_dict, desired_dict)
-        if not lifecycle_diff:
+        if lifecycle_diff:
             logger.debug(f"Bucket '{bucket.name}': lifecycle management policies already up to date")
             return True
 
         logger.debug(f"Bucket '{bucket.name}': current lifecycle management policy does not match desired state")
+        return False
     except ValueError as ve:
         # This error occurs even if the bucket has a lifecycle configuration.
         # This happens specifically with the minio-py library and might be a bug.

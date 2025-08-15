@@ -1,58 +1,40 @@
-"""Tests for bucket lifecycle policy management."""
+"""Tests for bucket lifecycle policy management using minio_manager functions."""
 
 import json
 from pathlib import Path
+from unittest.mock import Mock, patch
 
-from minio import Minio
-from minio.error import S3Error
+import pytest
 from minio.lifecycleconfig import Expiration, Filter, LifecycleConfig, NoncurrentVersionExpiration, Rule
 
-from minio_manager.bucket_handler import check_bucket_lifecycle
+from minio_manager.bucket_handler import check_bucket_lifecycle, configure_lifecycle, lifecycle_status_to_dict
 from minio_manager.classes.minio_resources import Bucket
 from tests.conftest import requires_minio
 
 
-@requires_minio
-class TestLifecyclePolicyCreation:
-    """Test lifecycle policy creation and management."""
+class TestLifecycleFunctions:
+    """Test minio_manager lifecycle functions."""
 
-    def test_create_simple_lifecycle_rule(self, minio_client: Minio, test_bucket_name: str, cleanup_bucket):
-        """Test creating a simple lifecycle rule."""
-        cleanup_bucket(test_bucket_name)
-
-        # Create bucket
-        minio_client.make_bucket(test_bucket_name)
-
-        # Create lifecycle configuration
-        from minio.lifecycleconfig import Filter
-
+    def test_lifecycle_status_to_dict(self):
+        """Test conversion of lifecycle config to dictionary."""
+        # Create a simple lifecycle configuration
         rule = Rule(
             rule_id="test-rule", rule_filter=Filter(prefix=""), status="Enabled", expiration=Expiration(days=30)
         )
         lifecycle_config = LifecycleConfig([rule])
 
-        # Apply lifecycle configuration
-        minio_client.set_bucket_lifecycle(test_bucket_name, lifecycle_config)
+        # Convert to dictionary
+        result = lifecycle_status_to_dict(lifecycle_config)
 
-        # Verify lifecycle configuration
-        current_lifecycle = minio_client.get_bucket_lifecycle(test_bucket_name)
-        assert len(current_lifecycle.rules) == 1
-        assert current_lifecycle.rules[0].rule_id == "test-rule"
-        assert current_lifecycle.rules[0].status == "Enabled"
-        assert current_lifecycle.rules[0].expiration.days == 30
+        # Verify structure (uses _rules instead of rules in minio library)
+        assert isinstance(result, dict)
+        assert "_rules" in result
+        assert len(result["_rules"]) == 1
+        assert result["_rules"][0]["_rule_id"] == "test-rule"
+        assert result["_rules"][0]["_status"] == "Enabled"
 
-    def test_create_lifecycle_with_noncurrent_version_expiration(
-        self, minio_client: Minio, test_bucket_name: str, cleanup_bucket
-    ):
-        """Test creating lifecycle rule with non-current version expiration."""
-        cleanup_bucket(test_bucket_name)
-
-        # Create bucket
-        minio_client.make_bucket(test_bucket_name)
-
-        # Create lifecycle configuration with non-current version expiration
-        from minio.lifecycleconfig import Filter
-
+    def test_lifecycle_status_to_dict_with_noncurrent_version(self):
+        """Test conversion with non-current version expiration."""
         rule = Rule(
             rule_id="test-noncurrent-rule",
             rule_filter=Filter(prefix=""),
@@ -62,222 +44,208 @@ class TestLifecyclePolicyCreation:
         )
         lifecycle_config = LifecycleConfig([rule])
 
-        # Apply lifecycle configuration
-        minio_client.set_bucket_lifecycle(test_bucket_name, lifecycle_config)
+        result = lifecycle_status_to_dict(lifecycle_config)
 
-        # Verify lifecycle configuration
-        current_lifecycle = minio_client.get_bucket_lifecycle(test_bucket_name)
-        assert len(current_lifecycle.rules) == 1
-        rule = current_lifecycle.rules[0]
-        assert rule.rule_id == "test-noncurrent-rule"
-        assert rule.expiration.days == 90
-        assert rule.noncurrent_version_expiration.noncurrent_days == 30
+        assert isinstance(result, dict)
+        assert "_rules" in result
+        assert len(result["_rules"]) == 1
+        rule_dict = result["_rules"][0]
+        assert rule_dict["_rule_id"] == "test-noncurrent-rule"
+        assert rule_dict["_status"] == "Enabled"
 
-    def test_multiple_lifecycle_rules(self, minio_client: Minio, test_bucket_name: str, cleanup_bucket):
-        """Test creating multiple lifecycle rules."""
-        cleanup_bucket(test_bucket_name)
+    @patch("minio_manager.bucket_handler.client_manager")
+    def test_configure_lifecycle_success(self, mock_client_manager):
+        """Test successful lifecycle configuration."""
+        # Setup
+        mock_s3 = Mock()
+        mock_client_manager.s3 = mock_s3
+        mock_s3.get_bucket_lifecycle.side_effect = Exception("No lifecycle")
+        
+        bucket = Bucket(name="test-bucket")
+        rule = Rule(
+            rule_id="test-rule", rule_filter=Filter(prefix=""), status="Enabled", expiration=Expiration(days=30)
+        )
+        bucket.lifecycle_config = LifecycleConfig([rule])
 
-        # Create bucket
-        minio_client.make_bucket(test_bucket_name)
+        # Execute
+        configure_lifecycle(bucket)
 
-        # Create multiple lifecycle rules
+        # Verify
+        mock_s3.delete_bucket_lifecycle.assert_called_once_with("test-bucket")
+        mock_s3.set_bucket_lifecycle.assert_called_once_with("test-bucket", bucket.lifecycle_config)
+
+    @patch("minio_manager.bucket_handler.compare_objects")
+    @patch("minio_manager.bucket_handler.client_manager")
+    def test_check_bucket_lifecycle_no_difference(self, mock_client_manager, mock_compare_objects):
+        """Test check_bucket_lifecycle when no changes needed."""
+        # Setup
+        mock_s3 = Mock()
+        mock_client_manager.s3 = mock_s3
+        mock_compare_objects.return_value = True  # No difference
+        
+        rule = Rule(
+            rule_id="test-rule", rule_filter=Filter(prefix=""), status="Enabled", expiration=Expiration(days=30)
+        )
+        lifecycle_config = LifecycleConfig([rule])
+        
+        bucket = Bucket(name="test-bucket")
+        bucket.lifecycle_config = lifecycle_config
+        
+        # Mock the current lifecycle
+        mock_s3.get_bucket_lifecycle.return_value = lifecycle_config
+
+        # Execute
+        result = check_bucket_lifecycle(bucket)
+
+        # Should return True when configurations match (after fixing the bug)
+        assert result is True
+
+    @patch("minio_manager.bucket_handler.compare_objects")
+    @patch("minio_manager.bucket_handler.client_manager")
+    def test_check_bucket_lifecycle_with_difference(self, mock_client_manager, mock_compare_objects):
+        """Test check_bucket_lifecycle when configurations differ."""
+        # Setup
+        mock_s3 = Mock()
+        mock_client_manager.s3 = mock_s3
+        mock_compare_objects.return_value = False  # Difference found
+        
+        # Current lifecycle
+        current_rule = Rule(
+            rule_id="old-rule", rule_filter=Filter(prefix=""), status="Enabled", expiration=Expiration(days=60)
+        )
+        current_lifecycle = LifecycleConfig([current_rule])
+        
+        # Desired lifecycle
+        desired_rule = Rule(
+            rule_id="new-rule", rule_filter=Filter(prefix=""), status="Enabled", expiration=Expiration(days=30)
+        )
+        desired_lifecycle = LifecycleConfig([desired_rule])
+        
+        bucket = Bucket(name="test-bucket")
+        bucket.lifecycle_config = desired_lifecycle
+        
+        mock_s3.get_bucket_lifecycle.return_value = current_lifecycle
+
+        # Execute
+        result = check_bucket_lifecycle(bucket)
+
+        # Should return False when configurations differ (after fixing the bug)
+        assert result is False
+
+
+class TestLifecycleClass:
+    """Test lifecycle functionality with Bucket class."""
+
+    def test_bucket_with_lifecycle_from_file(self, temp_lifecycle_file):
+        """Test creating bucket with lifecycle from JSON file."""
+        # Read lifecycle configuration from file
+        with open(temp_lifecycle_file) as f:
+            lifecycle_data = json.load(f)
+
+        # Create bucket with lifecycle
+        bucket = Bucket(name="test-bucket")
+        
+        # Convert JSON to LifecycleConfig object
+        rules = []
+        for rule_data in lifecycle_data["Rules"]:
+            rule = Rule(
+                rule_id=rule_data["ID"],
+                rule_filter=Filter(prefix=""),
+                status=rule_data["Status"],
+                expiration=Expiration(days=rule_data["Expiration"]["Days"]),
+                noncurrent_version_expiration=NoncurrentVersionExpiration(
+                    noncurrent_days=rule_data["NoncurrentVersionExpiration"]["NoncurrentDays"]
+                ),
+            )
+            rules.append(rule)
+
+        bucket.lifecycle_config = LifecycleConfig(rules)
+
+        # Verify the bucket has the lifecycle configuration
+        assert bucket.lifecycle_config is not None
+        assert len(bucket.lifecycle_config.rules) == 1
+        rule = bucket.lifecycle_config.rules[0]
+        assert rule.rule_id == "TestLifecycleRule"
+        assert rule.status == "Enabled"
+        assert rule.expiration.days == 30
+        assert rule.noncurrent_version_expiration.noncurrent_days == 7
+
+    def test_bucket_with_multiple_lifecycle_rules(self):
+        """Test Bucket class with multiple lifecycle rules."""
+        bucket = Bucket(name="test-multi-bucket")
+        
+        # Create multiple rules
         rule1 = Rule(
             rule_id="rule-1", rule_filter=Filter(prefix="logs/"), status="Enabled", expiration=Expiration(days=30)
         )
         rule2 = Rule(
             rule_id="rule-2", rule_filter=Filter(prefix="archive/"), status="Enabled", expiration=Expiration(days=365)
         )
-        lifecycle_config = LifecycleConfig([rule1, rule2])
+        
+        bucket.lifecycle_config = LifecycleConfig([rule1, rule2])
 
-        # Apply lifecycle configuration
-        minio_client.set_bucket_lifecycle(test_bucket_name, lifecycle_config)
-
-        # Verify lifecycle configuration
-        current_lifecycle = minio_client.get_bucket_lifecycle(test_bucket_name)
-        assert len(current_lifecycle.rules) == 2
-
-        rule_ids = [rule.rule_id for rule in current_lifecycle.rules]
+        # Verify multiple rules
+        assert bucket.lifecycle_config is not None
+        assert len(bucket.lifecycle_config.rules) == 2
+        
+        rule_ids = [rule.rule_id for rule in bucket.lifecycle_config.rules]
         assert "rule-1" in rule_ids
         assert "rule-2" in rule_ids
 
-    def test_remove_lifecycle_configuration(self, minio_client: Minio, test_bucket_name: str, cleanup_bucket):
-        """Test removing lifecycle configuration."""
-        cleanup_bucket(test_bucket_name)
 
-        # Create bucket
-        minio_client.make_bucket(test_bucket_name)
+class TestLifecycleComplexScenarios:
+    """Test complex lifecycle scenarios using minio_manager functions."""
 
-        # Create and apply lifecycle configuration
-        rule = Rule(
-            rule_id="temp-rule", rule_filter=Filter(prefix=""), status="Enabled", expiration=Expiration(days=30)
-        )
-        lifecycle_config = LifecycleConfig([rule])
-        minio_client.set_bucket_lifecycle(test_bucket_name, lifecycle_config)
-
-        # Verify it exists
-        current_lifecycle = minio_client.get_bucket_lifecycle(test_bucket_name)
-        assert len(current_lifecycle.rules) == 1
-
-        # Remove lifecycle configuration
-        minio_client.delete_bucket_lifecycle(test_bucket_name)
-
-        # Verify it's removed (should raise an error when trying to get it)
-        try:
-            lifecycle = minio_client.get_bucket_lifecycle(test_bucket_name)
-            # If we get here, verify the lifecycle is empty
-            assert lifecycle is None or len(lifecycle.rules) == 0
-        except S3Error as e:
-            # This is the expected behavior
-            assert e.code == "NoSuchLifecycleConfiguration"
-
-
-@requires_minio
-class TestLifecyclePolicyFromFile:
-    """Test lifecycle policy creation from files."""
-
-    def test_lifecycle_from_json_file(
-        self, minio_client: Minio, test_bucket_name: str, temp_lifecycle_file: Path, cleanup_bucket
-    ):
-        """Test creating lifecycle policy from JSON file."""
-        cleanup_bucket(test_bucket_name)
-
-        # Create bucket
-        minio_client.make_bucket(test_bucket_name)
-
-        # Read lifecycle configuration from file
-        with open(temp_lifecycle_file) as f:
-            lifecycle_data = json.load(f)
-
-        # Convert to LifecycleConfig object
-        rules = []
-        for rule_data in lifecycle_data["Rules"]:
-            rule = Rule(
-                rule_id=rule_data["ID"],
-                rule_filter=Filter(prefix=""),
-                status=rule_data["Status"],
-                expiration=Expiration(days=rule_data["Expiration"]["Days"]),
-                noncurrent_version_expiration=NoncurrentVersionExpiration(
-                    noncurrent_days=rule_data["NoncurrentVersionExpiration"]["NoncurrentDays"]
-                ),
-            )
-            rules.append(rule)
-
-        lifecycle_config = LifecycleConfig(rules)
-
-        # Apply lifecycle configuration
-        minio_client.set_bucket_lifecycle(test_bucket_name, lifecycle_config)
-
-        # Verify lifecycle configuration
-        current_lifecycle = minio_client.get_bucket_lifecycle(test_bucket_name)
-        assert len(current_lifecycle.rules) == 1
-        rule = current_lifecycle.rules[0]
-        assert rule.rule_id == "TestLifecycleRule"
-        assert rule.status == "Enabled"
-        assert rule.expiration.days == 30
-        assert rule.noncurrent_version_expiration.noncurrent_days == 7
-
-    def test_bucket_with_lifecycle_config(
-        self, minio_client: Minio, test_bucket_name: str, temp_lifecycle_file: Path, cleanup_bucket
-    ):
-        """Test Bucket class with lifecycle configuration."""
-        cleanup_bucket(test_bucket_name)
-
-        # Read and parse lifecycle configuration
-        with open(temp_lifecycle_file) as f:
-            lifecycle_data = json.load(f)
-
-        # Convert to LifecycleConfig object
-        rules = []
-        for rule_data in lifecycle_data["Rules"]:
-            rule = Rule(
-                rule_id=rule_data["ID"],
-                rule_filter=Filter(prefix=""),
-                status=rule_data["Status"],
-                expiration=Expiration(days=rule_data["Expiration"]["Days"]),
-                noncurrent_version_expiration=NoncurrentVersionExpiration(
-                    noncurrent_days=rule_data["NoncurrentVersionExpiration"]["NoncurrentDays"]
-                ),
-            )
-            rules.append(rule)
-
-        lifecycle_config = LifecycleConfig(rules)
-
-        # Create Bucket object with lifecycle configuration
-        bucket = Bucket(name=test_bucket_name, lifecycle_config=lifecycle_config)
-
-        assert bucket.name == test_bucket_name
-        assert bucket.lifecycle_config is not None
-        assert len(bucket.lifecycle_config.rules) == 1
-
-
-@requires_minio
-class TestBucketLifecycleHandler:
-    """Test the bucket lifecycle handler functionality."""
-
-    def test_check_bucket_lifecycle_no_config(self, minio_client: Minio, test_bucket_name: str, cleanup_bucket):
-        """Test checking bucket lifecycle when no configuration is set."""
-        cleanup_bucket(test_bucket_name)
-
-        # Create bucket without lifecycle
-        minio_client.make_bucket(test_bucket_name)
-
-        # Create a minimal lifecycle config to test with
-        rule = Rule(
-            rule_id="temp-rule", rule_filter=Filter(prefix=""), status="Enabled", expiration=Expiration(days=30)
-        )
-        lifecycle_config = LifecycleConfig([rule])
-
-        # Create Bucket object with lifecycle config but bucket has none set
-        bucket = Bucket(name=test_bucket_name, lifecycle_config=lifecycle_config)
-
-        # Check lifecycle - should return False since bucket has no lifecycle but we want one
-        result = check_bucket_lifecycle(bucket)
-        assert result is False
-
-    def test_check_bucket_lifecycle_matches(self, minio_client: Minio, test_bucket_name: str, cleanup_bucket):
-        """Test checking bucket lifecycle when configuration matches."""
-        cleanup_bucket(test_bucket_name)
-
-        # Create bucket
-        minio_client.make_bucket(test_bucket_name)
-
-        # Create and apply lifecycle configuration
+    @patch("minio_manager.bucket_handler.client_manager")
+    def test_lifecycle_with_error_handling(self, mock_client_manager):
+        """Test lifecycle configuration with error handling."""
+        # Setup
+        mock_s3 = Mock()
+        mock_client_manager.s3 = mock_s3
+        mock_s3.get_bucket_lifecycle.side_effect = Exception("Connection error")
+        
+        bucket = Bucket(name="test-bucket")
         rule = Rule(
             rule_id="test-rule", rule_filter=Filter(prefix=""), status="Enabled", expiration=Expiration(days=30)
         )
-        lifecycle_config = LifecycleConfig([rule])
-        minio_client.set_bucket_lifecycle(test_bucket_name, lifecycle_config)
+        bucket.lifecycle_config = LifecycleConfig([rule])
 
-        # Create Bucket object with same lifecycle config
-        bucket = Bucket(name=test_bucket_name, lifecycle_config=lifecycle_config)
+        # Execute - should handle the error gracefully and still proceed
+        configure_lifecycle(bucket)
 
-        # Check lifecycle - should return True (configuration matches) or False due to minio-py issues
-        result = check_bucket_lifecycle(bucket)
-        # The function might return False due to minio-py GET lifecycle issues, or None if no return path hit
-        assert result in [True, False, None]
+        # Verify that despite get error, delete and set were still called
+        mock_s3.delete_bucket_lifecycle.assert_called_once_with("test-bucket")
+        mock_s3.set_bucket_lifecycle.assert_called_once_with("test-bucket", bucket.lifecycle_config)
 
-    def test_check_bucket_lifecycle_differs(self, minio_client: Minio, test_bucket_name: str, cleanup_bucket):
-        """Test checking bucket lifecycle when configuration differs."""
-        cleanup_bucket(test_bucket_name)
-
-        # Create bucket
-        minio_client.make_bucket(test_bucket_name)
-
-        # Apply initial lifecycle configuration
-        rule1 = Rule(
-            rule_id="old-rule", rule_filter=Filter(prefix=""), status="Enabled", expiration=Expiration(days=60)
+    @patch("minio_manager.bucket_handler.client_manager")
+    def test_lifecycle_comparison_with_different_rule_count(self, mock_client_manager):
+        """Test lifecycle comparison when rule counts differ."""
+        # Setup
+        mock_s3 = Mock()
+        mock_client_manager.s3 = mock_s3
+        
+        # Current has 1 rule
+        current_rule = Rule(
+            rule_id="current-rule", rule_filter=Filter(prefix=""), status="Enabled", expiration=Expiration(days=30)
         )
-        lifecycle_config1 = LifecycleConfig([rule1])
-        minio_client.set_bucket_lifecycle(test_bucket_name, lifecycle_config1)
-
-        # Create Bucket object with different lifecycle config
-        rule2 = Rule(
-            rule_id="new-rule", rule_filter=Filter(prefix=""), status="Enabled", expiration=Expiration(days=30)
+        current_lifecycle = LifecycleConfig([current_rule])
+        
+        # Desired has 2 rules
+        desired_rule1 = Rule(
+            rule_id="rule-1", rule_filter=Filter(prefix="logs/"), status="Enabled", expiration=Expiration(days=30)
         )
-        lifecycle_config2 = LifecycleConfig([rule2])
-        bucket = Bucket(name=test_bucket_name, lifecycle_config=lifecycle_config2)
+        desired_rule2 = Rule(
+            rule_id="rule-2", rule_filter=Filter(prefix="archive/"), status="Enabled", expiration=Expiration(days=365)
+        )
+        desired_lifecycle = LifecycleConfig([desired_rule1, desired_rule2])
+        
+        bucket = Bucket(name="test-bucket")
+        bucket.lifecycle_config = desired_lifecycle
+        
+        mock_s3.get_bucket_lifecycle.return_value = current_lifecycle
 
-        # Check lifecycle - should return False (configuration differs) but may return True due to comparison logic
+        # Execute check_bucket_lifecycle (which only checks, doesn't update)
         result = check_bucket_lifecycle(bucket)
-        # Due to potential issues with minio-py lifecycle comparison, accept either result
-        assert result in [True, False]
+
+        # Should return False when configurations differ (after fixing the bug)
+        assert result is False
