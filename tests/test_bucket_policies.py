@@ -3,13 +3,14 @@
 import json
 import tempfile
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 from minio import Minio
 from minio.error import S3Error
 
 from minio_manager.classes.minio_resources import Bucket, BucketPolicy
-from minio_manager.policy_handler import handle_bucket_policy, apply_bucket_policy, get_existing_bucket_policy, delete_existing_bucket_policy
+from minio_manager.policy_handler import handle_bucket_policy, apply_bucket_policy, get_existing_bucket_policy, delete_existing_bucket_policy, resolve_bucket_policy_file
 from minio_manager.bucket_handler import handle_bucket
 from tests.conftest import requires_minio
 
@@ -17,6 +18,37 @@ from tests.conftest import requires_minio
 @requires_minio
 class TestBucketPolicyFunctions:
     """Unit tests for minio_manager bucket policy functions."""
+
+    @patch('minio_manager.policy_handler.settings')
+    def test_resolve_bucket_policy_file_explicit_policy(self, mock_settings):
+        """Test resolving when bucket has explicit policy file."""
+        bucket_policy = BucketPolicy(bucket="test-bucket", policy_file="custom-policy.json")
+        
+        result = resolve_bucket_policy_file(bucket_policy)
+        
+        assert result == "custom-policy.json"
+
+    @patch('minio_manager.policy_handler.settings')
+    def test_resolve_bucket_policy_file_default_policy(self, mock_settings):
+        """Test resolving when no explicit policy but default policy exists."""
+        mock_settings.default_bucket_policy_file = "default-policy.json"
+        
+        bucket_policy = BucketPolicy(bucket="test-bucket", policy_file=None)
+        
+        result = resolve_bucket_policy_file(bucket_policy)
+        
+        assert result == "default-policy.json"
+
+    @patch('minio_manager.policy_handler.settings')
+    def test_resolve_bucket_policy_file_no_policy(self, mock_settings):
+        """Test resolving when no explicit policy and no default policy."""
+        mock_settings.default_bucket_policy_file = None
+        
+        bucket_policy = BucketPolicy(bucket="test-bucket", policy_file=None)
+        
+        result = resolve_bucket_policy_file(bucket_policy)
+        
+        assert result is None
 
     def test_apply_bucket_policy_simple(self, minio_client: Minio, test_bucket_name: str, cleanup_bucket):
         """Test apply_bucket_policy function with simple policy."""
