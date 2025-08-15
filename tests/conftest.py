@@ -1,6 +1,7 @@
 """Test configuration and fixtures for MinIO Manager tests."""
 
 import json
+import os
 import tempfile
 import subprocess
 from collections.abc import Generator
@@ -9,6 +10,43 @@ from pathlib import Path
 import pytest
 from minio import Minio
 from minio.deleteobjects import DeleteObject
+
+
+def pytest_configure(config):
+    """Configure pytest and set up test environment variables before any imports."""
+    # Load environment variables from .testenv file
+    testenv_path = Path(__file__).parent / "fixtures" / ".testenv"
+    
+    if testenv_path.exists():
+        with open(testenv_path, 'r') as f:
+            for line in f:
+                line = line.strip()
+                # Skip comments and empty lines
+                if line and not line.startswith('#'):
+                    if '=' in line:
+                        key, value = line.split('=', 1)
+                        os.environ[key] = value
+    else:
+        # Fallback to hardcoded values if .testenv file doesn't exist
+        os.environ["MINIO_MANAGER_SECRET_BACKEND_TYPE"] = "yaml"
+        os.environ["MINIO_MANAGER_SECRET_BACKEND_PATH"] = "tests/fixtures/testsecrets-insecure.yaml"
+        os.environ["MINIO_MANAGER_CLUSTER_NAME"] = "test-cluster"
+        os.environ["MINIO_MANAGER_S3_ENDPOINT"] = "localhost:9000"
+        os.environ["MINIO_MANAGER_S3_ENDPOINT_SECURE"] = "false"
+        os.environ["MINIO_MANAGER_MINIO_CONTROLLER_USER"] = "local-test-controller"
+        os.environ["MINIO_MANAGER_DRY_RUN"] = "false"
+        os.environ["MINIO_MANAGER_LOG_LEVEL"] = "INFO"
+        os.environ["MINIO_MANAGER_AUTO_CREATE_SERVICE_ACCOUNT"] = "false"
+        os.environ["MINIO_MANAGER_DEFAULT_BUCKET_VERSIONING"] = "Suspended"
+        os.environ["MINIO_MANAGER_ALLOWED_BUCKET_PREFIXES"] = "integration-test-,test-,demo-"
+
+
+@pytest.fixture(scope="session")
+def monkeypatch_session():
+    """Session-scoped monkeypatch fixture for setting environment variables."""
+    mp = pytest.MonkeyPatch()
+    yield mp
+    mp.undo()
 
 
 @pytest.fixture(scope="session", autouse=True)

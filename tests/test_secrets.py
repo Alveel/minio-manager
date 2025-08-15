@@ -17,7 +17,7 @@ class TestSecretManager:
     def setup_method(self):
         """Setup for each test method."""
         self.test_fixtures_dir = Path(__file__).parent / "fixtures"
-        self.test_secrets_file = self.test_fixtures_dir / "secrets-insecure.yaml"
+        self.test_secrets_file = self.test_fixtures_dir / "testsecrets-insecure.yaml"
 
     def test_yaml_backend_initialization(self):
         """Test YAML backend initialization with real secrets file."""
