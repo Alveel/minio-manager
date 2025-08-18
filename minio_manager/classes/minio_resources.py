@@ -135,7 +135,13 @@ class ServiceAccount:
             return_dict["policy"] = self.policy
         elif self.policy_file:
             return_dict["policy_file"] = self.policy_file
-        logger.debug(f"Returning service account as dict: {return_dict}")
+
+        # Redact secret_key for logging
+        log_dict = return_dict.copy()
+        if "secret_key" in log_dict:
+            log_dict["secret_key"] = "***REDACTED***"
+        logger.debug(f"Returning service account as dict: {log_dict}")
+
         return return_dict
 
 
