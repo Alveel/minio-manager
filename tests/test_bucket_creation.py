@@ -3,10 +3,10 @@
 import pytest
 from minio import Minio
 from minio.error import S3Error
+from minio.lifecycleconfig import Expiration, Filter, LifecycleConfig, Rule
 from minio.versioningconfig import VersioningConfig
-from minio.lifecycleconfig import LifecycleConfig, Rule, Expiration, Filter
 
-from minio_manager.bucket_handler import configure_versioning, handle_bucket, configure_lifecycle
+from minio_manager.bucket_handler import configure_lifecycle, configure_versioning, handle_bucket
 from minio_manager.classes.minio_resources import Bucket
 from tests.conftest import requires_minio
 
@@ -113,14 +113,14 @@ class TestBucketHandler:
                 )
             ]
         )
-        
+
         # Create bucket with lifecycle using minio_manager
         bucket = Bucket(name=test_bucket_name, lifecycle_config=lifecycle_config)
         handle_bucket(bucket)
-        
+
         # Verify bucket exists
         assert minio_client.bucket_exists(test_bucket_name)
-        
+
         # Verify lifecycle policy is applied
         current_lifecycle = minio_client.get_bucket_lifecycle(test_bucket_name)
         assert len(current_lifecycle.rules) == 1
@@ -132,14 +132,14 @@ class TestBucketHandler:
 
         # Create bucket first
         minio_client.make_bucket(test_bucket_name)
-        
+
         # Create Bucket object with versioning
         versioning_config = VersioningConfig("Enabled")
         bucket = Bucket(name=test_bucket_name, versioning=versioning_config)
 
         # Test configure_versioning function
         configure_versioning(bucket)
-        
+
         # Verify versioning is configured
         current_versioning = minio_client.get_bucket_versioning(test_bucket_name)
         assert current_versioning.status == "Enabled"
@@ -150,7 +150,7 @@ class TestBucketHandler:
 
         # Create bucket first
         minio_client.make_bucket(test_bucket_name)
-        
+
         # Create lifecycle config
         lifecycle_config = LifecycleConfig(
             [
@@ -162,13 +162,13 @@ class TestBucketHandler:
                 )
             ]
         )
-        
+
         # Create Bucket object with lifecycle
         bucket = Bucket(name=test_bucket_name, lifecycle_config=lifecycle_config)
 
         # Test configure_lifecycle function
         configure_lifecycle(bucket)
-        
+
         # Verify lifecycle is configured
         current_lifecycle = minio_client.get_bucket_lifecycle(test_bucket_name)
         assert len(current_lifecycle.rules) == 1

@@ -29,12 +29,12 @@ def service_account_exists(account: ServiceAccount):
 
     logger.debug(f"Access key for {account.full_name} not found in secret backend, trying to find it in MinIO.")
     sa_list = json.loads(client_manager.admin.list_service_account(settings.minio_controller_user))  # type: dict
-    
+
     # Handle case where no service accounts exist for this user
     if sa_list.get("accounts") is None:
         logger.debug(f"No service accounts found for user '{settings.minio_controller_user}'")
         return False
-        
+
     for sa in sa_list["accounts"]:
         access_key = sa["accessKey"]
         sa_info = json.loads(client_manager.admin.get_service_account(access_key))  # type: dict

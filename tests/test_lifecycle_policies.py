@@ -1,15 +1,12 @@
 """Tests for bucket lifecycle policy management using minio_manager functions."""
 
 import json
-from pathlib import Path
 from unittest.mock import Mock, patch
 
-import pytest
 from minio.lifecycleconfig import Expiration, Filter, LifecycleConfig, NoncurrentVersionExpiration, Rule
 
 from minio_manager.bucket_handler import check_bucket_lifecycle, configure_lifecycle, lifecycle_status_to_dict
 from minio_manager.classes.minio_resources import Bucket
-from tests.conftest import requires_minio
 
 
 class TestLifecycleFunctions:
@@ -60,7 +57,7 @@ class TestLifecycleFunctions:
         mock_s3 = Mock()
         mock_client_manager.s3 = mock_s3
         mock_s3.get_bucket_lifecycle.side_effect = Exception("No lifecycle")
-        
+
         bucket = Bucket(name="test-bucket")
         rule = Rule(
             rule_id="test-rule", rule_filter=Filter(prefix=""), status="Enabled", expiration=Expiration(days=30)
@@ -82,15 +79,15 @@ class TestLifecycleFunctions:
         mock_s3 = Mock()
         mock_client_manager.s3 = mock_s3
         mock_compare_objects.return_value = True  # No difference
-        
+
         rule = Rule(
             rule_id="test-rule", rule_filter=Filter(prefix=""), status="Enabled", expiration=Expiration(days=30)
         )
         lifecycle_config = LifecycleConfig([rule])
-        
+
         bucket = Bucket(name="test-bucket")
         bucket.lifecycle_config = lifecycle_config
-        
+
         # Mock the current lifecycle
         mock_s3.get_bucket_lifecycle.return_value = lifecycle_config
 
@@ -109,22 +106,22 @@ class TestLifecycleFunctions:
         mock_s3 = Mock()
         mock_client_manager.s3 = mock_s3
         mock_compare_objects.return_value = False  # Difference found
-        
+
         # Current lifecycle
         current_rule = Rule(
             rule_id="old-rule", rule_filter=Filter(prefix=""), status="Enabled", expiration=Expiration(days=60)
         )
         current_lifecycle = LifecycleConfig([current_rule])
-        
+
         # Desired lifecycle
         desired_rule = Rule(
             rule_id="new-rule", rule_filter=Filter(prefix=""), status="Enabled", expiration=Expiration(days=30)
         )
         desired_lifecycle = LifecycleConfig([desired_rule])
-        
+
         bucket = Bucket(name="test-bucket")
         bucket.lifecycle_config = desired_lifecycle
-        
+
         mock_s3.get_bucket_lifecycle.return_value = current_lifecycle
 
         # Execute
@@ -146,7 +143,7 @@ class TestLifecycleClass:
 
         # Create bucket with lifecycle
         bucket = Bucket(name="test-bucket")
-        
+
         # Convert JSON to LifecycleConfig object
         rules = []
         for rule_data in lifecycle_data["Rules"]:
@@ -175,7 +172,7 @@ class TestLifecycleClass:
     def test_bucket_with_multiple_lifecycle_rules(self):
         """Test Bucket class with multiple lifecycle rules."""
         bucket = Bucket(name="test-multi-bucket")
-        
+
         # Create multiple rules
         rule1 = Rule(
             rule_id="rule-1", rule_filter=Filter(prefix="logs/"), status="Enabled", expiration=Expiration(days=30)
@@ -183,13 +180,13 @@ class TestLifecycleClass:
         rule2 = Rule(
             rule_id="rule-2", rule_filter=Filter(prefix="archive/"), status="Enabled", expiration=Expiration(days=365)
         )
-        
+
         bucket.lifecycle_config = LifecycleConfig([rule1, rule2])
 
         # Verify multiple rules
         assert bucket.lifecycle_config is not None
         assert len(bucket.lifecycle_config.rules) == 2
-        
+
         rule_ids = [rule.rule_id for rule in bucket.lifecycle_config.rules]
         assert "rule-1" in rule_ids
         assert "rule-2" in rule_ids
@@ -205,7 +202,7 @@ class TestLifecycleComplexScenarios:
         mock_s3 = Mock()
         mock_client_manager.s3 = mock_s3
         mock_s3.get_bucket_lifecycle.side_effect = Exception("Connection error")
-        
+
         bucket = Bucket(name="test-bucket")
         rule = Rule(
             rule_id="test-rule", rule_filter=Filter(prefix=""), status="Enabled", expiration=Expiration(days=30)
@@ -225,13 +222,13 @@ class TestLifecycleComplexScenarios:
         # Setup
         mock_s3 = Mock()
         mock_client_manager.s3 = mock_s3
-        
+
         # Current has 1 rule
         current_rule = Rule(
             rule_id="current-rule", rule_filter=Filter(prefix=""), status="Enabled", expiration=Expiration(days=30)
         )
         current_lifecycle = LifecycleConfig([current_rule])
-        
+
         # Desired has 2 rules
         desired_rule1 = Rule(
             rule_id="rule-1", rule_filter=Filter(prefix="logs/"), status="Enabled", expiration=Expiration(days=30)
@@ -240,10 +237,10 @@ class TestLifecycleComplexScenarios:
             rule_id="rule-2", rule_filter=Filter(prefix="archive/"), status="Enabled", expiration=Expiration(days=365)
         )
         desired_lifecycle = LifecycleConfig([desired_rule1, desired_rule2])
-        
+
         bucket = Bucket(name="test-bucket")
         bucket.lifecycle_config = desired_lifecycle
-        
+
         mock_s3.get_bucket_lifecycle.return_value = current_lifecycle
 
         # Execute check_bucket_lifecycle (which only checks, doesn't update)

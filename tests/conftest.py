@@ -16,15 +16,15 @@ def pytest_configure(config):
     """Configure pytest and set up test environment variables before any imports."""
     # Load environment variables from .testenv file
     testenv_path = Path(__file__).parent / "fixtures" / ".testenv"
-    
+
     if testenv_path.exists():
-        with open(testenv_path, 'r') as f:
+        with open(testenv_path) as f:
             for line in f:
                 line = line.strip()
                 # Skip comments and empty lines
-                if line and not line.startswith('#'):
-                    if '=' in line:
-                        key, value = line.split('=', 1)
+                if line and not line.startswith("#"):
+                    if "=" in line:
+                        key, value = line.split("=", 1)
                         os.environ[key] = value
     else:
         # Fallback to hardcoded values if .testenv file doesn't exist
@@ -46,19 +46,17 @@ def clean_secrets_file():
     """Ensure the secrets file starts clean for each test session."""
     secrets_file = Path(__file__).parent / "fixtures" / "testsecrets-insecure.yaml"
     controller_secrets = {
-        "local-test-controller": {
-            "access_key": "static-for-testing",
-            "secret_key": "static-secret-key-for-testing"
-        }
+        "local-test-controller": {"access_key": "static-for-testing", "secret_key": "static-secret-key-for-testing"}
     }
-    
+
     try:
         import yaml
-        with open(secrets_file, 'w') as f:
+
+        with open(secrets_file, "w") as f:
             yaml.dump(controller_secrets, f, default_flow_style=False)
     except Exception as e:
         print(f"Error initializing secrets file: {e}")
-    
+
     yield
     # Cleanup happens in pytest_sessionfinish
 
@@ -151,12 +149,12 @@ def cleanup_bucket(minio_client):
                     errors = minio_client.remove_objects(bucket_name, delete_object_list)
                     for error in errors:
                         print(f"Error deleting object: {error}")
-                
+
                 # Remove bucket
                 minio_client.remove_bucket(bucket_name)
         except Exception as e:
             print(f"Error cleaning up bucket {bucket_name} immediately: {e}")
-        
+
         # Register for teardown cleanup as well (defensive)
         if bucket_name not in buckets_to_cleanup:
             buckets_to_cleanup.append(bucket_name)
@@ -174,7 +172,7 @@ def cleanup_bucket(minio_client):
                     errors = minio_client.remove_objects(bucket_name, delete_object_list)
                     for error in errors:
                         print(f"Error deleting object: {error}")
-                
+
                 # Remove bucket
                 minio_client.remove_bucket(bucket_name)
         except Exception as e:
@@ -186,15 +184,13 @@ def pytest_sessionfinish(session, exitstatus):
     # Reset the secrets file to only contain the controller user
     secrets_file = Path(__file__).parent / "fixtures" / "testsecrets-insecure.yaml"
     controller_secrets = {
-        "local-test-controller": {
-            "access_key": "static-for-testing",
-            "secret_key": "static-secret-key-for-testing"
-        }
+        "local-test-controller": {"access_key": "static-for-testing", "secret_key": "static-secret-key-for-testing"}
     }
-    
+
     try:
         import yaml
-        with open(secrets_file, 'w') as f:
+
+        with open(secrets_file, "w") as f:
             yaml.dump(controller_secrets, f, default_flow_style=False)
         print(f"Cleaned up secrets file: {secrets_file}")
     except Exception as e:

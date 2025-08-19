@@ -83,7 +83,7 @@ This ensures all developers and CI/CD systems use the same MinIO version for tes
 
 ### Bucket Prefix Validation
 
-MinIO Manager supports bucket prefix validation to enforce naming conventions. This is configured via the `MINIO_MANAGER_ALLOWED_BUCKET_PREFIXES` environment variable. 
+MinIO Manager supports bucket prefix validation to enforce naming conventions. This is configured via the `MINIO_MANAGER_ALLOWED_BUCKET_PREFIXES` environment variable.
 
 - **Resource-level validation**: Buckets that don't match allowed prefixes are filtered out during YAML resource parsing
 - **Integration testing**: Comprehensive tests verify prefix validation behavior with various scenarios

@@ -7,11 +7,16 @@ from unittest.mock import patch
 
 import pytest
 from minio import Minio
-from minio.error import S3Error
 
-from minio_manager.classes.minio_resources import Bucket, BucketPolicy
-from minio_manager.policy_handler import handle_bucket_policy, apply_bucket_policy, get_existing_bucket_policy, delete_existing_bucket_policy, resolve_bucket_policy_file
 from minio_manager.bucket_handler import handle_bucket
+from minio_manager.classes.minio_resources import Bucket, BucketPolicy
+from minio_manager.policy_handler import (
+    apply_bucket_policy,
+    delete_existing_bucket_policy,
+    get_existing_bucket_policy,
+    handle_bucket_policy,
+    resolve_bucket_policy_file,
+)
 from tests.conftest import requires_minio
 
 
@@ -19,35 +24,35 @@ from tests.conftest import requires_minio
 class TestBucketPolicyFunctions:
     """Unit tests for minio_manager bucket policy functions."""
 
-    @patch('minio_manager.policy_handler.settings')
+    @patch("minio_manager.policy_handler.settings")
     def test_resolve_bucket_policy_file_explicit_policy(self, mock_settings):
         """Test resolving when bucket has explicit policy file."""
         bucket_policy = BucketPolicy(bucket="test-bucket", policy_file="custom-policy.json")
-        
+
         result = resolve_bucket_policy_file(bucket_policy)
-        
+
         assert result == "custom-policy.json"
 
-    @patch('minio_manager.policy_handler.settings')
+    @patch("minio_manager.policy_handler.settings")
     def test_resolve_bucket_policy_file_default_policy(self, mock_settings):
         """Test resolving when no explicit policy but default policy exists."""
         mock_settings.default_bucket_policy_file = "default-policy.json"
-        
+
         bucket_policy = BucketPolicy(bucket="test-bucket", policy_file=None)
-        
+
         result = resolve_bucket_policy_file(bucket_policy)
-        
+
         assert result == "default-policy.json"
 
-    @patch('minio_manager.policy_handler.settings')
+    @patch("minio_manager.policy_handler.settings")
     def test_resolve_bucket_policy_file_no_policy(self, mock_settings):
         """Test resolving when no explicit policy and no default policy."""
         mock_settings.default_bucket_policy_file = None
-        
+
         bucket_policy = BucketPolicy(bucket="test-bucket", policy_file=None)
-        
+
         result = resolve_bucket_policy_file(bucket_policy)
-        
+
         assert result is None
 
     def test_apply_bucket_policy_simple(self, minio_client: Minio, test_bucket_name: str, cleanup_bucket):
@@ -128,7 +133,7 @@ class TestBucketPolicyFunctions:
 
         # Test get_existing_bucket_policy function
         policy = get_existing_bucket_policy(test_bucket_name)
-        
+
         assert policy is None
 
     def test_delete_existing_bucket_policy(self, minio_client: Minio, test_bucket_name: str, cleanup_bucket):
@@ -188,7 +193,7 @@ class TestBucketPolicyFunctions:
             ],
         }
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump(policy_content, f)
             temp_policy_path = f.name
 
@@ -199,11 +204,11 @@ class TestBucketPolicyFunctions:
 
             # Verify policy was applied
             current_policy = get_existing_bucket_policy(test_bucket_name)
-            
+
             assert current_policy["Version"] == "2012-10-17"
             assert current_policy["Statement"][0]["Sid"] == "AllowReadAccess"
             assert current_policy["Statement"][0]["Action"] == ["s3:GetObject"]
-            
+
         finally:
             Path(temp_policy_path).unlink(missing_ok=True)
 
@@ -217,7 +222,7 @@ class TestBucketPolicyFunctions:
 
         # Test handle_bucket_policy function with non-existent file
         bucket_policy = BucketPolicy(bucket=test_bucket_name, policy_file="/nonexistent/policy.json")
-        
+
         # This should handle the error gracefully (specific behavior depends on implementation)
         with pytest.raises((FileNotFoundError, OSError)):
             handle_bucket_policy(bucket_policy)
@@ -244,7 +249,7 @@ class TestBucketPolicyFunctions:
             ],
         }
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump(initial_policy_content, f)
             initial_policy_path = f.name
 
@@ -262,7 +267,7 @@ class TestBucketPolicyFunctions:
             ],
         }
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump(updated_policy_content, f)
             updated_policy_path = f.name
 
@@ -314,12 +319,12 @@ class TestBucketPolicyClass:
         """Test BucketPolicy class attributes are properly set."""
         bucket_name = "my-test-bucket"
         policy_file_path = str(temp_policy_file)
-        
+
         bucket_policy = BucketPolicy(bucket=bucket_name, policy_file=policy_file_path)
 
         # Test that attributes are accessible and correct
-        assert hasattr(bucket_policy, 'bucket')
-        assert hasattr(bucket_policy, 'policy_file')
+        assert hasattr(bucket_policy, "bucket")
+        assert hasattr(bucket_policy, "policy_file")
         assert bucket_policy.bucket == bucket_name
         assert bucket_policy.policy_file == policy_file_path
 
@@ -371,7 +376,7 @@ class TestBucketPolicyComplexScenarios:
 
         # Verify complex policy using get_existing_bucket_policy function
         current_policy = get_existing_bucket_policy(test_bucket_name)
-        
+
         assert len(current_policy["Statement"]) == 3
 
         # Check each statement exists

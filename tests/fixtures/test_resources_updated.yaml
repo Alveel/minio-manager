@@ -42,22 +42,22 @@ buckets:
     versioning: Enabled
     # Updated lifecycle policy (changed from 30 to 60 days)
     object_lifecycle_file: tests/fixtures/lifecycle_policies/updated_lifecycle_60_days.json
-    
-  # Custom bucket: UNCHANGED lifecycle (90 days), versioning unchanged (Suspended)  
+
+  # Custom bucket: UNCHANGED lifecycle (90 days), versioning unchanged (Suspended)
   # Tests that unchanged configurations don't cause unnecessary updates
-  - name: integration-test-custom-bucket  
+  - name: integration-test-custom-bucket
     create_service_account: false
     versioning: Suspended
     # Same lifecycle policy (no change)
     object_lifecycle_file: tests/fixtures/lifecycle_policies/custom_lifecycle_90_days.json
-    
+
   # Minimal bucket: ADDED versioning and lifecycle (was basic in initial config)
   # Tests adding new configuration to existing buckets
   - name: integration-test-minimal-bucket
     create_service_account: false
     # Added new versioning config
     versioning: Enabled
-    # Added new lifecycle policy  
+    # Added new lifecycle policy
     object_lifecycle_file: tests/fixtures/lifecycle_policies/default_lifecycle_30_days.json
 
 bucket_policies:
@@ -66,13 +66,13 @@ bucket_policies:
   - bucket: integration-test-default-bucket
     # Updated bucket policy (changed from read-only to full access)
     policy_file: tests/fixtures/bucket_policies/default_bucket_full_access_policy.json
-    
+
   # Custom bucket: CHANGED from full-access to read-only policy
   # Tests policy swapping and ensures policies are properly replaced
   - bucket: integration-test-custom-bucket
     # Updated bucket policy (changed from full access to read-only)
     policy_file: tests/fixtures/bucket_policies/custom_bucket_read_only_policy.json
-    
+
   # Minimal bucket: NEW bucket policy added (had no policy in initial config)
   # Tests adding bucket policies to buckets that previously had none
   - bucket: integration-test-minimal-bucket

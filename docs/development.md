@@ -21,7 +21,7 @@ make test
 
 ### Prerequisites
 
-- **Python 3.9+** 
+- **Python 3.9+**
 - **PDM** (Python Dependency Manager)
 - **Podman** (for local MinIO test environment)
 - **MinIO Client (mc)** (for MinIO configuration)

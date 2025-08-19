@@ -1,13 +1,13 @@
-import pytest
 import json
 import tempfile
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
-from minio_manager.classes.resource_parser import ClusterResources
-from minio_manager.classes.minio_resources import Bucket, BucketPolicy, ServiceAccount, IamPolicy, IamPolicyAttachment
+import pytest
 from minio.lifecycleconfig import LifecycleConfig, Rule
-from minio.versioningconfig import VersioningConfig
+
+from minio_manager.classes.minio_resources import Bucket, BucketPolicy, IamPolicy, ServiceAccount
+from minio_manager.classes.resource_parser import ClusterResources
 
 
 class TestResourceParser:
@@ -25,28 +25,32 @@ class TestResourceParser:
                 "name": "test-bucket-1",
                 "create_service_account": False,
                 "versioning": "Suspended",
-                "object_lifecycle_file": str(self.examples_dir / "lifecycle_policies" / "default_lifecycle_30_days.json")
+                "object_lifecycle_file": str(
+                    self.examples_dir / "lifecycle_policies" / "default_lifecycle_30_days.json"
+                ),
             },
             {
                 "name": "test-bucket-2",
-                "object_lifecycle_file": str(self.examples_dir / "lifecycle_policies" / "alternative_lifecycle_90_days.json")
+                "object_lifecycle_file": str(
+                    self.examples_dir / "lifecycle_policies" / "alternative_lifecycle_90_days.json"
+                ),
             },
-            {
-                "name": "test-bucket-3"
-            }
+            {"name": "test-bucket-3"},
         ]
 
-        with patch('minio_manager.classes.resource_parser.settings') as mock_settings:
+        with patch("minio_manager.classes.resource_parser.settings") as mock_settings:
             mock_settings.allowed_bucket_prefixes = None
             mock_settings.auto_create_service_account = True
             mock_settings.default_bucket_versioning = "Enabled"
-            mock_settings.default_lifecycle_policy_file = str(self.examples_dir / "lifecycle_policies" / "default_lifecycle_30_days.json")
+            mock_settings.default_lifecycle_policy_file = str(
+                self.examples_dir / "lifecycle_policies" / "default_lifecycle_30_days.json"
+            )
 
             buckets = self.parser.parse_buckets(buckets_config)
 
         assert len(buckets) == 3
         assert all(isinstance(bucket, Bucket) for bucket in buckets)
-        
+
         # Test bucket 1 - explicit settings
         bucket1 = buckets[0]
         assert bucket1.name == "test-bucket-1"
@@ -68,13 +72,9 @@ class TestResourceParser:
 
     def test_parse_buckets_with_prefix_filtering(self):
         """Test bucket parsing with allowed prefix filtering."""
-        buckets_config = [
-            {"name": "allowed-bucket-1"},
-            {"name": "denied-bucket-1"},
-            {"name": "allowed-bucket-2"}
-        ]
+        buckets_config = [{"name": "allowed-bucket-1"}, {"name": "denied-bucket-1"}, {"name": "allowed-bucket-2"}]
 
-        with patch('minio_manager.classes.resource_parser.settings') as mock_settings:
+        with patch("minio_manager.classes.resource_parser.settings") as mock_settings:
             mock_settings.allowed_bucket_prefixes = ["allowed-"]
             mock_settings.auto_create_service_account = False
             mock_settings.default_bucket_versioning = "Enabled"
@@ -92,10 +92,10 @@ class TestResourceParser:
         buckets_config = [
             {"name": "duplicate-bucket"},
             {"name": "unique-bucket"},
-            {"name": "duplicate-bucket"}  # Duplicate
+            {"name": "duplicate-bucket"},  # Duplicate
         ]
 
-        with patch('minio_manager.classes.resource_parser.settings') as mock_settings:
+        with patch("minio_manager.classes.resource_parser.settings") as mock_settings:
             mock_settings.allowed_bucket_prefixes = None
             mock_settings.auto_create_service_account = False
             mock_settings.default_bucket_versioning = "Enabled"
@@ -112,13 +112,13 @@ class TestResourceParser:
     def test_parse_bucket_lifecycle_file_real_file(self):
         """Test parsing real lifecycle policy files."""
         lifecycle_file = str(self.examples_dir / "lifecycle_policies" / "default_lifecycle_30_days.json")
-        
+
         lifecycle_config = self.parser.parse_bucket_lifecycle_file(lifecycle_file)
-        
+
         assert lifecycle_config is not None
         assert isinstance(lifecycle_config, LifecycleConfig)
         assert len(lifecycle_config.rules) == 1
-        
+
         rule = lifecycle_config.rules[0]
         assert isinstance(rule, Rule)
         assert rule.rule_id == "ExpireDeleteMarkerAndOldVersionsAfter30Days"
@@ -129,9 +129,9 @@ class TestResourceParser:
     def test_parse_bucket_lifecycle_file_alternative_file(self):
         """Test parsing alternative lifecycle policy file."""
         lifecycle_file = str(self.examples_dir / "lifecycle_policies" / "alternative_lifecycle_90_days.json")
-        
+
         lifecycle_config = self.parser.parse_bucket_lifecycle_file(lifecycle_file)
-        
+
         assert lifecycle_config is not None
         assert isinstance(lifecycle_config, LifecycleConfig)
         assert len(lifecycle_config.rules) >= 1
@@ -139,12 +139,12 @@ class TestResourceParser:
     def test_parse_bucket_lifecycle_file_not_found(self):
         """Test handling of missing lifecycle file."""
         lifecycle_config = self.parser.parse_bucket_lifecycle_file("/nonexistent/file.json")
-        
+
         assert lifecycle_config is None
 
     def test_parse_bucket_lifecycle_file_invalid_json(self):
         """Test handling of invalid JSON in lifecycle file."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             f.write('{"invalid": json')
             temp_file = f.name
 
@@ -160,12 +160,8 @@ class TestResourceParser:
         rule_data = {
             "Status": "Enabled",
             "ID": "TestRule",
-            "Expiration": {
-                "ExpiredObjectDeleteMarker": True
-            },
-            "NoncurrentVersionExpiration": {
-                "NoncurrentDays": 30
-            }
+            "Expiration": {"ExpiredObjectDeleteMarker": True},
+            "NoncurrentVersionExpiration": {"NoncurrentDays": 30},
         }
 
         rule = self.parser.parse_bucket_lifecycle_rule(rule_data)
@@ -181,13 +177,8 @@ class TestResourceParser:
     def test_parse_service_accounts(self):
         """Test parsing service account configurations."""
         service_accounts_config = [
-            {
-                "name": "test-sa-1",
-                "policy_file": str(self.examples_dir / "user_policies" / "my_user.json")
-            },
-            {
-                "name": "test-sa-2"
-            }
+            {"name": "test-sa-1", "policy_file": str(self.examples_dir / "user_policies" / "my_user.json")},
+            {"name": "test-sa-2"},
         ]
 
         service_accounts = self.parser.parse_service_accounts(service_accounts_config)
@@ -205,13 +196,9 @@ class TestResourceParser:
 
     def test_parse_service_accounts_duplicate_names(self):
         """Test service account parsing rejects duplicates."""
-        service_accounts_config = [
-            {"name": "duplicate-sa"},
-            {"name": "unique-sa"},
-            {"name": "duplicate-sa"}
-        ]
+        service_accounts_config = [{"name": "duplicate-sa"}, {"name": "unique-sa"}, {"name": "duplicate-sa"}]
 
-        with patch('minio_manager.classes.resource_parser.logger') as mock_logger:
+        with patch("minio_manager.classes.resource_parser.logger") as mock_logger:
             service_accounts = self.parser.parse_service_accounts(service_accounts_config)
 
         # All should be parsed but error logged for duplicate
@@ -223,12 +210,9 @@ class TestResourceParser:
         bucket_policies_config = [
             {
                 "bucket": "test-bucket-1",
-                "policy_file": str(self.examples_dir / "bucket_policies" / "my_default_bucket_policy.json")
+                "policy_file": str(self.examples_dir / "bucket_policies" / "my_default_bucket_policy.json"),
             },
-            {
-                "bucket": "test-bucket-2", 
-                "policy_file": "/path/to/policy.json"
-            }
+            {"bucket": "test-bucket-2", "policy_file": "/path/to/policy.json"},
         ]
 
         bucket_policies = self.parser.parse_bucket_policies(bucket_policies_config)
@@ -247,14 +231,8 @@ class TestResourceParser:
     def test_parse_iam_policies(self):
         """Test parsing IAM policy configurations."""
         iam_policies_config = [
-            {
-                "name": "test-policy-1",
-                "policy_file": "/path/to/policy1.json"
-            },
-            {
-                "name": "test-policy-2",
-                "policy_file": "/path/to/policy2.json"
-            }
+            {"name": "test-policy-1", "policy_file": "/path/to/policy1.json"},
+            {"name": "test-policy-2", "policy_file": "/path/to/policy2.json"},
         ]
 
         iam_policies = self.parser.parse_iam_policies(iam_policies_config)
@@ -271,10 +249,10 @@ class TestResourceParser:
         iam_policies_config = [
             {"name": "duplicate-policy", "policy_file": "/path1.json"},
             {"name": "unique-policy", "policy_file": "/path2.json"},
-            {"name": "duplicate-policy", "policy_file": "/path3.json"}
+            {"name": "duplicate-policy", "policy_file": "/path3.json"},
         ]
 
-        with patch('minio_manager.classes.resource_parser.logger') as mock_logger:
+        with patch("minio_manager.classes.resource_parser.logger") as mock_logger:
             iam_policies = self.parser.parse_iam_policies(iam_policies_config)
 
         assert len(iam_policies) == 3
@@ -283,37 +261,31 @@ class TestResourceParser:
     def test_parse_iam_attachments(self):
         """Test parsing IAM policy attachment configurations."""
         iam_attachments_config = [
-            {
-                "username": "test-user-1",
-                "policies": ["policy1", "policy2"]
-            },
-            {
-                "username": "test-user-2",
-                "policies": ["policy3"]
-            }
+            {"username": "test-user-1", "policies": ["policy1", "policy2"]},
+            {"username": "test-user-2", "policies": ["policy3"]},
         ]
 
         # Note: There's a bug in the original code - it appends to the input list instead of the output list
         # and causes a SystemExit. This test documents the current behavior
         with pytest.raises(SystemExit) as exc_info:
             iam_attachments = self.parser.parse_iam_attachments(iam_attachments_config)
-        
+
         assert exc_info.value.code == 150
 
     def test_parse_empty_configurations(self):
         """Test parsing empty configurations."""
         assert self.parser.parse_buckets([]) == []
         assert self.parser.parse_buckets(None) == []
-        
+
         assert self.parser.parse_service_accounts([]) == []
         assert self.parser.parse_service_accounts(None) == []
-        
+
         assert self.parser.parse_bucket_policies([]) == []
         assert self.parser.parse_bucket_policies(None) == []
-        
+
         assert self.parser.parse_iam_policies([]) == []
         assert self.parser.parse_iam_policies(None) == []
-        
+
         assert self.parser.parse_iam_attachments([]) == []
         assert self.parser.parse_iam_attachments(None) == []
 
@@ -321,34 +293,26 @@ class TestResourceParser:
         """Test parsing complete resources file integration."""
         # Create a temporary resources file for testing
         resources_content = {
-            "buckets": [
-                {"name": "integration-bucket-1"},
-                {"name": "integration-bucket-2"}
-            ],
-            "service_accounts": [
-                {"name": "integration-sa-1"}
-            ],
-            "bucket_policies": [
-                {"bucket": "integration-bucket-1", "policy_file": "/path/policy.json"}
-            ],
-            "iam_policies": [
-                {"name": "integration-policy-1", "policy_file": "/path/iam.json"}
-            ]
+            "buckets": [{"name": "integration-bucket-1"}, {"name": "integration-bucket-2"}],
+            "service_accounts": [{"name": "integration-sa-1"}],
+            "bucket_policies": [{"bucket": "integration-bucket-1", "policy_file": "/path/policy.json"}],
+            "iam_policies": [{"name": "integration-policy-1", "policy_file": "/path/iam.json"}],
         }
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
             import yaml
+
             yaml.dump(resources_content, f)
             temp_file = f.name
 
         try:
-            with patch('minio_manager.classes.resource_parser.settings') as mock_settings:
+            with patch("minio_manager.classes.resource_parser.settings") as mock_settings:
                 mock_settings.allowed_bucket_prefixes = None
                 mock_settings.auto_create_service_account = False
                 mock_settings.default_bucket_versioning = "Enabled"
                 mock_settings.default_lifecycle_policy_file = None
 
-                with patch('minio_manager.classes.resource_parser.get_error_count', return_value=0):
+                with patch("minio_manager.classes.resource_parser.get_error_count", return_value=0):
                     self.parser.parse_resources(temp_file)
 
             # Verify all resources were parsed
@@ -364,7 +328,7 @@ class TestResourceParser:
         """Test handling of missing resources file."""
         with pytest.raises(SystemExit) as exc_info:
             self.parser.parse_resources("/nonexistent/resources.yaml")
-        
+
         assert exc_info.value.code == 170
 
     def test_versioning_config_parsing(self):
@@ -379,9 +343,9 @@ class TestResourceParser:
         assert versioning_config.status == "Suspended"
 
         # Test default fallback
-        with patch('minio_manager.classes.resource_parser.settings') as mock_settings:
+        with patch("minio_manager.classes.resource_parser.settings") as mock_settings:
             mock_settings.default_bucket_versioning = "Enabled"
-            
+
             bucket_def_empty = {}
             versioning_config = self.parser._get_versioning_config(bucket_def_empty)
             assert versioning_config.status == "Enabled"
@@ -389,13 +353,13 @@ class TestResourceParser:
     def test_versioning_config_invalid_value(self):
         """Test handling of invalid versioning values."""
         bucket_def_invalid = {"versioning": "InvalidValue"}
-        
-        with patch('minio_manager.classes.resource_parser.settings') as mock_settings:
+
+        with patch("minio_manager.classes.resource_parser.settings") as mock_settings:
             mock_settings.default_bucket_versioning = "Enabled"
-            
-            with patch('minio_manager.classes.resource_parser.logger') as mock_logger:
+
+            with patch("minio_manager.classes.resource_parser.logger") as mock_logger:
                 versioning_config = self.parser._get_versioning_config(bucket_def_invalid)
-                
+
                 # Should fallback to default and log error
                 assert versioning_config.status == "Enabled"
                 mock_logger.error.assert_called()
@@ -405,19 +369,19 @@ class TestResourceParser:
         # Test with specific file
         lifecycle_file = str(self.examples_dir / "lifecycle_policies" / "default_lifecycle_30_days.json")
         default_lifecycle = None
-        
+
         effective_lifecycle = self.parser._get_effective_lifecycle(lifecycle_file, "test-bucket", default_lifecycle)
-        
+
         assert effective_lifecycle is not None
         assert isinstance(effective_lifecycle, LifecycleConfig)
 
         # Test with no file, uses default
         mock_default = MagicMock(spec=LifecycleConfig)
         effective_lifecycle = self.parser._get_effective_lifecycle(None, "test-bucket", mock_default)
-        
+
         assert effective_lifecycle == mock_default
 
         # Test with invalid file, falls back to default
         effective_lifecycle = self.parser._get_effective_lifecycle("/nonexistent.json", "test-bucket", mock_default)
-        
+
         assert effective_lifecycle == mock_default

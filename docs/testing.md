@@ -10,11 +10,11 @@ The test suite is organized into focused test files, each covering specific func
 
 - **`test_integration.py`** - Comprehensive end-to-end integration tests (29 tests)
   - End-to-end resource deployment and management
-  - Service account creation and credential management  
+  - Service account creation and credential management
   - Bucket policy application and lifecycle management
   - Component-level tests for handler functions
   - Resource class initialization and validation
-  
+
 - **`test_bucket_creation.py`** - Bucket creation logic and validation
 - **`test_bucket_policies.py`** - Bucket policy handling and application
 - **`test_lifecycle_policies.py`** - Lifecycle policy configuration and management
@@ -211,7 +211,7 @@ make configure-controller
 Tests run automatically in GitHub Actions on:
 
 - Pull requests to main branch
-- Pushes to main branch  
+- Pushes to main branch
 - Release creation
 
 The CI environment mirrors the local test setup with the same MinIO version and configuration for consistency.
