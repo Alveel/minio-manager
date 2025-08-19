@@ -174,8 +174,6 @@ def handle_service_account(bare_account: ServiceAccount):
     # Scenario 3: service account does not exist in neither MinIO nor the secret backend
     if not sa_exists and not credentials.access_key:
         logger.debug(f"Creating service account '{credentials.full_name}'")
-        # TODO: catch scenario where an access key is deleted in MinIO, but MinIO does not accept the creation of a
-        #  service account with the same access key, which sometimes happens.
         # Create the service account in MinIO
         new_service_account_raw = client_manager.admin.add_service_account(**credentials.as_dict)
         new_service_account_dict = json.loads(new_service_account_raw)["credentials"]  # type: dict
@@ -183,6 +181,11 @@ def handle_service_account(bare_account: ServiceAccount):
         credentials.secret_key = new_service_account_dict["secretKey"]
         # Create credentials in the secret backend
         secrets.set_password(credentials)
+        # Log the service account details with redacted secret
+        log_dict = credentials.as_dict
+        if "secret_key" in log_dict:
+            log_dict["secret_key"] = "***REDACTED***"
+        logger.debug(f"Created service account details: {log_dict}")
         logger.info(f"Created service account '{credentials.full_name}' with access key '{credentials.access_key}'")
 
     # Load custom policy if policy_file is set
