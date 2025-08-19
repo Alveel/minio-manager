@@ -109,7 +109,23 @@ class Settings(BaseSettings):
 
 
 try:
-    settings = Settings()
+    # Check if we're running in pytest and disable CLI parsing
+
+    if "pytest" in sys.modules or any("pytest" in arg for arg in sys.argv):
+        # Create a test-only settings class without CLI parsing
+        class TestSettings(Settings):
+            model_config = SettingsConfigDict(
+                cli_parse_args=False,  # Disable CLI parsing for tests
+                cli_kebab_case=True,
+                env_prefix="MINIO_MANAGER_",
+                env_file="tests/fixtures/.testenv",  # Use the .testenv file in fixtures directory
+                env_file_encoding="utf-8",
+                extra="ignore",
+            )
+
+        settings = TestSettings()
+    else:
+        settings = Settings()
 except ValidationError as e:
     print(f"Error loading settings: {e}")
     sys.exit(1)

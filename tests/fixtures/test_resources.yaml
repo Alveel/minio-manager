@@ -1,0 +1,59 @@
+# Test Resources Configuration - Initial State
+#
+# This file defines the INITIAL configuration for integration testing of MinIO Manager.
+# It represents the "baseline" state that gets deployed first during testing.
+#
+# PURPOSE:
+# - Tests initial resource deployment and creation
+# - Validates basic MinIO Manager functionality
+# - Establishes known state for subsequent update testing
+#
+# USED BY:
+# - test_integration.py::test_initial_resource_deployment()
+# - test_integration.py::test_configuration_validation()
+#
+# TESTING STRATEGY:
+# 1. Deploy this configuration (initial state)
+# 2. Deploy test_resources_updated.yaml (modified state)
+# 3. Verify MinIO Manager correctly handles configuration changes
+# 4. Re-deploy updated configuration to test idempotency
+#
+# KEY CHARACTERISTICS:
+# - 3 buckets: default (30-day lifecycle), custom (90-day lifecycle), minimal (basic)
+# - 2 bucket policies: default (read-only), custom (full-access)
+# - Service account creation disabled for focused testing
+# - Versioning: Enabled for default, Suspended for custom, None for minimal
+#
+# COMPANION FILE: test_resources_updated.yaml (represents evolved configuration)
+---
+
+buckets:
+  # Default bucket: Enabled versioning with 30-day lifecycle policy
+  # This bucket tests basic lifecycle management and will be updated to 60 days in updated config
+  - name: integration-test-default-bucket
+    create_service_account: false  # Disabled for focused testing (not testing service accounts here)
+    versioning: Enabled
+    object_lifecycle_file: tests/fixtures/lifecycle_policies/default_lifecycle_30_days.json
+
+  # Custom bucket: Suspended versioning with 90-day lifecycle policy
+  # This bucket tests different versioning state and will keep same lifecycle in updated config
+  - name: integration-test-custom-bucket
+    create_service_account: false
+    versioning: Suspended
+    object_lifecycle_file: tests/fixtures/lifecycle_policies/custom_lifecycle_90_days.json
+
+  # Minimal bucket: Basic configuration with no lifecycle or versioning
+  # This bucket will gain lifecycle and versioning in the updated configuration
+  - name: integration-test-minimal-bucket
+    create_service_account: false
+
+bucket_policies:
+  # Default bucket gets read-only policy initially (will become full-access in updated config)
+  - bucket: integration-test-default-bucket
+    policy_file: tests/fixtures/bucket_policies/read_only_policy.json
+
+  # Custom bucket gets full-access policy initially (will become read-only in updated config)
+  - bucket: integration-test-custom-bucket
+    policy_file: tests/fixtures/bucket_policies/full_access_policy.json
+
+  # Note: minimal-bucket has no policy initially (will gain read-only policy in updated config)

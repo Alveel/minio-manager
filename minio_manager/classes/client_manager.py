@@ -57,7 +57,7 @@ class ClientManager:
         return self._admin
 
     def _setup_controller_user_policy(self) -> dict:
-        """Get the S3 client."""
+        """Get the controller user policy from MinIO."""
         logger.debug("Retrieving controller user policy from MinIO.")
         controller_user_info_raw = self._admin.get_service_account(controller_user.access_key)
         controller_user_dict = json.loads(controller_user_info_raw)
