@@ -1,16 +1,58 @@
+# Test Resources Configuration - Updated State
+#
+# This file defines the UPDATED configuration for integration testing of MinIO Manager.
+# It represents an "evolved" state with modified settings, testing configuration changes.
+#
+# PURPOSE:
+# - Tests resource updates and configuration changes
+# - Validates MinIO Manager's ability to handle configuration evolution
+# - Tests idempotency (repeated application should not cause unnecessary changes)
+#
+# USED BY:
+# - test_integration.py::test_resource_updates_and_idempotency()
+# - test_integration.py::test_idempotent_reapplication()
+# - test_integration.py::test_cleanup_and_teardown()
+#
+# TESTING STRATEGY:
+# 1. First deploy test_resources.yaml (baseline state)
+# 2. Deploy this file to test configuration updates
+# 3. Re-deploy this file to verify idempotent behavior
+# 4. Verify all changes were applied correctly
+#
+# CHANGES FROM INITIAL STATE (test_resources.yaml):
+# - default-bucket: lifecycle 30→60 days, policy read-only→full-access
+# - custom-bucket: policy full-access→read-only (lifecycle unchanged: 90 days)
+# - minimal-bucket: added versioning (Enabled), added lifecycle (30 days), added policy (read-only)
+# - Total bucket policies: 2→3 (added policy for minimal-bucket)
+#
+# KEY CHARACTERISTICS:
+# - 3 buckets: default (60-day lifecycle), custom (90-day lifecycle), minimal (30-day lifecycle)
+# - 3 bucket policies: default (full-access), custom (read-only), minimal (read-only)
+# - Service account creation disabled for focused testing
+# - Versioning: All buckets now have Enabled versioning
+#
+# COMPANION FILE: test_resources.yaml (represents initial configuration)
 ---
 
 buckets:
+  # Default bucket: UPDATED lifecycle from 30→60 days, versioning unchanged (Enabled)
+  # Tests lifecycle policy updates and policy changes (read-only→full-access)
   - name: integration-test-default-bucket
     create_service_account: false
     versioning: Enabled
     # Updated lifecycle policy (changed from 30 to 60 days)
     object_lifecycle_file: tests/fixtures/lifecycle_policies/updated_lifecycle_60_days.json
+    
+  # Custom bucket: UNCHANGED lifecycle (90 days), versioning unchanged (Suspended)  
+  # Tests that unchanged configurations don't cause unnecessary updates
   - name: integration-test-custom-bucket  
     create_service_account: false
     versioning: Suspended
     # Same lifecycle policy (no change)
     object_lifecycle_file: tests/fixtures/lifecycle_policies/custom_lifecycle_90_days.json
+    
+  # Minimal bucket: ADDED versioning and lifecycle (was basic in initial config)
+  # Tests adding new configuration to existing buckets
   - name: integration-test-minimal-bucket
     create_service_account: false
     # Added new versioning config
@@ -19,12 +61,20 @@ buckets:
     object_lifecycle_file: tests/fixtures/lifecycle_policies/default_lifecycle_30_days.json
 
 bucket_policies:
+  # Default bucket: CHANGED from read-only to full-access policy
+  # Tests bucket policy updates and policy content changes
   - bucket: integration-test-default-bucket
     # Updated bucket policy (changed from read-only to full access)
     policy_file: tests/fixtures/bucket_policies/default_bucket_full_access_policy.json
+    
+  # Custom bucket: CHANGED from full-access to read-only policy
+  # Tests policy swapping and ensures policies are properly replaced
   - bucket: integration-test-custom-bucket
     # Updated bucket policy (changed from full access to read-only)
     policy_file: tests/fixtures/bucket_policies/custom_bucket_read_only_policy.json
+    
+  # Minimal bucket: NEW bucket policy added (had no policy in initial config)
+  # Tests adding bucket policies to buckets that previously had none
   - bucket: integration-test-minimal-bucket
     # Added new bucket policy
     policy_file: tests/fixtures/bucket_policies/minimal_bucket_read_only_policy.json
