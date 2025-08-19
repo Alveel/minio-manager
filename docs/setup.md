@@ -2,6 +2,10 @@
 
 An admin user should be used for these steps.
 
+## Production Setup (KeePass Backend)
+
+For production environments, use the secure KeePass backend:
+
 ## Steps
 
 1. Create the bucket for the secret backend `minio-manager-secrets`
@@ -72,6 +76,50 @@ Also see [Service Account Details][service-account-details].
 - You must have a group called "s3" and subgroups with the name of the MinIO cluster to be managed.
 - Entry names must be unique.
 - Entries are found by way of the title of the entry, the username is not considered when searching.
+
+## Development Setup (YAML Backend)
+
+For development and testing environments, you can use the simpler YAML secret backend:
+
+### Quick Setup
+
+```bash
+# Start local MinIO test environment
+make run-test-environment
+
+# Configure controller user (creates YAML secrets file)
+make configure-controller
+```
+
+This creates a local YAML secrets file at `tests/fixtures/testsecrets-insecure.yaml` with the controller user credentials.
+
+### Manual YAML Backend Setup
+
+1. **Set environment variables for YAML backend:**
+   ```bash
+   MINIO_MANAGER_SECRET_BACKEND_TYPE=yaml
+   MINIO_MANAGER_SECRET_BACKEND_PATH=path/to/secrets.yaml
+   ```
+
+2. **Create initial secrets file:**
+   ```yaml
+   # secrets.yaml
+   controller-user-name:
+     access_key: "your-controller-access-key"
+     secret_key: "your-controller-secret-key"
+   ```
+
+3. **Service account credentials are automatically managed** - MinIO Manager will add/update service account entries as needed.
+
+### YAML Backend Features
+
+- **Human-readable format** for easy debugging
+- **Automatic credential management** for service accounts
+- **No encryption** (suitable for development only)
+- **Local file storage** (no S3 bucket required)
+- **Session cleanup** in test environments
+
+**⚠️ Security Warning:** YAML backend stores credentials in plain text. Only use for development and testing environments.
 
 ## Configuration variables
 
