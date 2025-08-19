@@ -4,16 +4,16 @@ buckets:
   - name: integration-test-default-bucket
     create_service_account: false
     versioning: Enabled
-    object_lifecycle_file: /Users/ewelder/Git_NA/minio-manager/minio-manager-python/tests/fixtures/lifecycle_policies/default_lifecycle_30_days.json
+    object_lifecycle_file: tests/fixtures/lifecycle_policies/default_lifecycle_30_days.json
   - name: integration-test-custom-bucket  
     create_service_account: false
     versioning: Suspended
-    object_lifecycle_file: /Users/ewelder/Git_NA/minio-manager/minio-manager-python/tests/fixtures/lifecycle_policies/custom_lifecycle_90_days.json
+    object_lifecycle_file: tests/fixtures/lifecycle_policies/custom_lifecycle_90_days.json
   - name: integration-test-minimal-bucket
     create_service_account: false
 
 bucket_policies:
   - bucket: integration-test-default-bucket
-    policy_file: /Users/ewelder/Git_NA/minio-manager/minio-manager-python/tests/fixtures/bucket_policies/read_only_policy.json
+    policy_file: tests/fixtures/bucket_policies/read_only_policy.json
   - bucket: integration-test-custom-bucket
-    policy_file: /Users/ewelder/Git_NA/minio-manager/minio-manager-python/tests/fixtures/bucket_policies/full_access_policy.json
+    policy_file: tests/fixtures/bucket_policies/full_access_policy.json
