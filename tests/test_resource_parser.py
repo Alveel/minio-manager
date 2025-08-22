@@ -136,6 +136,26 @@ class TestResourceParser:
         assert isinstance(lifecycle_config, LifecycleConfig)
         assert len(lifecycle_config.rules) >= 1
 
+    def test_parse_bucket_lifecycle_file_expire_current_120_days(self):
+        """Test parsing ExpireCurrentAfter120DaysAndDelete.json lifecycle policy file."""
+        # Test the fixture file that was causing production issues
+        lifecycle_file = str(Path(__file__).parent / "fixtures" / "lifecycle_policies" / "ExpireCurrentAfter120DaysAndDelete.json")
+
+        lifecycle_config = self.parser.parse_bucket_lifecycle_file(lifecycle_file)
+
+        assert lifecycle_config is not None
+        assert isinstance(lifecycle_config, LifecycleConfig)
+        assert len(lifecycle_config.rules) == 1
+        
+        rule = lifecycle_config.rules[0]
+        assert isinstance(rule, Rule)
+        assert rule.rule_id == "remove-logging-after-120-day"
+        assert rule.status == "Enabled"
+        assert rule.expiration is not None
+        assert rule.expiration.days == 120  # This was the production issue - Days not being parsed
+        assert rule.noncurrent_version_expiration is not None
+        assert rule.noncurrent_version_expiration.noncurrent_days == 30
+
     def test_parse_bucket_lifecycle_file_not_found(self):
         """Test handling of missing lifecycle file."""
         lifecycle_config = self.parser.parse_bucket_lifecycle_file("/nonexistent/file.json")
@@ -171,6 +191,25 @@ class TestResourceParser:
         assert rule.rule_id == "TestRule"
         assert rule.expiration is not None
         assert rule.expiration.expired_object_delete_marker is True
+        assert rule.noncurrent_version_expiration is not None
+        assert rule.noncurrent_version_expiration.noncurrent_days == 30
+
+    def test_parse_bucket_lifecycle_rule_with_days(self):
+        """Test parsing lifecycle rule with Days-based expiration (production issue case)."""
+        rule_data = {
+            "Status": "Enabled",
+            "ID": "TestDaysRule",
+            "Expiration": {"Days": 120},
+            "NoncurrentVersionExpiration": {"NoncurrentDays": 30},
+        }
+
+        rule = self.parser.parse_bucket_lifecycle_rule(rule_data)
+
+        assert isinstance(rule, Rule)
+        assert rule.status == "Enabled"
+        assert rule.rule_id == "TestDaysRule"
+        assert rule.expiration is not None
+        assert rule.expiration.days == 120  # This is the key fix
         assert rule.noncurrent_version_expiration is not None
         assert rule.noncurrent_version_expiration.noncurrent_days == 30
 

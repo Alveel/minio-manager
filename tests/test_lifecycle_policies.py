@@ -249,3 +249,40 @@ class TestLifecycleComplexScenarios:
         # The logic is: if not lifecycle_diff means if not False (True), so it returns True
         # when configurations differ
         assert result is True
+
+    def test_bucket_with_fixture_lifecycle_expire_120_days(self):
+        """Test creating bucket with lifecycle from fixture ExpireCurrentAfter120DaysAndDelete.json file."""
+        from pathlib import Path
+        
+        # Read lifecycle configuration from fixture file
+        fixture_file = Path(__file__).parent / "fixtures" / "lifecycle_policies" / "ExpireCurrentAfter120DaysAndDelete.json"
+        with open(fixture_file) as f:
+            lifecycle_data = json.load(f)
+
+        # Create bucket with lifecycle
+        bucket = Bucket(name="test-120-day-bucket")
+
+        # Convert JSON to LifecycleConfig object
+        rules = []
+        for rule_data in lifecycle_data["Rules"]:
+            rule = Rule(
+                rule_id=rule_data["ID"],
+                rule_filter=Filter(prefix=rule_data.get("Prefix", "")),
+                status=rule_data["Status"],
+                expiration=Expiration(days=rule_data["Expiration"]["Days"]),
+                noncurrent_version_expiration=NoncurrentVersionExpiration(
+                    noncurrent_days=rule_data["NoncurrentVersionExpiration"]["NoncurrentDays"]
+                ),
+            )
+            rules.append(rule)
+
+        bucket.lifecycle_config = LifecycleConfig(rules)
+
+        # Verify the bucket has the lifecycle configuration
+        assert bucket.lifecycle_config is not None
+        assert len(bucket.lifecycle_config.rules) == 1
+        rule = bucket.lifecycle_config.rules[0]
+        assert rule.rule_id == "remove-logging-after-120-day"
+        assert rule.status == "Enabled"
+        assert rule.expiration.days == 120
+        assert rule.noncurrent_version_expiration.noncurrent_days == 30

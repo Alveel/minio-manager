@@ -590,3 +590,90 @@ class TestMinIOManagerIntegration:
         # Explicitly created account
         explicit_name = f"{test_bucket_name}-explicit"
         assert explicit_name in secrets_data, f"Explicit service account '{explicit_name}' should exist"
+
+    def test_lifecycle_policy_120_days_expire_integration(self, minio_client: Minio, test_bucket_name: str, cleanup_bucket):
+        """Test end-to-end integration with ExpireCurrentAfter120DaysAndDelete.json lifecycle policy."""
+        # Verify MinIO connectivity first
+        try:
+            buckets = minio_client.list_buckets()
+            print(f"MinIO accessible, found {len(buckets)} existing buckets")
+        except Exception as e:
+            pytest.fail(f"MinIO server not accessible: {e}")
+        
+        # Create bucket with the specific lifecycle policy that's causing production issues
+        bucket = Bucket(name=test_bucket_name)
+        bucket.create_service_account = False  # Disable service account creation for focused testing
+        
+        # Use the problematic lifecycle policy from fixtures
+        from pathlib import Path
+        from minio_manager.classes.resource_parser import ClusterResources
+        
+        parser = ClusterResources()
+        lifecycle_file = str(Path(__file__).parent / "fixtures" / "lifecycle_policies" / "ExpireCurrentAfter120DaysAndDelete.json")
+        lifecycle_config = parser.parse_bucket_lifecycle_file(lifecycle_file)
+        
+        assert lifecycle_config is not None, "Should be able to parse the lifecycle policy file"
+        bucket.lifecycle_config = lifecycle_config
+        
+        # Debug: Print the parsed lifecycle config
+        print(f"Parsed lifecycle config with {len(lifecycle_config.rules)} rules")
+        rule = lifecycle_config.rules[0]
+        print(f"Rule: {rule.rule_id}, Status: {rule.status}, Days: {rule.expiration.days if rule.expiration else 'None'}")
+        
+        resources = ClusterResources()
+        resources.buckets = [bucket]
+        resources.bucket_policies = []
+        resources.service_accounts = []
+        resources.iam_policies = []
+        resources.iam_policy_attachments = []
+
+        # Debug: Check bucket name format
+        print(f"Attempting to create bucket: {test_bucket_name}")
+        
+        # Deploy the resources - this will test end-to-end functionality
+        try:
+            handle_resources(resources)
+            print("handle_resources completed")
+        except Exception as e:
+            pytest.fail(f"handle_resources failed: {e}")
+
+        # Debug: Check if bucket exists immediately after creation
+        bucket_exists_immediate = minio_client.bucket_exists(test_bucket_name)
+        print(f"Bucket exists immediately after handle_resources: {bucket_exists_immediate}")
+        
+        # Verify bucket was created - with better error reporting
+        if not minio_client.bucket_exists(test_bucket_name):
+            # List all buckets to see what was actually created
+            all_buckets = [b.name for b in minio_client.list_buckets()]
+            pytest.fail(f"Bucket {test_bucket_name} should exist. Existing buckets: {all_buckets}")
+
+        # Verify lifecycle policy was applied correctly
+        try:
+            lifecycle = minio_client.get_bucket_lifecycle(test_bucket_name)
+            assert len(lifecycle.rules) == 1, "Should have exactly one lifecycle rule"
+            
+            rule = lifecycle.rules[0]
+            assert rule.rule_id == "remove-logging-after-120-day", f"Rule ID should match, got: {rule.rule_id}"
+            assert rule.status == "Enabled", f"Rule should be enabled, got: {rule.status}"
+            
+            # Test the expiration configuration that might be causing production issues
+            assert rule.expiration is not None, "Rule should have expiration configuration"
+            assert rule.expiration.days == 120, f"Expiration should be 120 days, got: {rule.expiration.days}"
+            
+            # Test non-current version expiration
+            assert rule.noncurrent_version_expiration is not None, "Rule should have non-current version expiration"
+            assert rule.noncurrent_version_expiration.noncurrent_days == 30, f"Non-current expiration should be 30 days, got: {rule.noncurrent_version_expiration.noncurrent_days}"
+            
+        except Exception as e:
+            pytest.fail(f"Failed to retrieve or validate lifecycle policy: {e}")
+
+        # Test idempotency - apply the same configuration again
+        handle_resources(resources)
+        
+        # Verify lifecycle policy is still correct after reapplication
+        lifecycle_after_reapply = minio_client.get_bucket_lifecycle(test_bucket_name)
+        assert len(lifecycle_after_reapply.rules) == 1, "Should still have exactly one lifecycle rule after reapplication"
+        assert lifecycle_after_reapply.rules[0].rule_id == "remove-logging-after-120-day", "Rule ID should be unchanged after reapplication"
+
+        # Finally, register cleanup AFTER all tests are done
+        cleanup_bucket(test_bucket_name)
