@@ -677,3 +677,203 @@ class TestMinIOManagerIntegration:
 
         # Finally, register cleanup AFTER all tests are done
         cleanup_bucket(test_bucket_name)
+
+        # Finally, register cleanup AFTER all tests are done
+        cleanup_bucket(test_bucket_name)
+
+    def test_service_account_from_resources_integration(self, minio_client: Minio, test_bucket_name: str, cleanup_bucket):
+        """Test creating service account from resources.yaml service_accounts section with policy verification."""
+        # Verify MinIO connectivity first
+        try:
+            buckets = minio_client.list_buckets()
+            print(f"MinIO accessible, found {len(buckets)} existing buckets")
+        except Exception as e:
+            pytest.fail(f"MinIO server not accessible: {e}")
+        
+        # Create explicit service account from service_accounts section (no bucket needed)
+        from minio_manager.classes.minio_resources import ServiceAccount
+        from minio_manager.classes.resource_parser import ClusterResources
+        from pathlib import Path
+        
+        service_account_name = f"{test_bucket_name}-sa"
+        user_policy_file = str(Path(__file__).parent / "fixtures" / "user_policies" / "test_service_account_policy.json")
+        
+        # Debug: Check if policy file exists
+        policy_path = Path(user_policy_file)
+        print(f"Service account policy file path: {user_policy_file}")
+        print(f"Policy file exists: {policy_path.exists()}")
+        if policy_path.exists():
+            print(f"Policy file size: {policy_path.stat().st_size} bytes")
+        
+        service_account = ServiceAccount(name=service_account_name, policy_file=user_policy_file)
+        
+        # Set up minimal resources configuration - just the service account
+        resources = ClusterResources()
+        resources.buckets = []  # No buckets needed for service account creation
+        resources.bucket_policies = []
+        resources.service_accounts = [service_account]  # Explicit service account from resources
+        resources.iam_policies = []
+        resources.iam_policy_attachments = []
+
+        print(f"Setting up integration test for service account: {service_account_name}")
+        
+        # Deploy the resources - this will test service account creation from resources section
+        try:
+            print(f"About to call handle_resources with {len(resources.service_accounts)} service accounts")
+            for sa in resources.service_accounts:
+                print(f"  - Service account: {sa.name}, policy_file: {sa.policy_file}")
+            handle_resources(resources)
+            print("Service account integration test completed successfully")
+        except Exception as e:
+            pytest.fail(f"handle_resources failed: {e}")
+
+        # Force secrets backend to save changes to file
+        from minio_manager.classes.secrets import secrets
+        secrets.cleanup()  # This will save the backend if it's dirty
+
+        # Verify explicit service account was created and credentials stored
+        try:
+            import yaml
+            
+            # Check secrets backend file for the service account credentials
+            secrets_file = Path("tests/fixtures/testsecrets-insecure.yaml")
+            assert secrets_file.exists(), "Secrets backend file should exist"
+            
+            with open(secrets_file) as f:
+                secrets_data = yaml.safe_load(f) or {}
+            
+            # Service account should exist with the explicit name
+            assert service_account_name in secrets_data, f"Service account '{service_account_name}' should exist in secrets"
+            
+            service_account_creds = secrets_data[service_account_name]
+            assert "access_key" in service_account_creds, "Service account should have access_key"
+            assert "secret_key" in service_account_creds, "Service account should have secret_key"
+            assert len(service_account_creds["access_key"]) > 0, "Access key should not be empty"
+            assert len(service_account_creds["secret_key"]) > 0, "Secret key should not be empty"
+            
+            print(f"✅ Service account '{service_account_name}' credentials stored: access_key={service_account_creds['access_key'][:8]}...")
+            
+        except Exception as e:
+            pytest.fail(f"Failed to verify service account credentials: {e}")
+
+        # Verify the service account exists in MinIO and has the correct policy
+        try:
+            from minio_manager.classes.client_manager import client_manager
+            import json
+            
+            # Get the service account details from MinIO
+            access_key = service_account_creds["access_key"]
+            sa_info_raw = client_manager.admin.get_service_account(access_key)
+            sa_info = json.loads(sa_info_raw)
+            
+            print(f"✅ Service account '{service_account_name}' exists in MinIO")
+            print(f"  - Access Key: {access_key}")
+            print(f"  - Name: {sa_info.get('name', 'Not set')}")
+            print(f"  - Description: {sa_info.get('description', 'Not set')}")
+            
+            # Verify the policy was applied correctly
+            if 'policy' in sa_info:
+                applied_policy = json.loads(sa_info['policy'])
+                
+                # Load the expected policy from file
+                with open(user_policy_file) as f:
+                    expected_policy = json.load(f)
+                
+                print(f"✅ Service account has policy attached")
+                
+                # Instead of exact comparison, verify key policy components
+                applied_statements = applied_policy.get('Statement', [])
+                expected_statements = expected_policy.get('Statement', [])
+                
+                assert len(applied_statements) == len(expected_statements), f"Should have {len(expected_statements)} policy statements"
+                print(f"✅ Service account policy has correct number of statements: {len(applied_statements)}")
+                
+                # Check that all expected actions and resources are present
+                all_applied_actions = set()
+                all_applied_resources = set()
+                
+                for stmt in applied_statements:
+                    actions = stmt.get('Action', [])
+                    resources = stmt.get('Resource', [])
+                    if isinstance(actions, str):
+                        actions = [actions]
+                    if isinstance(resources, str):
+                        resources = [resources]
+                    all_applied_actions.update(actions)
+                    all_applied_resources.update(resources)
+                
+                all_expected_actions = set()
+                all_expected_resources = set()
+                
+                for stmt in expected_statements:
+                    actions = stmt.get('Action', [])
+                    resources = stmt.get('Resource', [])
+                    if isinstance(actions, str):
+                        actions = [actions]
+                    if isinstance(resources, str):
+                        resources = [resources]
+                    all_expected_actions.update(actions)
+                    all_expected_resources.update(resources)
+                
+                # Verify all expected actions are present
+                missing_actions = all_expected_actions - all_applied_actions
+                assert not missing_actions, f"Missing expected actions: {missing_actions}"
+                print(f"✅ Service account policy contains all expected actions: {sorted(all_applied_actions)}")
+                
+                # For resources, be more flexible since MinIO may modify them
+                print(f"Applied resources: {sorted(all_applied_resources)}")
+                print(f"Expected resources: {sorted(all_expected_resources)}")
+                
+                # Check for the specific resources we care about (not all, since MinIO may modify "*")
+                important_resources = {
+                    "arn:aws:s3:::test-bucket-*",
+                    "arn:aws:s3:::test-bucket-*/*"
+                }
+                
+                missing_important_resources = important_resources - all_applied_resources
+                assert not missing_important_resources, f"Missing important resources: {missing_important_resources}"
+                print(f"✅ Service account policy contains all important resources")
+                
+                # Verify specific key permissions
+                assert "s3:ListBucket" in all_applied_actions, "Should have ListBucket permission"
+                assert "s3:CreateBucket" in all_applied_actions, "Should have CreateBucket permission"
+                assert "s3:GetObject" in all_applied_actions, "Should have GetObject permission"
+                assert "s3:PutObject" in all_applied_actions, "Should have PutObject permission"
+                assert "s3:ListAllMyBuckets" in all_applied_actions, "Should have ListAllMyBuckets permission"
+                
+                # Verify specific resource patterns
+                assert "arn:aws:s3:::test-bucket-*" in all_applied_resources, "Should have test-bucket-* bucket permissions"
+                assert "arn:aws:s3:::test-bucket-*/*" in all_applied_resources, "Should have test-bucket-*/* object permissions"
+                
+                print(f"✅ Service account policy contains all expected permissions and resources")
+                
+            else:
+                pytest.fail("Service account should have a policy attached")
+            
+        except Exception as e:
+            pytest.fail(f"Failed to verify service account policy: {e}")
+
+        # Test basic authentication with the service account
+        try:
+            from minio import Minio
+            
+            # Create a new MinIO client using the service account credentials
+            sa_client = Minio(
+                endpoint="localhost:9000",
+                access_key=service_account_creds["access_key"],
+                secret_key=service_account_creds["secret_key"],
+                secure=False,
+            )
+            
+            # Test basic operation - list buckets
+            sa_buckets = sa_client.list_buckets()
+            print(f"✅ Service account can authenticate and list {len(sa_buckets)} buckets")
+            
+        except Exception as e:
+            pytest.fail(f"Service account authentication failed: {e}")
+
+        print(f"✅ Service account integration test completed successfully")
+        print(f"   - Service account '{service_account_name}' created from resources configuration")
+        print(f"   - Credentials stored in secrets backend")
+        print(f"   - Policy correctly applied and verified")
+        print(f"   - Authentication successful")
