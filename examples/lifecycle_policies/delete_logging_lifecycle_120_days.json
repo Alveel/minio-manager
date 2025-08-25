@@ -4,7 +4,7 @@
       "Expiration": {
         "Days": 120
       },
-      "ID": "remove-logging-after-120-day",
+      "ID": "delete-logging-after-120-day",
       "NoncurrentVersionExpiration": {
         "NoncurrentDays": 30
       },
