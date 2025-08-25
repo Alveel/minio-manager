@@ -590,3 +590,290 @@ class TestMinIOManagerIntegration:
         # Explicitly created account
         explicit_name = f"{test_bucket_name}-explicit"
         assert explicit_name in secrets_data, f"Explicit service account '{explicit_name}' should exist"
+
+    def test_lifecycle_policy_120_days_expire_integration(self, minio_client: Minio, test_bucket_name: str, cleanup_bucket):
+        """Test end-to-end integration with ExpireCurrentAfter120DaysAndDelete.json lifecycle policy."""
+        # Verify MinIO connectivity first
+        try:
+            buckets = minio_client.list_buckets()
+            print(f"MinIO accessible, found {len(buckets)} existing buckets")
+        except Exception as e:
+            pytest.fail(f"MinIO server not accessible: {e}")
+        
+        # Create bucket with the specific lifecycle policy that's causing production issues
+        bucket = Bucket(name=test_bucket_name)
+        bucket.create_service_account = False  # Disable service account creation for focused testing
+        
+        # Use the problematic lifecycle policy from fixtures
+        from pathlib import Path
+        from minio_manager.classes.resource_parser import ClusterResources
+        
+        parser = ClusterResources()
+        lifecycle_file = str(Path(__file__).parent / "fixtures" / "lifecycle_policies" / "ExpireCurrentAfter120DaysAndDelete.json")
+        lifecycle_config = parser.parse_bucket_lifecycle_file(lifecycle_file)
+        
+        assert lifecycle_config is not None, "Should be able to parse the lifecycle policy file"
+        bucket.lifecycle_config = lifecycle_config
+        
+        # Debug: Print the parsed lifecycle config
+        print(f"Parsed lifecycle config with {len(lifecycle_config.rules)} rules")
+        rule = lifecycle_config.rules[0]
+        print(f"Rule: {rule.rule_id}, Status: {rule.status}, Days: {rule.expiration.days if rule.expiration else 'None'}")
+        
+        resources = ClusterResources()
+        resources.buckets = [bucket]
+        resources.bucket_policies = []
+        resources.service_accounts = []
+        resources.iam_policies = []
+        resources.iam_policy_attachments = []
+
+        # Debug: Check bucket name format
+        print(f"Attempting to create bucket: {test_bucket_name}")
+        
+        # Deploy the resources - this will test end-to-end functionality
+        try:
+            handle_resources(resources)
+            print("handle_resources completed")
+        except Exception as e:
+            pytest.fail(f"handle_resources failed: {e}")
+
+        # Debug: Check if bucket exists immediately after creation
+        bucket_exists_immediate = minio_client.bucket_exists(test_bucket_name)
+        print(f"Bucket exists immediately after handle_resources: {bucket_exists_immediate}")
+        
+        # Verify bucket was created - with better error reporting
+        if not minio_client.bucket_exists(test_bucket_name):
+            # List all buckets to see what was actually created
+            all_buckets = [b.name for b in minio_client.list_buckets()]
+            pytest.fail(f"Bucket {test_bucket_name} should exist. Existing buckets: {all_buckets}")
+
+        # Verify lifecycle policy was applied correctly
+        try:
+            lifecycle = minio_client.get_bucket_lifecycle(test_bucket_name)
+            assert len(lifecycle.rules) == 1, "Should have exactly one lifecycle rule"
+            
+            rule = lifecycle.rules[0]
+            assert rule.rule_id == "remove-logging-after-120-day", f"Rule ID should match, got: {rule.rule_id}"
+            assert rule.status == "Enabled", f"Rule should be enabled, got: {rule.status}"
+            
+            # Test the expiration configuration that might be causing production issues
+            assert rule.expiration is not None, "Rule should have expiration configuration"
+            assert rule.expiration.days == 120, f"Expiration should be 120 days, got: {rule.expiration.days}"
+            
+            # Test non-current version expiration
+            assert rule.noncurrent_version_expiration is not None, "Rule should have non-current version expiration"
+            assert rule.noncurrent_version_expiration.noncurrent_days == 30, f"Non-current expiration should be 30 days, got: {rule.noncurrent_version_expiration.noncurrent_days}"
+            
+        except Exception as e:
+            pytest.fail(f"Failed to retrieve or validate lifecycle policy: {e}")
+
+        # Test idempotency - apply the same configuration again
+        handle_resources(resources)
+        
+        # Verify lifecycle policy is still correct after reapplication
+        lifecycle_after_reapply = minio_client.get_bucket_lifecycle(test_bucket_name)
+        assert len(lifecycle_after_reapply.rules) == 1, "Should still have exactly one lifecycle rule after reapplication"
+        assert lifecycle_after_reapply.rules[0].rule_id == "remove-logging-after-120-day", "Rule ID should be unchanged after reapplication"
+
+        # Finally, register cleanup AFTER all tests are done
+        cleanup_bucket(test_bucket_name)
+
+        # Finally, register cleanup AFTER all tests are done
+        cleanup_bucket(test_bucket_name)
+
+    def test_service_account_from_resources_integration(self, minio_client: Minio, test_bucket_name: str, cleanup_bucket):
+        """Test creating service account from resources.yaml service_accounts section with policy verification."""
+        # Verify MinIO connectivity first
+        try:
+            buckets = minio_client.list_buckets()
+            print(f"MinIO accessible, found {len(buckets)} existing buckets")
+        except Exception as e:
+            pytest.fail(f"MinIO server not accessible: {e}")
+        
+        # Create explicit service account from service_accounts section (no bucket needed)
+        from minio_manager.classes.minio_resources import ServiceAccount
+        from minio_manager.classes.resource_parser import ClusterResources
+        from pathlib import Path
+        
+        service_account_name = f"{test_bucket_name}-sa"
+        user_policy_file = str(Path(__file__).parent / "fixtures" / "user_policies" / "test_service_account_policy.json")
+        
+        # Debug: Check if policy file exists
+        policy_path = Path(user_policy_file)
+        print(f"Service account policy file path: {user_policy_file}")
+        print(f"Policy file exists: {policy_path.exists()}")
+        if policy_path.exists():
+            print(f"Policy file size: {policy_path.stat().st_size} bytes")
+        
+        service_account = ServiceAccount(name=service_account_name, policy_file=user_policy_file)
+        
+        # Set up minimal resources configuration - just the service account
+        resources = ClusterResources()
+        resources.buckets = []  # No buckets needed for service account creation
+        resources.bucket_policies = []
+        resources.service_accounts = [service_account]  # Explicit service account from resources
+        resources.iam_policies = []
+        resources.iam_policy_attachments = []
+
+        print(f"Setting up integration test for service account: {service_account_name}")
+        
+        # Deploy the resources - this will test service account creation from resources section
+        try:
+            print(f"About to call handle_resources with {len(resources.service_accounts)} service accounts")
+            for sa in resources.service_accounts:
+                print(f"  - Service account: {sa.name}, policy_file: {sa.policy_file}")
+            handle_resources(resources)
+            print("Service account integration test completed successfully")
+        except Exception as e:
+            pytest.fail(f"handle_resources failed: {e}")
+
+        # Force secrets backend to save changes to file
+        from minio_manager.classes.secrets import secrets
+        secrets.cleanup()  # This will save the backend if it's dirty
+
+        # Verify explicit service account was created and credentials stored
+        try:
+            import yaml
+            
+            # Check secrets backend file for the service account credentials
+            secrets_file = Path("tests/fixtures/testsecrets-insecure.yaml")
+            assert secrets_file.exists(), "Secrets backend file should exist"
+            
+            with open(secrets_file) as f:
+                secrets_data = yaml.safe_load(f) or {}
+            
+            # Service account should exist with the explicit name
+            assert service_account_name in secrets_data, f"Service account '{service_account_name}' should exist in secrets"
+            
+            service_account_creds = secrets_data[service_account_name]
+            assert "access_key" in service_account_creds, "Service account should have access_key"
+            assert "secret_key" in service_account_creds, "Service account should have secret_key"
+            assert len(service_account_creds["access_key"]) > 0, "Access key should not be empty"
+            assert len(service_account_creds["secret_key"]) > 0, "Secret key should not be empty"
+            
+            print(f"✅ Service account '{service_account_name}' credentials stored: access_key={service_account_creds['access_key'][:8]}...")
+            
+        except Exception as e:
+            pytest.fail(f"Failed to verify service account credentials: {e}")
+
+        # Verify the service account exists in MinIO and has the correct policy
+        try:
+            from minio_manager.classes.client_manager import client_manager
+            import json
+            
+            # Get the service account details from MinIO
+            access_key = service_account_creds["access_key"]
+            sa_info_raw = client_manager.admin.get_service_account(access_key)
+            sa_info = json.loads(sa_info_raw)
+            
+            print(f"✅ Service account '{service_account_name}' exists in MinIO")
+            print(f"  - Access Key: {access_key}")
+            print(f"  - Name: {sa_info.get('name', 'Not set')}")
+            print(f"  - Description: {sa_info.get('description', 'Not set')}")
+            
+            # Verify the policy was applied correctly
+            if 'policy' in sa_info:
+                applied_policy = json.loads(sa_info['policy'])
+                
+                # Load the expected policy from file
+                with open(user_policy_file) as f:
+                    expected_policy = json.load(f)
+                
+                print(f"✅ Service account has policy attached")
+                
+                # Instead of exact comparison, verify key policy components
+                applied_statements = applied_policy.get('Statement', [])
+                expected_statements = expected_policy.get('Statement', [])
+                
+                assert len(applied_statements) == len(expected_statements), f"Should have {len(expected_statements)} policy statements"
+                print(f"✅ Service account policy has correct number of statements: {len(applied_statements)}")
+                
+                # Check that all expected actions and resources are present
+                all_applied_actions = set()
+                all_applied_resources = set()
+                
+                for stmt in applied_statements:
+                    actions = stmt.get('Action', [])
+                    resources = stmt.get('Resource', [])
+                    if isinstance(actions, str):
+                        actions = [actions]
+                    if isinstance(resources, str):
+                        resources = [resources]
+                    all_applied_actions.update(actions)
+                    all_applied_resources.update(resources)
+                
+                all_expected_actions = set()
+                all_expected_resources = set()
+                
+                for stmt in expected_statements:
+                    actions = stmt.get('Action', [])
+                    resources = stmt.get('Resource', [])
+                    if isinstance(actions, str):
+                        actions = [actions]
+                    if isinstance(resources, str):
+                        resources = [resources]
+                    all_expected_actions.update(actions)
+                    all_expected_resources.update(resources)
+                
+                # Verify all expected actions are present
+                missing_actions = all_expected_actions - all_applied_actions
+                assert not missing_actions, f"Missing expected actions: {missing_actions}"
+                print(f"✅ Service account policy contains all expected actions: {sorted(all_applied_actions)}")
+                
+                # For resources, be more flexible since MinIO may modify them
+                print(f"Applied resources: {sorted(all_applied_resources)}")
+                print(f"Expected resources: {sorted(all_expected_resources)}")
+                
+                # Check for the specific resources we care about (not all, since MinIO may modify "*")
+                important_resources = {
+                    "arn:aws:s3:::test-bucket-*",
+                    "arn:aws:s3:::test-bucket-*/*"
+                }
+                
+                missing_important_resources = important_resources - all_applied_resources
+                assert not missing_important_resources, f"Missing important resources: {missing_important_resources}"
+                print(f"✅ Service account policy contains all important resources")
+                
+                # Verify specific key permissions
+                assert "s3:ListBucket" in all_applied_actions, "Should have ListBucket permission"
+                assert "s3:CreateBucket" in all_applied_actions, "Should have CreateBucket permission"
+                assert "s3:GetObject" in all_applied_actions, "Should have GetObject permission"
+                assert "s3:PutObject" in all_applied_actions, "Should have PutObject permission"
+                assert "s3:ListAllMyBuckets" in all_applied_actions, "Should have ListAllMyBuckets permission"
+                
+                # Verify specific resource patterns
+                assert "arn:aws:s3:::test-bucket-*" in all_applied_resources, "Should have test-bucket-* bucket permissions"
+                assert "arn:aws:s3:::test-bucket-*/*" in all_applied_resources, "Should have test-bucket-*/* object permissions"
+                
+                print(f"✅ Service account policy contains all expected permissions and resources")
+                
+            else:
+                pytest.fail("Service account should have a policy attached")
+            
+        except Exception as e:
+            pytest.fail(f"Failed to verify service account policy: {e}")
+
+        # Test basic authentication with the service account
+        try:
+            from minio import Minio
+            
+            # Create a new MinIO client using the service account credentials
+            sa_client = Minio(
+                endpoint="localhost:9000",
+                access_key=service_account_creds["access_key"],
+                secret_key=service_account_creds["secret_key"],
+                secure=False,
+            )
+            
+            # Test basic operation - list buckets
+            sa_buckets = sa_client.list_buckets()
+            print(f"✅ Service account can authenticate and list {len(sa_buckets)} buckets")
+            
+        except Exception as e:
+            pytest.fail(f"Service account authentication failed: {e}")
+
+        print(f"✅ Service account integration test completed successfully")
+        print(f"   - Service account '{service_account_name}' created from resources configuration")
+        print(f"   - Credentials stored in secrets backend")
+        print(f"   - Policy correctly applied and verified")
+        print(f"   - Authentication successful")

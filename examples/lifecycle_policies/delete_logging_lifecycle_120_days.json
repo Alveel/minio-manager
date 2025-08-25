@@ -1,0 +1,15 @@
+{
+  "Rules": [
+    {
+      "Expiration": {
+        "Days": 120
+      },
+      "ID": "delete-logging-after-120-day",
+      "NoncurrentVersionExpiration": {
+        "NoncurrentDays": 30
+      },
+      "Prefix": "",
+      "Status": "Enabled"
+    }
+  ]
+}
