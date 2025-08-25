@@ -168,7 +168,7 @@ class ClusterResources:
         Parse a single bucket object lifecycle rule.
 
         TODO:
-          Implement date and days in Expiration, implement Transition, NoncurrentVersionTransition, Filter, and
+          Implement date in Expiration, implement Transition, NoncurrentVersionTransition, Filter, and
           AbortIncompleteMultipartUpload
 
         Args:
@@ -183,7 +183,7 @@ class ClusterResources:
             # Handle both Days-based expiration and ExpiredObjectDeleteMarker
             expire_days = expiration.get("Days")
             expire_delete_marker = expiration.get("ExpiredObjectDeleteMarker")
-            
+
             if expire_days is not None:
                 # Days-based expiration (e.g., "Days": 120)
                 rule_dict["expiration"] = Expiration(days=expire_days)
@@ -192,7 +192,9 @@ class ClusterResources:
                 rule_dict["expiration"] = Expiration(expired_object_delete_marker=expire_delete_marker)
             else:
                 # No recognized expiration configuration, log warning but continue
-                logger.warning(f"Expiration configuration found but no recognized fields (Days or ExpiredObjectDeleteMarker)")
+                logger.warning(
+                    "Expiration configuration found but no recognized fields (Days or ExpiredObjectDeleteMarker)"
+                )
                 rule_dict["expiration"] = Expiration(expired_object_delete_marker=False)
 
         noncurrent_version_expiration = rule_data.get("NoncurrentVersionExpiration")
